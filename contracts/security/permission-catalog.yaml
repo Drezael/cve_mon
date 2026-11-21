@@ -1,0 +1,418 @@
+version: '1.0'
+permissions:
+  - code: user:list
+    description: user list
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: user:read
+    description: user read
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: user:create
+    description: user create
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: user:update
+    description: user update
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: user:enable
+    description: user enable
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: user:disable
+    description: user disable
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: user:archive
+    description: user archive
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: user:session:revoke
+    description: user session revoke
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: user:role:assign
+    description: user role assign
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: user:mfa:recovery
+    description: user mfa recovery
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: role:list
+    description: role list
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: role:create
+    description: role create
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: role:update
+    description: role update
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: role:delete
+    description: role delete
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: role:assign:privileged
+    description: role assign privileged
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: server:read
+    description: server read
+    administrative: false
+    object_scope: view
+    reauthentication: false
+    delegable: true
+    identity_type: human
+    classification: object_scoped
+  - code: server:create
+    description: server create
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: server:update
+    description: server update
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: server:delete
+    description: server delete
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: server:restore
+    description: server restore
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: server:acl:manage
+    description: server acl manage
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: server:reorder
+    description: server reorder
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: group:read
+    description: group read
+    administrative: false
+    object_scope: view
+    reauthentication: false
+    delegable: true
+    identity_type: human
+    classification: object_scoped
+  - code: inventory:read
+    description: inventory read
+    administrative: false
+    object_scope: view
+    reauthentication: false
+    delegable: true
+    identity_type: human
+    classification: object_scoped
+  - code: inventory:upload:dashboard
+    description: inventory upload dashboard
+    administrative: false
+    object_scope: inventory_upload
+    reauthentication: false
+    delegable: true
+    identity_type: human
+    classification: object_scoped
+  - code: security:overview:read
+    description: security overview read
+    administrative: false
+    object_scope: view
+    reauthentication: false
+    delegable: true
+    identity_type: human
+    classification: object_scoped
+  - code: cve:read
+    description: cve read
+    administrative: false
+    object_scope: view
+    reauthentication: false
+    delegable: true
+    identity_type: human
+    classification: object_scoped
+  - code: cve:update
+    description: Request CVE data update
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: finding:read
+    description: finding read
+    administrative: false
+    object_scope: findings_read
+    reauthentication: false
+    delegable: true
+    identity_type: human
+    classification: object_scoped
+  - code: finding:update
+    description: finding update
+    administrative: false
+    object_scope: findings_manage
+    reauthentication: false
+    delegable: true
+    identity_type: human
+    classification: object_scoped
+  - code: deployment:status:read
+    description: deployment status read
+    administrative: false
+    object_scope: null
+    reauthentication: false
+    delegable: true
+    identity_type: human
+    classification: limited_read
+  - code: permission:read
+    description: Read permission catalog
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: audit:read
+    description: Read authorized audit metadata
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: finding:close
+    description: finding close
+    administrative: true
+    object_scope: findings_manage
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: finding:review:confirm
+    description: finding review confirm
+    administrative: true
+    object_scope: findings_manage
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: finding:exception:approve
+    description: finding exception approve
+    administrative: true
+    object_scope: findings_manage
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: finding:policy:manage
+    description: finding policy manage
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: inventory:submit
+    description: Separate machine upload scope; Phase 11
+    identity_type: machine
+    administrative: false
+    object_scope: registered_server
+    reauthentication: false
+    delegable: false
+    classification: machine_only
+  - code: notification:read
+    description: notification read
+    administrative: false
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: functional
+  - code: notification:preferences:update
+    description: notification preferences update
+    administrative: false
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: functional
+  - code: notification:rule:read
+    description: notification rule read
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: notification:rule:manage
+    description: notification rule manage
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: notification:template:read
+    description: notification template read
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: notification:template:manage
+    description: notification template manage
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: notification:delivery:read
+    description: notification delivery read
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: notification:workflow:read
+    description: notification workflow read
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: deployment:diagnostics:read
+    description: deployment diagnostics read
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: deployment:maintenance:manage
+    description: deployment maintenance manage
+    administrative: true
+    object_scope: null
+    reauthentication: true
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: server:inventory:manage
+    description: Server hinzufügen und aktualisieren
+    administrative: false
+    object_scope: null
+    reauthentication: false
+    delegable: true
+    identity_type: human
+    classification: operational
+  - code: deployment:service:restart
+    description: deployment service restart
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: notification:smtp:manage
+    description: notification smtp manage
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative
+  - code: instance:settings:manage
+    description: Manage instance settings
+    administrative: true
+    object_scope: null
+    reauthentication: false
+    delegable: false
+    identity_type: human
+    classification: administrative

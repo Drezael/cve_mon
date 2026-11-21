@@ -1,0 +1,56 @@
+# Python und Werkzeuge
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage*
+htmlcov/
+coverage.xml
+*.egg-info/
+build/
+dist/
+# Lokale IDE- und Arbeitsdateien
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+/tmp/
+# Lokale Konfiguration und geheimes Schlüsselmaterial
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+/secrets/
+# Laufzeitdaten, Inventare und Datenbank-Dumps
+/runtime/
+/data/
+/volumes/
+/inventory_uploads/
+/backups/
+/dumps/
+*.sql.gz
+*.dump
+*.backup
+# Lokale Infrastruktur: Zertifikate, gerenderte Konfiguration und Testberichte
+/.runtime/
+*.crt
+*.csr
+*.srl
+# Dashboard dependencies and local browser reports
+node_modules/
+playwright-report/
+test-results/
+
+# Private historical development plans; retained locally, never published.
+/docs/history/plans/
+/docs/development/phase-*-plan.md

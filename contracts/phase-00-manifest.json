@@ -1,0 +1,97 @@
+{
+  "version": "1.0",
+  "schema": "contracts/inventory/inventory-v1.schema.json",
+  "openapi": "contracts/api/openapi.yaml",
+  "required_files": [
+    "contracts/api/README.md",
+    "contracts/api/openapi.yaml",
+    "contracts/inventory/README.md",
+    "contracts/inventory/inventory-v1.schema.json",
+    "contracts/inventory/rejection-cases.md",
+    "contracts/security/service-access-v1.json",
+    "docs/api/authentication-boundaries.md",
+    "docs/api/conventions.md",
+    "docs/architecture/availability-and-offline.md",
+    "docs/architecture/components.md",
+    "docs/architecture/current-state.md",
+    "docs/architecture/data-flow.md",
+    "docs/architecture/decisions/ADR-0001-postgresql-only.md",
+    "docs/architecture/decisions/ADR-0002-n8n-orchestration.md",
+    "docs/architecture/decisions/ADR-0003-postgres-jobs.md",
+    "docs/architecture/decisions/ADR-0004-transactional-outbox.md",
+    "docs/architecture/decisions/ADR-0005-docker-compose.md",
+    "docs/architecture/decisions/ADR-0006-nginx-ingress.md",
+    "docs/architecture/decisions/ADR-0007-envoy-egress.md",
+    "docs/architecture/decisions/ADR-0008-postfix-queue.md",
+    "docs/architecture/decisions/ADR-0009-manual-ansible.md",
+    "docs/architecture/decisions/ADR-0010-technical-upload.md",
+    "docs/architecture/decisions/ADR-0011-dashboard-upload.md",
+    "docs/architecture/decisions/ADR-0012-shared-inventory.md",
+    "docs/architecture/decisions/ADR-0013-inventory-isolation.md",
+    "docs/architecture/decisions/ADR-0014-dashboard-groups.md",
+    "docs/architecture/decisions/ADR-0015-dashboard-order.md",
+    "docs/architecture/decisions/ADR-0016-local-users.md",
+    "docs/architecture/decisions/ADR-0017-totp-admins.md",
+    "docs/architecture/decisions/ADR-0018-live-status.md",
+    "docs/architecture/decisions/ADR-0019-offline-analysis.md",
+    "docs/architecture/decisions/README.md",
+    "docs/architecture/egress.md",
+    "docs/architecture/ingress.md",
+    "docs/architecture/internal-trust.md",
+    "docs/architecture/networks.md",
+    "docs/architecture/open-points.md",
+    "docs/architecture/overview.md",
+    "docs/architecture/responsibilities.md",
+    "docs/architecture/statuspage.md",
+    "docs/database/access-matrix.md",
+    "docs/database/automation-and-audit.md",
+    "docs/database/cve-and-findings.md",
+    "docs/database/inventory.md",
+    "docs/database/overview.md",
+    "docs/database/security.md",
+    "docs/database/server-and-groups.md",
+    "docs/development/phase-00-acceptance.md",
+    "docs/development/phase-00-handover.md",
+    "docs/development/phase-00-status.md",
+    "docs/development/phase-00-traceability.md",
+    "docs/development/phase-01-impact.md",
+    "docs/security/authentication.md",
+    "docs/security/authorization.md",
+    "docs/security/threat-model.md",
+    "docs/testing/architecture-acceptance-scenarios.md",
+    "scripts/validate_contracts.py",
+    "tests/unit/test_contracts.py"
+  ],
+  "examples": [
+    {
+      "path": "contracts/inventory/examples/valid-ubuntu.json",
+      "valid": true
+    },
+    {
+      "path": "contracts/inventory/examples/valid-partial.json",
+      "valid": true
+    },
+    {
+      "path": "contracts/inventory/examples/valid-with-containers.json",
+      "valid": true
+    },
+    {
+      "path": "contracts/inventory/examples/invalid-group-assignment.json",
+      "valid": false,
+      "error_pointer": "/os/data",
+      "keyword": "additionalProperties"
+    },
+    {
+      "path": "contracts/inventory/examples/invalid-server-id.json",
+      "valid": false,
+      "error_pointer": "/server_id",
+      "keyword": "format"
+    },
+    {
+      "path": "contracts/inventory/examples/invalid-timestamp.json",
+      "valid": false,
+      "error_pointer": "/captured_at",
+      "keyword": "format"
+    }
+  ]
+}

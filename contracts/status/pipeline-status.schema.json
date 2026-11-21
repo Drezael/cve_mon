@@ -1,0 +1,105 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "service",
+        "pipeline"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "healthy",
+        "degraded",
+        "unavailable",
+        "unknown",
+        "starting"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "raw_state": {
+      "anyOf": [
+        {
+          "enum": [
+            "healthy",
+            "degraded",
+            "unavailable",
+            "unknown",
+            "starting"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Raw State"
+    },
+    "display_state": {
+      "enum": [
+        "healthy",
+        "degraded",
+        "unavailable",
+        "unknown",
+        "starting",
+        "maintenance"
+      ],
+      "title": "Display State",
+      "type": "string"
+    },
+    "observed_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Observed At"
+    },
+    "stale": {
+      "title": "Stale",
+      "type": "boolean"
+    },
+    "maintenance_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "title": "Maintenance Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "kind",
+    "state",
+    "raw_state",
+    "display_state",
+    "observed_at",
+    "stale",
+    "maintenance_ids"
+  ],
+  "title": "EntityRead",
+  "type": "object"
+}

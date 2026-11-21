@@ -1,0 +1,113 @@
+version: '1.0'
+system_roles:
+  user:
+    mfa_required: false
+    default_for_new_accounts: true
+    permissions:
+      - server:inventory:manage
+      - server:read
+      - group:read
+      - inventory:read
+      - cve:read
+      - finding:read
+      - finding:update
+      - notification:read
+      - notification:preferences:update
+      - security:overview:read
+  admin:
+    requires_roles: [user]
+    mfa_required: false
+    permissions:
+      - instance:settings:manage
+      - audit:read
+      - cve:read
+      - cve:update
+      - deployment:diagnostics:read
+      - deployment:maintenance:manage
+      - deployment:service:restart
+      - deployment:status:read
+      - finding:close
+      - finding:exception:approve
+      - finding:policy:manage
+      - finding:read
+      - finding:review:confirm
+      - finding:update
+      - group:read
+      - inventory:read
+      - inventory:upload:dashboard
+      - notification:delivery:read
+      - notification:preferences:update
+      - notification:smtp:manage
+      - notification:read
+      - notification:rule:manage
+      - notification:rule:read
+      - notification:template:manage
+      - notification:template:read
+      - notification:workflow:read
+      - permission:read
+      - role:assign:privileged
+      - role:create
+      - role:delete
+      - role:list
+      - role:update
+      - security:overview:read
+      - server:acl:manage
+      - server:create
+      - server:delete
+      - server:read
+      - server:reorder
+      - server:restore
+      - server:update
+      - user:archive
+      - user:create
+      - user:disable
+      - user:enable
+      - user:list
+      - user:mfa:recovery
+      - user:read
+      - user:role:assign
+      - user:session:revoke
+      - user:update
+      - server:inventory:manage
+  user_admin:
+    mfa_required: false
+    permissions:
+      - notification:read
+      - notification:preferences:update
+      - audit:read
+      - permission:read
+      - role:list
+      - user:create
+      - user:disable
+      - user:enable
+      - user:list
+      - user:read
+      - user:role:assign
+      - user:session:revoke
+      - user:update
+  security_analyst:
+    mfa_required: false
+    permissions:
+      - cve:read
+      - deployment:status:read
+      - finding:read
+      - group:read
+      - inventory:read
+      - notification:preferences:update
+      - notification:read
+      - security:overview:read
+      - server:read
+  viewer:
+    mfa_required: false
+    permissions:
+      - cve:read
+      - finding:read
+      - group:read
+      - inventory:read
+      - notification:preferences:update
+      - notification:read
+      - server:read
+policy:
+  implicit_group_inheritance: false
+  custom_roles: explicit_delegable_human_only
+  admin_upload_requires_explicit_acl: false

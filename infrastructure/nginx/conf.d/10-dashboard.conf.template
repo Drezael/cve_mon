@@ -1,0 +1,15 @@
+server {
+    listen 8443 ssl;
+    server_name ${DASHBOARD_DOMAIN};
+    include /etc/nginx/cve/snippets/tls.conf;
+    include /etc/nginx/cve/snippets/security-headers.conf;
+    if ($valid_sni_host = 0) { return 421; }
+    limit_conn connections 10;
+    limit_req zone=web_requests burst=${RATE_BURST} nodelay;
+    include /etc/nginx/cve/snippets/errors.conf;
+    include /etc/nginx/cve/snippets/inventory-dashboard-routes.conf;
+    include /etc/nginx/cve/snippets/administration-routes.conf;
+    include /etc/nginx/cve/snippets/auth-routes.conf;
+    include /etc/nginx/cve/snippets/api-routes.conf;
+    include /etc/nginx/cve/snippets/dashboard-static-routes.conf;
+}

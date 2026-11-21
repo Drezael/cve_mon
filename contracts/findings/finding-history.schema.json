@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "id",
+    "finding_id",
+    "episode_id",
+    "kind",
+    "old_value",
+    "new_value",
+    "actor_role",
+    "occurred_at"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "finding_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "episode_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "old_value": {
+      "type": "object"
+    },
+    "new_value": {
+      "type": "object"
+    },
+    "actor_role": {
+      "enum": [
+        "api_security",
+        "findings_writer"
+      ]
+    },
+    "actor_user_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}

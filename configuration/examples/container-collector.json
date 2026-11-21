@@ -1,0 +1,14 @@
+{
+  "origin": "https://inventory.internal",
+  "ca_file": "/private/server-ca.crt",
+  "certificate_file": "/private/collector.crt",
+  "key_file": "/private/collector.key",
+  "token_file": "/private/collector.token",
+  "targets": {
+    "application-host": {
+      "interval_seconds": 21600,
+      "enabled": true,
+      "connection_file": "/private/application-host.json"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+name: Verbesserung vorschlagen
+description: Ein konkretes Problem und die gewünschte Änderung beschreiben.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welches Problem soll gelöst werden?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Gewünschtes Verhalten
+    validations:
+      required: true

@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools==84.2.1", "wheel==0.48.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+license = "PolyForm-Noncommercial-1.0.0"
+name = "cve-api"
+version = "0.23.0"
+requires-python = ">=3.12,<3.13"
+description = "CVE inventory acceptance and administrative dashboard API"
+dependencies = ["cve-importer==0.15.0", "cve-notification==0.22.0", "cve-findings==0.18.0", "cve-common==0.7.0", "uvicorn==0.54.0", "argon2-cffi==25.1.0", "cryptography==50.0.2", "jsonschema==4.26.0", "rfc3339-validator==0.1.4", "python-multipart==0.0.33", "PyYAML==6.0.3"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cve_api = ["py.typed", "auth/password-blocklist.txt", "auth/blocklist-source.json", "auth/BLOCKLIST-LICENSE.txt", "inventories/data/inventory-v1.schema.json", "inventories/data/inventory-v1.1.schema.json", "inventories/data/inventory-v1.2.schema.json", "inventories/data/inventory-v1.3.schema.json"]

@@ -1,0 +1,136 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "job_type": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+      "title": "Job Type",
+      "type": "string"
+    },
+    "payload_version": {
+      "default": 1,
+      "maximum": 100,
+      "minimum": 1,
+      "title": "Payload Version",
+      "type": "integer"
+    },
+    "payload": {
+      "type": "object",
+      "propertyNames": {
+        "not": {
+          "pattern": "^(?:[aA][pP][iI]_[tT][oO][kK][eE][nN]|[aA][uU][tT][hH][oO][rR][iI][zZ][aA][tT][iI][oO][nN]|[cC][aA][lL][lL][bB][aA][cC][kK]_[uU][rR][lL]|[cC][lL][aA][sS][sS]|[cC][oO][mM][mM][aA][nN][dD]|[cC][oO][oO][kK][iI][eE]|[mM][fF][aA]_[sS][eE][cC][rR][eE][tT]|[mM][oO][dD][uU][lL][eE]|[pP][aA][sS][sS][wW][oO][rR][dD]|[pP][aA][sS][sS][wW][oO][rR][dD]_[hH][aA][sS][hH]|[pP][rR][iI][vV][aA][tT][eE]_[kK][eE][yY]|[pP][yY][tT][hH][oO][nN]|[sS][eE][cC][rR][eE][tT]|[sS][hH][eE][lL][lL]|[sS][mM][tT][pP]_[pP][aA][sS][sS][wW][oO][rR][dD]|[tT][aA][rR][gG][eE][tT]_[uU][rR][lL]|[tT][oO][kK][eE][nN]|[tT][oO][tT][pP]_[sS][eE][cC][rR][eE][tT]|[tT][rR][aA][nN][sS][pP][oO][rR][tT]|[uU][rR][lL])$"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/safe_value"
+      }
+    },
+    "idempotency_key": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "scope": {
+      "default": "system",
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Scope",
+      "type": "string"
+    },
+    "correlation_id": {
+      "format": "uuid",
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "priority": {
+      "default": 0,
+      "maximum": 100,
+      "minimum": -100,
+      "title": "Priority",
+      "type": "integer"
+    },
+    "max_attempts": {
+      "default": 3,
+      "maximum": 100,
+      "minimum": 1,
+      "title": "Max Attempts",
+      "type": "integer"
+    },
+    "scheduled_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Scheduled At"
+    },
+    "deadline": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deadline"
+    },
+    "pending": {
+      "default": false,
+      "title": "Pending",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "job_type",
+    "payload",
+    "idempotency_key"
+  ],
+  "title": "JobEnvelope",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cve:job-envelope-v1.schema",
+  "description": "Version 1 envelope; payload additionally validated by explicit code registry and PostgreSQL. Limit 16384 JSON bytes; no secret/executable/URL fields.",
+  "$defs": {
+    "safe_value": {
+      "anyOf": [
+        {
+          "type": "object",
+          "propertyNames": {
+            "not": {
+              "pattern": "^(?:[aA][pP][iI]_[tT][oO][kK][eE][nN]|[aA][uU][tT][hH][oO][rR][iI][zZ][aA][tT][iI][oO][nN]|[cC][aA][lL][lL][bB][aA][cC][kK]_[uU][rR][lL]|[cC][lL][aA][sS][sS]|[cC][oO][mM][mM][aA][nN][dD]|[cC][oO][oO][kK][iI][eE]|[mM][fF][aA]_[sS][eE][cC][rR][eE][tT]|[mM][oO][dD][uU][lL][eE]|[pP][aA][sS][sS][wW][oO][rR][dD]|[pP][aA][sS][sS][wW][oO][rR][dD]_[hH][aA][sS][hH]|[pP][rR][iI][vV][aA][tT][eE]_[kK][eE][yY]|[pP][yY][tT][hH][oO][nN]|[sS][eE][cC][rR][eE][tT]|[sS][hH][eE][lL][lL]|[sS][mM][tT][pP]_[pP][aA][sS][sS][wW][oO][rR][dD]|[tT][aA][rR][gG][eE][tT]_[uU][rR][lL]|[tT][oO][kK][eE][nN]|[tT][oO][tT][pP]_[sS][eE][cC][rR][eE][tT]|[tT][rR][aA][nN][sS][pP][oO][rR][tT]|[uU][rR][lL])$"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/safe_value"
+          }
+        },
+        {
+          "type": "array",
+          "maxItems": 1024,
+          "items": {
+            "$ref": "#/$defs/safe_value"
+          }
+        },
+        {
+          "type": [
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "type": "string",
+          "maxLength": 16384
+        }
+      ]
+    }
+  }
+}

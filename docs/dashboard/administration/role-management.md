@@ -1,0 +1,3 @@
+# Rollen und effektive Rechte
+
+Bestehende Systemrollen bleiben unverändert. Benutzerdefinierte Rollen sind nur im durch Phase 9 erlaubten Umfang bearbeitbar; die Checkboxliste stammt aus dem echten Permission-Katalog und bietet nur delegierbare Rechte. Rollenzuweisung ist eine explizite Auswahl mit aktueller Benutzerversion, Begründung, kritischer Bestätigung und Reauthentifizierung. User Admin erhält keine CVE-/Finding-Rechte und keine privilegierten Rollen zur Vergabe. Aktuelle Zuweisungen und effektive Rechte werden aus dem Backend geladen. Rollen-/ACL-Mutationen lösen erneute Rechteprüfung auch in anderen Tabs aus. Keine automatische Rollenvergabe durch Erstellung, Zuweisung oder Gruppenzugehörigkeit.

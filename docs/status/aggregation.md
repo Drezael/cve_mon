@@ -1,0 +1,3 @@
+# Aggregation und Hysterese
+
+Kritische Ausfälle werden nicht gemittelt. Bestätigtes HTTP 503 ergibt unavailable; ein Timeout oder eine nicht validierbare Antwort unknown. Queue-Alter, verlorene Leases, fehlender erwarteter Fortschritt oder unklare SMTP-Übergaben ergeben degraded. Zwei bestätigte erfolgreiche Durchläufe sind für die Erholung erforderlich. Unknown beendet keinen Incident. Rohmessungen bleiben erhalten; Zustandswechsel werden mit Beobachtungs- und Entscheidungszeit gespeichert. Monitoringlücken werden beim Lesen und Wiederanlauf ausdrücklich berücksichtigt. Verfügbarkeit wird ausschließlich auf gemessenen, maximal bis TTL gültigen Zeitabschnitten berechnet; Coverage und unbekannte Sekunden werden separat ausgegeben.

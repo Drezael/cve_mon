@@ -1,0 +1,1736 @@
+openapi: 3.1.0
+info:
+  title: User administration
+  version: 0.9.0
+servers:
+  - url: https://{dashboard_host}
+    variables:
+      dashboard_host:
+        default: dashboard.example.test:8443
+paths:
+  /api/v1/auth/activation/redeem:
+    post:
+      tags:
+        - authentication
+      summary: Activate
+      operationId: activate_api_v1_auth_activation_redeem_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Activation'
+        required: true
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - LoginCookie: []
+          CsrfToken: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+  /api/v1/auth/mfa/recovery/redeem:
+    post:
+      tags:
+        - authentication
+      summary: Recover Handoff
+      operationId: recover_handoff_api_v1_auth_mfa_recovery_redeem_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryHandoff'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+  /api/v1/dashboard/admin/users:
+    get:
+      tags:
+        - user-administration
+      summary: List Users
+      operationId: list_users_api_v1_dashboard_admin_users_get
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+            default: ''
+            title: Search
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Limit
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100000
+            minimum: 0
+            default: 0
+            title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response List Users Api V1 Dashboard Admin Users Get
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+    post:
+      tags:
+        - user-administration
+      summary: Create User
+      operationId: create_user_api_v1_dashboard_admin_users_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Create User Api V1 Dashboard Admin Users Post
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+  /api/v1/dashboard/admin/users/{user_id}:
+    get:
+      tags:
+        - user-administration
+      summary: Get User
+      operationId: get_user_api_v1_dashboard_admin_users__user_id__get
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get User Api V1 Dashboard Admin Users  User Id  Get
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+    patch:
+      tags:
+        - user-administration
+      summary: Patch User
+      operationId: patch_user_api_v1_dashboard_admin_users__user_id__patch
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Patch User Api V1 Dashboard Admin Users  User Id  Patch
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+  /api/v1/dashboard/admin/users/{user_id}/roles:
+    put:
+      tags:
+        - user-administration
+      summary: Assign Roles
+      operationId: assign_roles_api_v1_dashboard_admin_users__user_id__roles_put
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRoles'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Assign Roles Api V1 Dashboard Admin Users  User Id  Roles
+                  Put
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+  /api/v1/dashboard/admin/users/{user_id}/permissions:
+    get:
+      tags:
+        - user-administration
+      summary: Effective
+      operationId: effective_api_v1_dashboard_admin_users__user_id__permissions_get
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Effective Api V1 Dashboard Admin Users  User Id  Permissions
+                  Get
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+  /api/v1/dashboard/admin/users/{user_id}/mfa-recovery:
+    post:
+      tags:
+        - user-administration
+      summary: Recover Mfa
+      operationId: recover_mfa_api_v1_dashboard_admin_users__user_id__mfa_recovery_post
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Version'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Recover Mfa Api V1 Dashboard Admin Users  User Id  Mfa
+                  Recovery Post
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+  /api/v1/dashboard/admin/users/{user_id}/enable:
+    post:
+      tags:
+        - user-administration
+      summary: User Enable
+      operationId: user_enable_api_v1_dashboard_admin_users__user_id__enable_post
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Version'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response User Enable Api V1 Dashboard Admin Users  User Id  Enable
+                  Post
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+  /api/v1/dashboard/admin/users/{user_id}/disable:
+    post:
+      tags:
+        - user-administration
+      summary: User Disable
+      operationId: user_disable_api_v1_dashboard_admin_users__user_id__disable_post
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Version'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response User Disable Api V1 Dashboard Admin Users  User Id  Disable
+                  Post
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+  /api/v1/dashboard/admin/users/{user_id}/archive:
+    post:
+      tags:
+        - user-administration
+      summary: User Archive
+      operationId: user_archive_api_v1_dashboard_admin_users__user_id__archive_post
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Version'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response User Archive Api V1 Dashboard Admin Users  User Id  Archive
+                  Post
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+  /api/v1/dashboard/admin/users/{user_id}/lock:
+    post:
+      tags:
+        - user-administration
+      summary: User Lock
+      operationId: user_lock_api_v1_dashboard_admin_users__user_id__lock_post
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Version'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response User Lock Api V1 Dashboard Admin Users  User Id  Lock
+                  Post
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+  /api/v1/dashboard/admin/users/{user_id}/revoke-sessions:
+    post:
+      tags:
+        - user-administration
+      summary: User Revoke Sessions
+      operationId: user_revoke_sessions_api_v1_dashboard_admin_users__user_id__revoke_sessions_post
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Version'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response User Revoke Sessions Api V1 Dashboard Admin Users  User
+                  Id  Revoke Sessions Post
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+  /api/v1/dashboard/me/permissions:
+    get:
+      tags:
+        - server-access
+      summary: Own
+      operationId: own_api_v1_dashboard_me_permissions_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Own Api V1 Dashboard Me Permissions Get
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+      description: Dashboard HTTPS origin only; server-side RBAC/target policy and
+        CSRF. Mutations use optimistic revisions and current single-use reauthentication
+        as specified in permission-catalog. No credentials in administration responses.
+        Conflicts return 409; invisible objects return 404.
+components:
+  schemas:
+    Activation:
+      properties:
+        activation_token:
+          type: string
+          maxLength: 100
+          minLength: 70
+          format: password
+          title: Activation Token
+          writeOnly: true
+        new_password:
+          type: string
+          maxLength: 256
+          minLength: 15
+          format: password
+          title: New Password
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - activation_token
+        - new_password
+      title: Activation
+    AssignRoles:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        role_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 20
+          title: Role Ids
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+        - role_ids
+      title: AssignRoles
+    Grant:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        rights:
+          items:
+            type: string
+            enum:
+              - view
+              - inventory_upload
+              - findings_read
+              - findings_manage
+          type: array
+          maxItems: 4
+          minItems: 1
+          title: Rights
+      additionalProperties: false
+      type: object
+      required:
+        - user_id
+        - rights
+      title: Grant
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    Login:
+      properties:
+        username:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Username
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+          title: Password
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - username
+        - password
+      title: Login
+    OTP:
+      properties:
+        code:
+          type: string
+          maxLength: 6
+          minLength: 6
+          format: password
+          title: Code
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - code
+      title: OTP
+    PasswordChange:
+      properties:
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+          title: Password
+          writeOnly: true
+        code:
+          anyOf:
+            - type: string
+              maxLength: 6
+              minLength: 6
+              format: password
+              writeOnly: true
+            - type: 'null'
+          title: Code
+        new_password:
+          type: string
+          maxLength: 256
+          minLength: 15
+          format: password
+          title: New Password
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - password
+        - new_password
+      title: PasswordChange
+    Reauthentication:
+      properties:
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+          title: Password
+          writeOnly: true
+        code:
+          anyOf:
+            - type: string
+              maxLength: 6
+              minLength: 6
+              format: password
+              writeOnly: true
+            - type: 'null'
+          title: Code
+      additionalProperties: false
+      type: object
+      required:
+        - password
+      title: Reauthentication
+    Recovery:
+      properties:
+        code:
+          type: string
+          maxLength: 80
+          minLength: 20
+          format: password
+          title: Code
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - code
+      title: Recovery
+    RecoveryHandoff:
+      properties:
+        recovery_token:
+          type: string
+          maxLength: 100
+          minLength: 70
+          format: password
+          title: Recovery Token
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - recovery_token
+      title: RecoveryHandoff
+    ReplaceAccess:
+      properties:
+        version:
+          type: integer
+          minimum: 0.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        grants:
+          items:
+            $ref: '#/components/schemas/Grant'
+          type: array
+          maxItems: 100
+          title: Grants
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+        - grants
+      title: ReplaceAccess
+    RoleCreate:
+      properties:
+        code:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{2,63}$
+          title: Code
+        name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Name
+        description:
+          type: string
+          maxLength: 512
+          title: Description
+          default: ''
+        permissions:
+          items:
+            type: string
+          type: array
+          maxItems: 40
+          title: Permissions
+      additionalProperties: false
+      type: object
+      required:
+        - code
+        - name
+        - permissions
+      title: RoleCreate
+    RolePatch:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Name
+        description:
+          type: string
+          maxLength: 512
+          title: Description
+          default: ''
+        permissions:
+          items:
+            type: string
+          type: array
+          maxItems: 40
+          title: Permissions
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+        - name
+        - permissions
+      title: RolePatch
+    UserCreate:
+      properties:
+        username:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Username
+        email:
+          type: string
+          maxLength: 254
+          minLength: 3
+          pattern: ^[^\s@]+@[^\s@]+\.[^\s@]+$
+          title: Email
+        display_name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Display Name
+      additionalProperties: false
+      type: object
+      required:
+        - username
+        - email
+        - display_name
+      title: UserCreate
+    UserPatch:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        display_name:
+          anyOf:
+            - type: string
+              maxLength: 128
+              minLength: 1
+            - type: 'null'
+          title: Display Name
+        email:
+          anyOf:
+            - type: string
+              maxLength: 254
+              minLength: 3
+              pattern: ^[^\s@]+@[^\s@]+\.[^\s@]+$
+            - type: 'null'
+          title: Email
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+      title: UserPatch
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+    Version:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+      title: Version
+    Problem:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - title
+        - status
+        - code
+        - request_id
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+        request_id:
+          type: string
+          format: uuid
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-cve-session
+    LoginCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-cve-login
+    CsrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token

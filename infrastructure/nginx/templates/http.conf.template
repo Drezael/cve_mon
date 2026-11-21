@@ -1,0 +1,24 @@
+ssl_protocols TLSv1.2 TLSv1.3;
+map "$ssl_server_name:$host" $valid_sni_host {
+    default 0;
+    "${DASHBOARD_DOMAIN}:${DASHBOARD_DOMAIN}" 1;
+}
+map $host $https_authority {
+    default "";
+    ${DASHBOARD_DOMAIN} "${DASHBOARD_DOMAIN}${HTTPS_SUFFIX}";
+}
+# Immutable frontend chunks must not consume the API/HTML request budget.
+map $uri $web_rate_key {
+    default $binary_remote_addr;
+    ~^/assets/ "";
+}
+limit_req_zone $web_rate_key zone=web_requests:1m rate=${WEB_RATE};
+limit_req_zone $binary_remote_addr zone=upload:1m rate=${UPLOAD_RATE};
+limit_conn_zone $binary_remote_addr zone=connections:1m;
+limit_req_status 429;
+limit_conn_status 429;
+client_header_timeout ${CLIENT_TIMEOUT};
+client_body_timeout ${CLIENT_TIMEOUT};
+keepalive_timeout 15s;
+send_timeout ${CLIENT_TIMEOUT};
+client_max_body_size ${MAX_BODY_SIZE};

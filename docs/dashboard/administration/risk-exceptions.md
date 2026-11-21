@@ -1,0 +1,3 @@
+# Risikoausnahmen und Abschluss
+
+Expliziter endlicher Zeitraum, scope basis/episode, Begründung und Risikokontext. Browserzeit wird in UTC übertragen. Ablauf muss später als Beginn sein. Genehmigen/Ablehnen/Widerrufen verwenden bestehende Ausnahme-IDs, finding:exception:approve, aktuelle Finding-Version und Step-up. Die Backendrichtlinie entscheidet über zulässige Akteure und Zustand. Eine Ausnahme bedeutet keine technische Behebung. Finding-Abschluss verwendet ausschließlich den vorhandenen close-Endpunkt mit Begründung und gegebenenfalls bestätigtem Fix-/Fehlalarmnachweis. Kein direkter Status-Patch und keine Historienlöschung.

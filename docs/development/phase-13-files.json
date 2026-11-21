@@ -1,0 +1,34 @@
+{
+  "phase": 13,
+  "date": "2026-11-07",
+  "repository": "/home/gerald/Documents/cve_mon",
+  "added": [
+    "docs/architecture/decisions/ADR-0031-ansible-submit-phase13.md",
+    "docs/development/phase-13-acceptance.md",
+    "docs/development/phase-13-handover.md",
+    "docs/development/phase-13-status.md",
+    "tests/inventory_upload/integration/test_ansible_submit.py"
+  ],
+  "modified": [
+    ".github/workflows/quality.yml",
+    "Makefile",
+    "README.md",
+    "docs/architecture/decisions/README.md",
+    "docs/development/development-status.md"
+  ],
+  "sha256": {
+    "docs/architecture/decisions/ADR-0031-ansible-submit-phase13.md": "sha256:48bd7b21f8a15af0f80115a61d540a060d361401ae6cc134b4a53a2007121b0b",
+    "docs/development/phase-13-acceptance.md": "sha256:c70b3ba69e1ac2c32ca15d32a4c3e3471e221763aa67a0a7b11d4c84fb9b18ff",
+    "docs/development/phase-13-handover.md": "sha256:e671ffc726d14906cd9b5d22343f27a5425f0b7dbff0e7b30bb479ff81a203c9",
+    "docs/development/phase-13-status.md": "sha256:d56a8daab81b4329f0a29dfd360469e7d6d8fed14fd948cc371e7cfc5d66ebc1",
+    "tests/inventory_upload/integration/test_ansible_submit.py": "sha256:20834f6185495315ad63facccbda8260edae4980e680dbcb92c282ac05b68f10",
+    ".github/workflows/quality.yml": "sha256:9d03410161317da03ddc95f21526ef079c1e92e13dc4202ebdaef9dce62e33be",
+    "Makefile": "sha256:8a1e4d3d53905ba8856f1aef2a7fff0416d3782ae0f024015dbaa6797ead0a85",
+    "README.md": "sha256:80c08f5fe7a204e4ba32aa09498a440619577dbdee26b76e788ddea047b65635",
+    "docs/architecture/decisions/README.md": "sha256:c12a04aec06889b12909fe217291fae4f2fd7e6dc61d5c764aced1208e4cd613",
+    "docs/development/development-status.md": "sha256:4628bf9f3a40d276130bcc767d06cd3d2dd6659b071f89416b52e4de79a0ed09"
+  },
+  "protected_originals_unchanged": 257,
+  "intentional_launcher_change": "API 0.11.1 and migration 00018 unchanged",
+  "self_excluded": "docs/development/phase-13-files.json"
+}

@@ -1,0 +1,3 @@
+# Queues und Backpressure
+
+status.sample() ist eine gekapselte lesende SECURITY-DEFINER-Projektion mit festem search_path und ausschließlich aggregierten Werten. Aktive Jobs, jüngste Ergebnisse, Outboxzustellungen, Intake, Notification und Workflowfristen sind separat erfasst. Jede Stichprobe ist auf 10001 Zeilen begrenzt; capped bedeutet Einschränkung, keine exakte Bestandsbehauptung. Native Indizes unterstützen fällige Jobs, jüngste Ergebnisse und Workflowfristen. Warnalter: 900 Sekunden für interaktive Verarbeitung, 3600 Sekunden für Import/Enrichment. Dies sind dokumentierte lokale Betriebsrichtlinien, keine SLA. Keine Payload-, Empfänger- oder Rohdatenanzeige.

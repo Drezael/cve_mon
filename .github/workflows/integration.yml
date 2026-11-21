@@ -1,0 +1,51 @@
+name: Integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Isolierte Integrationsprüfung
+        required: true
+        type: choice
+        options:
+          - ansible
+          - infrastructure
+          - database
+          - supply-chain
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CVE_ENV_FILE: configuration/examples/development.env
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Native build headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpq-dev python3-dev
+      - name: Locked development environment
+        run: make setup
+      - name: Ansible SSH and packaged playbooks
+        if: inputs.suite == 'ansible'
+        run: make inventory-collect-integration
+      - name: Docker, TLS and n8n bootstrap
+        if: inputs.suite == 'infrastructure'
+        run: make infra-test
+      - name: PostgreSQL
+        if: inputs.suite == 'database'
+        run: make db-test
+      - name: Supply-chain and image gates
+        if: inputs.suite == 'supply-chain'
+        run: make security-tools security-dependencies security-images

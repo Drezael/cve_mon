@@ -1,0 +1,5 @@
+# Leistungsbudgets Phase 23
+
+Budgets sind lokale Regressionsgrenzen für das dokumentierte Fixture, keine Kapazitätszusage. Vorhermessung liegt in phase-23-performance-before.json, Nachhermessung in phase-23-performance-after.json. API: null unerwartete Fehler, 24 Requests/Stufe, maximal 4 parallel, Seitenlimit25, Antwort unter256KiB, jede Probe unter15s. Annahme unter15s, Processor unter30s, Matching unter60s, Finding unter30s pro Stufe. Die bestehenden schärferen Request-/Statement-/Pool-/Parsergrenzen bleiben maßgeblich.
+
+CPU/RAM/PID-Grenzen bleiben bei den bestehenden Composewerten; es gibt keine ungemessene globale Erhöhung. api_security behält begrenzten Pool und Statementtimeout. Worker bleiben bei gemessener Standardparallelität; acht parallele Claims werden gesondert getestet. Die Baseline enthält absichtlich tatsächliche 503-Fehler. Ein erfolgreicher Baseline-Aufzeichnungstest bedeutet keine erfüllte Leistungsfreigabe. Kleine Stichproben werden als deskriptiv ausgewiesen; p99 ist keine statistisch belastbare Produktions-SLO.

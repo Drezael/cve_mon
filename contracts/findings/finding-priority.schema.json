@@ -1,0 +1,97 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "rule_version": {
+      "const": "findings-1",
+      "default": "findings-1",
+      "title": "Rule Version",
+      "type": "string"
+    },
+    "automatic_resolution": {
+      "default": false,
+      "title": "Automatic Resolution",
+      "type": "boolean"
+    },
+    "exception_four_eyes": {
+      "default": false,
+      "title": "Exception Four Eyes",
+      "type": "boolean"
+    },
+    "max_snapshot_age_hours": {
+      "anyOf": [
+        {
+          "maximum": 8760,
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Max Snapshot Age Hours"
+    },
+    "kev_floor": {
+      "default": "high",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "unrated"
+      ],
+      "title": "Kev Floor",
+      "type": "string"
+    },
+    "epss_high_threshold": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Epss High Threshold"
+    },
+    "deadlines_hours": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "propertyNames": {
+        "enum": [
+          "critical",
+          "high",
+          "medium",
+          "low",
+          "unrated"
+        ]
+      },
+      "title": "Deadlines Hours",
+      "type": "object"
+    },
+    "deadline_warning_hours": {
+      "anyOf": [
+        {
+          "maximum": 8760,
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deadline Warning Hours"
+    }
+  },
+  "title": "Policy",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

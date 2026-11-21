@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "name": "integration-example",
+  "kind": "integration",
+  "env_file": "platform.env",
+  "minimum_free_bytes": 10737418240,
+  "minimum_available_memory_bytes": 4294967296,
+  "minimum_cpus": 2,
+  "certificate_minimum_seconds": 86400
+}

@@ -1,0 +1,3 @@
+# Secretrotation Phase 23
+
+Kompromittierten Scope identifizieren, Sitzungen/Tokens sperren, neue unabhängige Schlüssel privat provisionieren, Dual-Key-/Key-ID-Kompatibilität prüfen, referenzierte Daten kontrolliert reencrypten, Funktionsprobe durchführen, Altwert widerrufen, Audit/Backups nachführen. Keine Produktivwerte in Tests kopieren. n8n-Credentials verlangen ihren ursprünglichen Encryption-Key oder explizite Reencryption. MFA- und HMAC-Rotation erfordern passende Verfahren der bestehenden Auth-/Uploaddokumentation. Backupschlüsselwechsel erzeugt einen neuen getrennten Backupzyklus; alte Archive benötigen ihren bisherigen Schlüssel.

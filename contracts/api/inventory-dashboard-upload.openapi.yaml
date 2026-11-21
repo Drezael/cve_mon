@@ -1,0 +1,1840 @@
+openapi: 3.1.0
+info:
+  title: Dashboard multipart inventory acceptance
+  version: 0.11.0
+servers:
+  - url: https://dashboard.example.test:8443
+paths:
+  /api/v1/dashboard/inventories/upload:
+    post:
+      tags:
+        - inventory-acceptance
+      summary: Dashboard Upload
+      operationId: dashboard_upload_api_v1_dashboard_inventories_upload_post
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receipt'
+        '400':
+          description: Generic safe error; no partial acceptance
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error; no partial acceptance
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error; no partial acceptance
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error; no partial acceptance
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error; no partial acceptance
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error; no partial acceptance
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: Generic safe error; no partial acceptance
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error; no partial acceptance
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error; no partial acceptance
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error; no partial acceptance
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permission: inventory:upload:dashboard
+      description: 'Versioned Phase-11 acceptance contract: authoritative Inventory
+        v1 unchanged; accepted receipts replace earlier planned snapshot/job responses.
+        No processing jobs are created. Actor, server and certificate bindings are
+        rechecked at commit. No raw payload is exposed by status routes.'
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+            pattern: ^[A-Za-z0-9._:-]+$
+          description: Defaults to inventory_id. Scoped to route + authenticated
+            identity + server; same canonical content repeats 202 with original
+            submission_id.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - server_id
+                - file
+              properties:
+                server_id:
+                  type: string
+                  format: uuid
+                file:
+                  type: string
+                  format: binary
+                  description: Exactly one UTF-8 JSON inventory, max 10 MiB; application/json
+                    file type.
+                server_metadata:
+                  type: string
+                  maxLength: 16384
+                  contentMediaType: application/json
+                  description: 'Optionale, getrennte Server-Stammdaten: display_name,
+                    description, environment, criticality und exposure. Nur Eigentümer
+                    oder Administrator; atomar mit Inventarannahme. Identitäts-
+                    und Softwarefelder sind hier verboten.'
+components:
+  schemas:
+    Activation:
+      properties:
+        activation_token:
+          type: string
+          maxLength: 100
+          minLength: 70
+          format: password
+          title: Activation Token
+          writeOnly: true
+        new_password:
+          type: string
+          maxLength: 256
+          minLength: 15
+          format: password
+          title: New Password
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - activation_token
+        - new_password
+      title: Activation
+    AssignRoles:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        role_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 20
+          title: Role Ids
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+        - role_ids
+      title: AssignRoles
+    Assignment:
+      properties:
+        group_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 100
+          title: Group Ids
+        primary_group_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Primary Group Id
+      additionalProperties: false
+      type: object
+      required:
+        - group_ids
+        - primary_group_id
+      title: Assignment
+    CertificateCreate:
+      properties:
+        certificate_pem:
+          type: string
+          maxLength: 6000
+          minLength: 1
+          title: Certificate Pem
+        chain_pem:
+          type: string
+          maxLength: 6000
+          title: Chain Pem
+          default: ''
+      additionalProperties: false
+      type: object
+      required:
+        - certificate_pem
+      title: CertificateCreate
+    CertificatePage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/CertificateRead'
+          type: array
+          title: Items
+        limit:
+          type: integer
+          title: Limit
+      additionalProperties: false
+      type: object
+      required:
+        - items
+        - limit
+      title: CertificatePage
+    CertificateRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        principal_id:
+          type: string
+          format: uuid
+          title: Principal Id
+        not_before:
+          type: string
+          format: date-time
+          title: Not Before
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+        revoked_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+          title: Revoked At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        fingerprint:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Fingerprint
+      additionalProperties: false
+      type: object
+      required:
+        - id
+        - principal_id
+        - not_before
+        - expires_at
+        - revoked_at
+        - created_at
+      title: CertificateRead
+    ClientCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._-]*$
+          title: Name
+      additionalProperties: false
+      type: object
+      required:
+        - name
+      title: ClientCreate
+    ClientPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ClientRead'
+          type: array
+          title: Items
+        limit:
+          type: integer
+          title: Limit
+      additionalProperties: false
+      type: object
+      required:
+        - items
+        - limit
+      title: ClientPage
+    ClientRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        status:
+          type: string
+          title: Status
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        version:
+          type: integer
+          title: Version
+      additionalProperties: false
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - created_at
+        - version
+      title: ClientRead
+    Grant:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        rights:
+          items:
+            type: string
+            enum:
+              - view
+              - inventory_upload
+              - findings_read
+              - findings_manage
+          type: array
+          maxItems: 4
+          minItems: 1
+          title: Rights
+      additionalProperties: false
+      type: object
+      required:
+        - user_id
+        - rights
+      title: Grant
+    GroupCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Name
+        description:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: 'null'
+          title: Description
+      additionalProperties: false
+      type: object
+      required:
+        - name
+      title: GroupCreate
+    GroupPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/VisibleGroup'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+        - items
+        - total
+        - limit
+        - offset
+      title: GroupPage
+    GroupPatch:
+      properties:
+        name:
+          anyOf:
+            - type: string
+              maxLength: 128
+              minLength: 1
+            - type: 'null'
+          title: Name
+        description:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: 'null'
+          title: Description
+      additionalProperties: false
+      type: object
+      title: GroupPatch
+    GroupRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        status:
+          type: string
+          title: Status
+        sort_order:
+          type: integer
+          title: Sort Order
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        archived_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+          title: Archived At
+        version:
+          type: integer
+          title: Version
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - status
+        - sort_order
+        - created_at
+        - updated_at
+        - archived_at
+        - version
+      title: GroupRead
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    IssuedToken:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        principal_id:
+          type: string
+          format: uuid
+          title: Principal Id
+        server_id:
+          type: string
+          format: uuid
+          title: Server Id
+        certificate_id:
+          type: string
+          format: uuid
+          title: Certificate Id
+        scope:
+          type: string
+          title: Scope
+        status:
+          type: string
+          title: Status
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+        revoked_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+          title: Revoked At
+        disabled:
+          type: boolean
+          title: Disabled
+        last_used_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+          title: Last Used At
+        token:
+          type: string
+          pattern: ^[0-9a-f-]{36}\.[A-Za-z0-9_-]{43}$
+          title: Token
+        one_time:
+          type: boolean
+          title: One Time
+      additionalProperties: false
+      type: object
+      required:
+        - id
+        - principal_id
+        - server_id
+        - certificate_id
+        - scope
+        - status
+        - created_at
+        - expires_at
+        - revoked_at
+        - disabled
+        - last_used_at
+        - token
+        - one_time
+      title: IssuedToken
+    Lifecycle:
+      properties:
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+        - reason
+      title: Lifecycle
+    Login:
+      properties:
+        username:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Username
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+          title: Password
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - username
+        - password
+      title: Login
+    OTP:
+      properties:
+        code:
+          type: string
+          maxLength: 6
+          minLength: 6
+          format: password
+          title: Code
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - code
+      title: OTP
+    Ordering:
+      properties:
+        ids:
+          anyOf:
+            - items:
+                type: string
+                format: uuid
+              type: array
+              maxItems: 100
+            - type: 'null'
+          title: Ids
+        move_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Move Id
+        before_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Before Id
+      additionalProperties: false
+      type: object
+      title: Ordering
+    PasswordChange:
+      properties:
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+          title: Password
+          writeOnly: true
+        code:
+          anyOf:
+            - type: string
+              maxLength: 6
+              minLength: 6
+              format: password
+              writeOnly: true
+            - type: 'null'
+          title: Code
+        new_password:
+          type: string
+          maxLength: 256
+          minLength: 15
+          format: password
+          title: New Password
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - password
+        - new_password
+      title: PasswordChange
+    Reauthentication:
+      properties:
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+          title: Password
+          writeOnly: true
+        code:
+          anyOf:
+            - type: string
+              maxLength: 6
+              minLength: 6
+              format: password
+              writeOnly: true
+            - type: 'null'
+          title: Code
+      additionalProperties: false
+      type: object
+      required:
+        - password
+      title: Reauthentication
+    Receipt:
+      properties:
+        submission_id:
+          type: string
+          format: uuid
+          title: Submission Id
+        inventory_id:
+          type: string
+          format: uuid
+          title: Inventory Id
+        server_id:
+          type: string
+          format: uuid
+          title: Server Id
+        status:
+          type: string
+          const: accepted
+          title: Status
+        duplicate:
+          type: boolean
+          title: Duplicate
+        source:
+          type: string
+          enum:
+            - ansible_api
+            - dashboard_file
+          title: Source
+        received_at:
+          type: string
+          format: date-time
+          title: Received At
+        status_url:
+          type: string
+          title: Status Url
+      additionalProperties: false
+      type: object
+      required:
+        - submission_id
+        - inventory_id
+        - server_id
+        - status
+        - duplicate
+        - source
+        - received_at
+        - status_url
+      title: Receipt
+    Recovery:
+      properties:
+        code:
+          type: string
+          maxLength: 80
+          minLength: 20
+          format: password
+          title: Code
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - code
+      title: Recovery
+    RecoveryHandoff:
+      properties:
+        recovery_token:
+          type: string
+          maxLength: 100
+          minLength: 70
+          format: password
+          title: Recovery Token
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - recovery_token
+      title: RecoveryHandoff
+    ReplaceAccess:
+      properties:
+        version:
+          type: integer
+          minimum: 0.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        grants:
+          items:
+            $ref: '#/components/schemas/Grant'
+          type: array
+          maxItems: 100
+          title: Grants
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+        - grants
+      title: ReplaceAccess
+    RoleCreate:
+      properties:
+        code:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{2,63}$
+          title: Code
+        name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Name
+        description:
+          type: string
+          maxLength: 512
+          title: Description
+          default: ''
+        permissions:
+          items:
+            type: string
+          type: array
+          maxItems: 40
+          title: Permissions
+      additionalProperties: false
+      type: object
+      required:
+        - code
+        - name
+        - permissions
+      title: RoleCreate
+    RolePatch:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Name
+        description:
+          type: string
+          maxLength: 512
+          title: Description
+          default: ''
+        permissions:
+          items:
+            type: string
+          type: array
+          maxItems: 40
+          title: Permissions
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+        - name
+        - permissions
+      title: RolePatch
+    ServerCreate:
+      properties:
+        display_name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Display Name
+        description:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: 'null'
+          title: Description
+        environment:
+          anyOf:
+            - type: string
+              maxLength: 64
+              minLength: 1
+            - type: 'null'
+          title: Environment
+        criticality:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+          title: Criticality
+          default: medium
+        exposure:
+          type: string
+          enum:
+            - internal
+            - restricted
+            - internet_exposed
+            - unknown
+          title: Exposure
+          default: unknown
+        request_id:
+          type: string
+          format: uuid
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+        - display_name
+        - request_id
+      title: ServerCreate
+    ServerPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ServerRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+        - items
+        - total
+        - limit
+        - offset
+      title: ServerPage
+    ServerPatch:
+      properties:
+        display_name:
+          anyOf:
+            - type: string
+              maxLength: 128
+              minLength: 1
+            - type: 'null'
+          title: Display Name
+        description:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: 'null'
+          title: Description
+        environment:
+          anyOf:
+            - type: string
+              maxLength: 64
+              minLength: 1
+            - type: 'null'
+          title: Environment
+        criticality:
+          anyOf:
+            - type: string
+              enum:
+                - low
+                - medium
+                - high
+                - critical
+            - type: 'null'
+          title: Criticality
+        exposure:
+          anyOf:
+            - type: string
+              enum:
+                - internal
+                - restricted
+                - internet_exposed
+                - unknown
+            - type: 'null'
+          title: Exposure
+      additionalProperties: false
+      type: object
+      title: ServerPatch
+    ServerRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        display_name:
+          type: string
+          title: Display Name
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        environment:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Environment
+        criticality:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+          title: Criticality
+        exposure:
+          type: string
+          enum:
+            - internal
+            - restricted
+            - internet_exposed
+            - unknown
+          title: Exposure
+        status:
+          type: string
+          title: Status
+        primary_group_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Primary Group Id
+        display_order:
+          type: integer
+          title: Display Order
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        archived_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+          title: Archived At
+        version:
+          type: integer
+          title: Version
+      type: object
+      required:
+        - id
+        - display_name
+        - description
+        - environment
+        - criticality
+        - exposure
+        - status
+        - primary_group_id
+        - display_order
+        - created_at
+        - updated_at
+        - archived_at
+        - version
+      title: ServerRead
+    TokenCreate:
+      properties:
+        server_id:
+          type: string
+          format: uuid
+          title: Server Id
+        certificate_id:
+          type: string
+          format: uuid
+          title: Certificate Id
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+      additionalProperties: false
+      type: object
+      required:
+        - server_id
+        - certificate_id
+        - expires_at
+      title: TokenCreate
+    TokenPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TokenRead'
+          type: array
+          title: Items
+        limit:
+          type: integer
+          title: Limit
+      additionalProperties: false
+      type: object
+      required:
+        - items
+        - limit
+      title: TokenPage
+    TokenRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        principal_id:
+          type: string
+          format: uuid
+          title: Principal Id
+        server_id:
+          type: string
+          format: uuid
+          title: Server Id
+        certificate_id:
+          type: string
+          format: uuid
+          title: Certificate Id
+        scope:
+          type: string
+          title: Scope
+        status:
+          type: string
+          title: Status
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+        revoked_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+          title: Revoked At
+        disabled:
+          type: boolean
+          title: Disabled
+        last_used_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+          title: Last Used At
+      additionalProperties: false
+      type: object
+      required:
+        - id
+        - principal_id
+        - server_id
+        - certificate_id
+        - scope
+        - status
+        - created_at
+        - expires_at
+        - revoked_at
+        - disabled
+        - last_used_at
+      title: TokenRead
+    TokenRotate:
+      properties:
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        certificate_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Certificate Id
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+      additionalProperties: false
+      type: object
+      required:
+        - reason
+        - expires_at
+      title: TokenRotate
+    UserCreate:
+      properties:
+        username:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Username
+        email:
+          type: string
+          maxLength: 254
+          minLength: 3
+          pattern: ^[^\s@]+@[^\s@]+\.[^\s@]+$
+          title: Email
+        display_name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Display Name
+      additionalProperties: false
+      type: object
+      required:
+        - username
+        - email
+        - display_name
+      title: UserCreate
+    UserPatch:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        display_name:
+          anyOf:
+            - type: string
+              maxLength: 128
+              minLength: 1
+            - type: 'null'
+          title: Display Name
+        email:
+          anyOf:
+            - type: string
+              maxLength: 254
+              minLength: 3
+              pattern: ^[^\s@]+@[^\s@]+\.[^\s@]+$
+            - type: 'null'
+          title: Email
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+      title: UserPatch
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+    Version:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+      title: Version
+    VisibleGroup:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        status:
+          type: string
+          title: Status
+        sort_order:
+          type: integer
+          title: Sort Order
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        archived_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+          title: Archived At
+        version:
+          type: integer
+          title: Version
+        visible_servers:
+          type: integer
+          title: Visible Servers
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - status
+        - sort_order
+        - created_at
+        - updated_at
+        - archived_at
+        - version
+        - visible_servers
+      title: VisibleGroup
+    Problem:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - code
+        - request_id
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+        request_id:
+          type: string
+          format: uuid
+    Inventory:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      title: CVE Monitoring Inventory v1
+      description: Unveränderlicher Inventarvertrag; unbekannte Felder sind auf
+        jeder Objektebene verboten.
+      type: object
+      additionalProperties: false
+      properties:
+        schema_version:
+          const: '1.0'
+        server_id:
+          $ref: '#/components/schemas/Inventory/$defs/uuid'
+        inventory_id:
+          $ref: '#/components/schemas/Inventory/$defs/uuid'
+        captured_at:
+          $ref: '#/components/schemas/Inventory/$defs/timestamp'
+        collection_status:
+          enum:
+            - complete
+            - partial
+            - failed
+        collector:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              const: ansible
+            version:
+              type: string
+              minLength: 1
+              maxLength: 64
+            controller_id:
+              type: string
+              minLength: 1
+              maxLength: 128
+          required:
+            - name
+            - version
+        os:
+          $ref: '#/components/schemas/Inventory/$defs/os_section'
+        packages:
+          $ref: '#/components/schemas/Inventory/$defs/package_section'
+        services:
+          $ref: '#/components/schemas/Inventory/$defs/service_section'
+        containers:
+          $ref: '#/components/schemas/Inventory/$defs/container_section'
+      required:
+        - schema_version
+        - server_id
+        - inventory_id
+        - captured_at
+        - collection_status
+        - collector
+        - os
+      $defs:
+        uuid:
+          type: string
+          minLength: 1
+          maxLength: 36
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+        timestamp:
+          type: string
+          minLength: 1
+          maxLength: 40
+          format: date-time
+          pattern: (Z|[+-][0-9]{2}:[0-9]{2})$
+        os_data:
+          type: object
+          additionalProperties: false
+          properties:
+            distribution:
+              type: string
+              minLength: 1
+              maxLength: 128
+            release:
+              type: string
+              minLength: 1
+              maxLength: 128
+            architecture:
+              type: string
+              minLength: 1
+              maxLength: 64
+            kernel:
+              type: string
+              minLength: 1
+              maxLength: 256
+          required: []
+          minProperties: 1
+        os_section:
+          type: object
+          additionalProperties: false
+          properties:
+            status:
+              enum:
+                - complete
+                - partial
+                - failed
+                - not_collected
+            data:
+              $ref: '#/components/schemas/Inventory/$defs/os_data'
+            error_code:
+              type: string
+              minLength: 1
+              maxLength: 64
+          required:
+            - status
+          allOf:
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - partial
+              then:
+                required:
+                  - data
+              else:
+                not:
+                  required:
+                    - data
+            - if:
+                properties:
+                  status:
+                    const: complete
+              then:
+                properties:
+                  data:
+                    required:
+                      - distribution
+                      - release
+                      - architecture
+                      - kernel
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              then:
+                not:
+                  required:
+                    - error_code
+        package:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 256
+            version:
+              type: string
+              minLength: 1
+              maxLength: 512
+            architecture:
+              type: string
+              minLength: 1
+              maxLength: 64
+            package_manager:
+              enum:
+                - dpkg
+                - rpm
+                - apk
+                - pip
+                - npm
+                - other
+            source_package:
+              type: object
+              additionalProperties: false
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                version:
+                  type: string
+                  minLength: 1
+                  maxLength: 512
+              required:
+                - name
+          required:
+            - name
+            - version
+            - architecture
+            - package_manager
+        package_section:
+          type: object
+          additionalProperties: false
+          properties:
+            status:
+              enum:
+                - complete
+                - partial
+                - failed
+                - not_collected
+            items:
+              type: array
+              maxItems: 100000
+              items:
+                $ref: '#/components/schemas/Inventory/$defs/package'
+            error_code:
+              type: string
+              minLength: 1
+              maxLength: 64
+          required:
+            - status
+          allOf:
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - partial
+              then:
+                required:
+                  - items
+              else:
+                not:
+                  required:
+                    - items
+            - if:
+                properties:
+                  status:
+                    const: partial
+              then:
+                properties:
+                  items:
+                    minItems: 1
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              then:
+                not:
+                  required:
+                    - error_code
+        service:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 256
+            state:
+              enum:
+                - running
+                - stopped
+                - failed
+                - unknown
+            enabled:
+              type:
+                - boolean
+                - 'null'
+            version:
+              type: string
+              minLength: 1
+              maxLength: 512
+          required:
+            - name
+            - state
+        service_section:
+          type: object
+          additionalProperties: false
+          properties:
+            status:
+              enum:
+                - complete
+                - partial
+                - failed
+                - not_collected
+            items:
+              type: array
+              maxItems: 100000
+              items:
+                $ref: '#/components/schemas/Inventory/$defs/service'
+            error_code:
+              type: string
+              minLength: 1
+              maxLength: 64
+          required:
+            - status
+          allOf:
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - partial
+              then:
+                required:
+                  - items
+              else:
+                not:
+                  required:
+                    - items
+            - if:
+                properties:
+                  status:
+                    const: partial
+              then:
+                properties:
+                  items:
+                    minItems: 1
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              then:
+                not:
+                  required:
+                    - error_code
+        container:
+          type: object
+          additionalProperties: false
+          properties:
+            container_id:
+              type: string
+              minLength: 1
+              maxLength: 128
+            image_reference:
+              type: string
+              minLength: 1
+              maxLength: 512
+            image_digest:
+              type: string
+              minLength: 1
+              maxLength: 71
+              pattern: ^sha256:[0-9a-f]{64}$
+            state:
+              enum:
+                - running
+                - stopped
+                - paused
+                - unknown
+            collection_status:
+              enum:
+                - complete
+                - partial
+                - failed
+          required:
+            - container_id
+            - image_reference
+            - state
+            - collection_status
+        container_section:
+          type: object
+          additionalProperties: false
+          properties:
+            status:
+              enum:
+                - complete
+                - partial
+                - failed
+                - not_collected
+            items:
+              type: array
+              maxItems: 100000
+              items:
+                $ref: '#/components/schemas/Inventory/$defs/container'
+            error_code:
+              type: string
+              minLength: 1
+              maxLength: 64
+          required:
+            - status
+          allOf:
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - partial
+              then:
+                required:
+                  - items
+              else:
+                not:
+                  required:
+                    - items
+            - if:
+                properties:
+                  status:
+                    const: partial
+              then:
+                properties:
+                  items:
+                    minItems: 1
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              then:
+                not:
+                  required:
+                    - error_code
+      allOf:
+        - if:
+            properties:
+              collection_status:
+                const: complete
+          then:
+            required:
+              - packages
+            properties:
+              os:
+                properties:
+                  status:
+                    const: complete
+              packages:
+                properties:
+                  status:
+                    const: complete
+              services:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              containers:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+        - if:
+            properties:
+              collection_status:
+                const: failed
+          then:
+            properties:
+              os:
+                properties:
+                  status:
+                    enum:
+                      - failed
+                      - not_collected
+              packages:
+                properties:
+                  status:
+                    enum:
+                      - failed
+                      - not_collected
+              services:
+                properties:
+                  status:
+                    enum:
+                      - failed
+                      - not_collected
+              containers:
+                properties:
+                  status:
+                    enum:
+                      - failed
+                      - not_collected
+        - if:
+            properties:
+              collection_status:
+                const: partial
+          then:
+            anyOf:
+              - required:
+                  - os
+                properties:
+                  os:
+                    properties:
+                      status:
+                        enum:
+                          - complete
+                          - partial
+              - required:
+                  - packages
+                properties:
+                  packages:
+                    properties:
+                      status:
+                        enum:
+                          - complete
+                          - partial
+              - required:
+                  - services
+                properties:
+                  services:
+                    properties:
+                      status:
+                        enum:
+                          - complete
+                          - partial
+              - required:
+                  - containers
+                properties:
+                  containers:
+                    properties:
+                      status:
+                        enum:
+                          - complete
+                          - partial
+  securitySchemes:
+    MutualTLS:
+      type: mutualTLS
+    UploadToken:
+      type: http
+      scheme: bearer
+      bearerFormat: UUID.256-bit-secret
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-cve-session
+    CsrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token

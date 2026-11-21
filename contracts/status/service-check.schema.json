@@ -1,0 +1,76 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "service_id": {
+      "pattern": "^[a-z][a-z0-9-]{0,47}$",
+      "title": "Service Id",
+      "type": "string"
+    },
+    "check_id": {
+      "pattern": "^[a-z][a-z0-9_-]{0,47}$",
+      "title": "Check Id",
+      "type": "string"
+    },
+    "checked_at": {
+      "format": "date-time",
+      "title": "Checked At",
+      "type": "string"
+    },
+    "result": {
+      "enum": [
+        "healthy",
+        "degraded",
+        "unavailable",
+        "unknown",
+        "starting"
+      ],
+      "title": "Result",
+      "type": "string"
+    },
+    "duration_ms": {
+      "maximum": 60000,
+      "minimum": 0,
+      "title": "Duration Ms",
+      "type": "number"
+    },
+    "reason_code": {
+      "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+      "title": "Reason Code",
+      "type": "string"
+    },
+    "metrics": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "maxProperties": 32,
+      "title": "Metrics",
+      "type": "object"
+    }
+  },
+  "required": [
+    "service_id",
+    "check_id",
+    "checked_at",
+    "result",
+    "duration_ms",
+    "reason_code"
+  ],
+  "title": "Observation",
+  "type": "object"
+}

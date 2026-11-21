@@ -1,0 +1,71 @@
+import json
+import shutil
+import subprocess
+import sys
+import tempfile
+import os
+from pathlib import Path
+
+
+def call(*args):
+    try:
+        p = subprocess.run([docker, "--host", "unix:///run/cve-monitoring/docker-readonly.sock", *args], capture_output=True, text=True, timeout=30)
+        return {"rc": p.returncode, "stdout": p.stdout}
+    except (OSError, subprocess.SubprocessError):
+        return {"rc": 1, "stdout": ""}
+
+
+docker = shutil.which("docker")
+result = {"cli": bool(docker)}
+software = {"status": "not_collected", "items": []}
+if docker:
+    result["engine"] = call("version", "--format", "{{.Server.Version}}")
+    for kind in ["containers", "images"]:
+        singular = "container" if kind == "containers" else "image"
+        listing = call(singular, "ls", "--all", "--quiet", "--no-trunc")
+        result[kind + "_list"] = {"rc": listing["rc"]}
+        entries = []
+        for identity in sorted(set(listing["stdout"].split()))[:10000]:
+            read = call(singular, "inspect", identity)
+            try:
+                data = json.loads(read["stdout"])[0]
+                if kind == "containers":
+                    record = {
+                        "container_id": data["Id"],
+                        "name": data["Name"],
+                        "image_reference": data["Config"]["Image"],
+                        "image_id": data["Image"],
+                        "state": data["State"]["Status"],
+                        "created_at": data["Created"],
+                    }
+                else:
+                    record = {
+                        "image_id": data["Id"],
+                        "references": data.get("RepoTags") or [],
+                        "repo_digests": data.get("RepoDigests") or [],
+                        "architecture": data.get("Architecture"),
+                        "created_at": data.get("Created"),
+                    }
+                entries.append({"rc": 0, "stdout": json.dumps(record)})
+            except (ValueError, KeyError, IndexError):
+                entries.append({"rc": 1})
+        result[kind] = {"results": entries}
+    if result["engine"]["rc"] == 0:
+        scope = {"__name__": "cve_docker_collector"}
+        exec(COLLECTOR_SOURCE, scope)
+        try:
+            # Scratch data is private and removed after each run; never persist target caches.
+            with tempfile.TemporaryDirectory(prefix="cve-inventory-") as temporary:
+                os.environ["SYFT_CHECK_FOR_APP_UPDATE"] = "false"
+                os.environ["SYFT_JAVA_USE_NETWORK"] = "false"
+                os.environ["SYFT_CACHE_DIR"] = temporary + "/syft"
+                software = scope["Collector"](
+                    sys.argv[1],
+                    docker,
+                    "unix:///run/cve-monitoring/docker-readonly.sock",
+                    Path(temporary) / "sbom",
+                    json.loads(sys.argv[2]),
+                ).all()
+        except Exception:
+            software = {"status": "failed", "items": []}
+print(json.dumps({"docker": result, "container_software": software}))

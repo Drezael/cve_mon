@@ -1,0 +1,9 @@
+{
+  "host": "192.0.2.10",
+  "port": 22,
+  "username": "cve-inventory",
+  "auth_method": "key",
+  "private_key_file": "/private/cve-inventory.key",
+  "host_key": "ssh-ed25519 REPLACE_WITH_CONFIRMED_PUBLIC_HOST_KEY",
+  "mount_paths": []
+}

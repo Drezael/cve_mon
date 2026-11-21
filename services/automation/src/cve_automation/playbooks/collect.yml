@@ -1,0 +1,63 @@
+---
+- name: Collect the selected server inventory
+  hosts: target
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Verify unprivileged target account
+      ansible.builtin.command:
+        argv: ['id', '-u']
+      register: target_uid
+      changed_when: false
+      failed_when: target_uid.stdout == '0'
+      no_log: true
+    - name: Read operating system and hardware
+      ansible.builtin.setup:
+        gather_subset: ['!all', 'min', 'hardware', 'virtual']
+      register: collected_system
+      no_log: true
+    - name: Read installed host packages
+      ansible.builtin.package_facts:
+        manager: auto
+      register: collected_packages
+      failed_when: false
+      no_log: true
+    - name: Read services
+      ansible.builtin.service_facts:
+      register: collected_services
+      failed_when: false
+      no_log: true
+    - name: Read stable monitoring identity
+      ansible.builtin.command:
+        argv:
+          - python3
+          - '-c'
+          - '{{ identity_code }}'
+      register: collected_identity
+      changed_when: false
+      no_log: true
+    - name: Read Docker metadata and software inventories
+      ansible.builtin.command:
+        argv:
+          - python3
+          - '-c'
+          - '{{ docker_code }}'
+          - '/usr/local/bin/syft'
+          - '{{ mount_paths | to_json }}'
+      register: collected_docker
+      changed_when: false
+      no_log: true
+    - name: Write the private inventory input on the controller
+      ansible.builtin.copy:
+        content: >-
+          {{ {"host": (collected_identity.stdout | from_json).host,
+          "ansible_version": ansible_version.full, "system": collected_system,
+          "packages": collected_packages, "services": collected_services,
+          "docker": (collected_docker.stdout | from_json).docker,
+          "container_software": (collected_docker.stdout | from_json).container_software}
+          | to_json }}
+        dest: '{{ output_file }}'
+        mode: '0600'
+      delegate_to: localhost
+      become: false
+      no_log: true

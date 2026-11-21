@@ -1,0 +1,17 @@
+# Dashboard-Betrieb
+
+Voraussetzung: funktionierendes Deployment der Phasen 19–20, Python-Venv und Docker-Zugriff. Vor Migration vollständiges Backup erstellen. Migrationen bis 00029_dashboard_administration ausführen, API-Image cve-api:0.21.0-phase21 bauen und den vorhandenen Dienst aktualisieren. Danach make dashboard-build und CVE_DOCKER_SUDO=1 make dashboard-up. Es entsteht kein weiterer Container.
+
+Die Aktivierung kopiert Assets in das bereits read-only eingebundene Nginx-Konfigurationsverzeichnis, ersetzt index.html atomar, prüft nginx -t und lädt Nginx neu. Alte gehashte Chunks bleiben für bereits geöffnete Tabs erhalten. Ohne aktivierten Build bleibt die bisherige Backend-absent-Antwort bestehen. Keine globalen Docker-Prunes.
+
+Rollback: vorherigen HTML-/Assetstand und vorheriges API-Image wieder aktivieren; die additive Lesesicht kann bestehen bleiben. Kein destruktives Alembic-Downgrade. Restore ausschließlich über den bestehenden geprüften Backupablauf. Zugang über DASHBOARD_DOMAIN und INGRESS_HTTPS_PORT; ein erster Administrator wird weiterhin explizit mit dem bestehenden Bootstrapwerkzeug angelegt.
+
+Phase 21 verwendet denselben statischen Mount und dieselben 13 Dienste. Verwaltungsrouten unter /administration liefern die SPA; /api und /internal bleiben davon ausgeschlossen. Nginx erlaubt für Verwaltungspräfixe bis 32 KiB, die API beschränkt weiterhin jede einzelne Route: ausschließlich ACL-Gesamtersatz, Regeln, Vorlagen und synthetische Vorschau dürfen 32 KiB verarbeiten. Alle übrigen Auth-/JSON-Mutationen bleiben bei 8 KiB; für den bestehenden Multipart-Inventarupload gilt die vorhandene 10-MiB-Grenze.
+
+Neue additive Datenbankobjekte sind ausschließlich die minimierte Audit-Lesesicht und SELECT-Freigaben für Verarbeitungsstatus. Es werden keine Benutzer, Grants, Versandfreigaben oder Fachdaten zur Aktivierung angelegt. Verwaltungsprüfung: CVE_DOCKER_SUDO=1 make administration-e2e.
+
+Phase 22 benötigt Migration `00030_status_monitoring` sowie API und Notification in Version `0.22.0-phase22`. Vorher den vorhandenen Backupweg ausführen. Statusverträge mit `make status-contracts` erzeugen und mit `make status-check`, `make status-test`, `CVE_DOCKER_SUDO=1 make status-integration` sowie `CVE_DOCKER_SUDO=1 make status-e2e` prüfen.
+
+Bei der Aktivierung zuerst Migration und Statusverzeichnisse vorbereiten. Envoy und Postfix über ihre bestehenden Startcontroller erneuern, damit Adaptermounts und Namespace-Schutzregeln zusammenpassen. Anschließend Notification aktualisieren und dessen Guard erneuern, API vorbereiten und aktualisieren, zuletzt den Dashboardbuild aktivieren. Die API erhält neben dem bisherigen Serviceverzeichnis ausschließlich einen weiteren read-only Mount für minimierte lokale Statusberichte. Weder Docker-Socket noch ein weiterer Container werden benötigt. n8n-Workflows müssen dafür nicht neu installiert werden.
+
+`STATUS_COLLECTOR_PAUSED=false` aktiviert die periodische Erfassung; `true` pausiert nur den Statuscollector. Die Seite `/status` zeigt ohne belastbare Messung UNKNOWN. Globale Leserechte, administrative Diagnose und Wartungsverwaltung bleiben getrennt. Wartung erfordert MFA, frische Bestätigung und Objektversion. Fehlende Quellfristen und fehlende externe Ende-zu-Ende-Beobachtung dürfen nicht durch erfundene Erfolgsmessungen ersetzt werden. Betriebsdetails: [Status-Recovery](../status/recovery.md), [Abnahme Phase 22](../development/phase-22-acceptance.md).

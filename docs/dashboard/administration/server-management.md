@@ -1,0 +1,3 @@
+# Serververwaltung
+
+Registrieren: Anzeigename, optionale Beschreibung/Umgebung, Kritikalität und Exposition gemäß Phase 10. Die UUID stammt aus der bestätigten Antwort. request_id bleibt bei ausdrücklich wiederverwendeter idempotenter Registrierung gleich. Patch überträgt nur freigegebene Metadaten. Archivierung ist eine eigene bestätigte Aktion mit Begründung und Version, Wiederaktivierung getrennt. Kein endgültiger Server-Delete-Vertrag vorhanden: deshalb kein entsprechender Button oder neuer Endpunkt. Historische Inventare, Evidenz und Findings bleiben bestehen. Registrierung startet keine Erfassung oder Remoteverbindung.

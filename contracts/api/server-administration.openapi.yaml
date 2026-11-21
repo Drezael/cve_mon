@@ -1,0 +1,1806 @@
+openapi: 3.1.0
+info:
+  title: Administrative and ACL-protected servers
+  version: 0.10.0
+servers:
+  - url: https://dashboard.example.test:8443
+paths:
+  /api/v1/dashboard/admin/servers:
+    post:
+      tags:
+        - server-administration
+      summary: Create Server
+      operationId: create_server_api_v1_dashboard_admin_servers_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServerCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerRead'
+          headers:
+            ETag:
+              description: Strong revision ETag when response has a version
+              schema:
+                type: string
+        '422':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permissions:
+        - server:create
+      description: Dashboard session, object ACL and database transaction; critical
+        mutations require fresh single-use Phase-8 reauthentication. Technical tokens
+        are not accepted.
+    get:
+      tags:
+        - server-administration
+      summary: List Servers
+      operationId: list_servers_api_v1_dashboard_admin_servers_get
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+            default: ''
+            title: Search
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Limit
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100000
+            minimum: 0
+            default: 0
+            title: Offset
+        - name: group_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                format: uuid
+              - type: 'null'
+            title: Group Id
+        - name: environment
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                maxLength: 64
+              - type: 'null'
+            title: Environment
+        - name: criticality
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Criticality
+        - name: exposure
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Exposure
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            default: active
+            title: Status
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            default: manual
+            title: Sort
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerPage'
+          headers:
+            ETag:
+              description: Strong revision ETag when response has a version
+              schema:
+                type: string
+        '422':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+      x-permissions:
+        - server:read
+      description: Dashboard session, object ACL and database transaction; critical
+        mutations require fresh single-use Phase-8 reauthentication. Technical tokens
+        are not accepted.
+  /api/v1/dashboard/admin/servers/{server_id}:
+    get:
+      tags:
+        - server-administration
+      summary: Get Server
+      operationId: get_server_api_v1_dashboard_admin_servers__server_id__get
+      parameters:
+        - name: server_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Server Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerRead'
+          headers:
+            ETag:
+              description: Strong revision ETag when response has a version
+              schema:
+                type: string
+        '422':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+      x-permissions:
+        - server:read
+      description: Dashboard session, object ACL and database transaction; critical
+        mutations require fresh single-use Phase-8 reauthentication. Technical tokens
+        are not accepted.
+    patch:
+      tags:
+        - server-administration
+      summary: Patch Server
+      operationId: patch_server_api_v1_dashboard_admin_servers__server_id__patch
+      parameters:
+        - name: server_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Server Id
+        - name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+            pattern: ^"[1-9][0-9]{0,17}"$
+          description: Strong object or ordering-context ETag; missing 428, stale
+            412.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServerPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerRead'
+          headers:
+            ETag:
+              description: Strong revision ETag when response has a version
+              schema:
+                type: string
+        '422':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permissions:
+        - server:update
+      description: Dashboard session, object ACL and database transaction; critical
+        mutations require fresh single-use Phase-8 reauthentication. Technical tokens
+        are not accepted.
+  /api/v1/dashboard/admin/servers/{server_id}/archive:
+    post:
+      tags:
+        - server-administration
+      summary: Archive Server
+      operationId: archive_server_api_v1_dashboard_admin_servers__server_id__archive_post
+      parameters:
+        - name: server_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Server Id
+        - name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+            pattern: ^"[1-9][0-9]{0,17}"$
+          description: Strong object or ordering-context ETag; missing 428, stale
+            412.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Lifecycle'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerRead'
+          headers:
+            ETag:
+              description: Strong revision ETag when response has a version
+              schema:
+                type: string
+        '422':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permissions:
+        - server:delete
+      description: Dashboard session, object ACL and database transaction; critical
+        mutations require fresh single-use Phase-8 reauthentication. Technical tokens
+        are not accepted.
+  /api/v1/dashboard/admin/servers/{server_id}/restore:
+    post:
+      tags:
+        - server-administration
+      summary: Restore Server
+      operationId: restore_server_api_v1_dashboard_admin_servers__server_id__restore_post
+      parameters:
+        - name: server_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Server Id
+        - name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+            pattern: ^"[1-9][0-9]{0,17}"$
+          description: Strong object or ordering-context ETag; missing 428, stale
+            412.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Lifecycle'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerRead'
+          headers:
+            ETag:
+              description: Strong revision ETag when response has a version
+              schema:
+                type: string
+        '422':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permissions:
+        - server:restore
+      description: Dashboard session, object ACL and database transaction; critical
+        mutations require fresh single-use Phase-8 reauthentication. Technical tokens
+        are not accepted.
+  /api/v1/dashboard/servers:
+    get:
+      tags:
+        - server-administration
+      summary: List Servers
+      operationId: list_servers_api_v1_dashboard_servers_get
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 128
+            default: ''
+            title: Search
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Limit
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100000
+            minimum: 0
+            default: 0
+            title: Offset
+        - name: group_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                format: uuid
+              - type: 'null'
+            title: Group Id
+        - name: environment
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                maxLength: 64
+              - type: 'null'
+            title: Environment
+        - name: criticality
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Criticality
+        - name: exposure
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Exposure
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            default: active
+            title: Status
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            default: manual
+            title: Sort
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerPage'
+          headers:
+            ETag:
+              description: Strong revision ETag when response has a version
+              schema:
+                type: string
+        '422':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+      x-permissions:
+        - server:read
+      description: Dashboard session, object ACL and database transaction; critical
+        mutations require fresh single-use Phase-8 reauthentication. Technical tokens
+        are not accepted.
+  /api/v1/dashboard/servers/{server_id}:
+    get:
+      tags:
+        - server-administration
+      summary: Server Detail
+      operationId: server_detail_api_v1_dashboard_servers__server_id__get
+      parameters:
+        - name: server_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Server Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerRead'
+          headers:
+            ETag:
+              description: Strong revision ETag when response has a version
+              schema:
+                type: string
+        '422':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '412':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error; transaction rolled back
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+      x-permissions:
+        - server:read
+      description: Dashboard session, object ACL and database transaction; critical
+        mutations require fresh single-use Phase-8 reauthentication. Technical tokens
+        are not accepted.
+components:
+  schemas:
+    Activation:
+      properties:
+        activation_token:
+          type: string
+          maxLength: 100
+          minLength: 70
+          format: password
+          title: Activation Token
+          writeOnly: true
+        new_password:
+          type: string
+          maxLength: 256
+          minLength: 15
+          format: password
+          title: New Password
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - activation_token
+        - new_password
+      title: Activation
+    AssignRoles:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        role_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 20
+          title: Role Ids
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+        - role_ids
+      title: AssignRoles
+    Assignment:
+      properties:
+        group_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 100
+          title: Group Ids
+        primary_group_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Primary Group Id
+      additionalProperties: false
+      type: object
+      required:
+        - group_ids
+        - primary_group_id
+      title: Assignment
+    Grant:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        rights:
+          items:
+            type: string
+            enum:
+              - view
+              - inventory_upload
+              - findings_read
+              - findings_manage
+          type: array
+          maxItems: 4
+          minItems: 1
+          title: Rights
+      additionalProperties: false
+      type: object
+      required:
+        - user_id
+        - rights
+      title: Grant
+    GroupCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Name
+        description:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: 'null'
+          title: Description
+      additionalProperties: false
+      type: object
+      required:
+        - name
+      title: GroupCreate
+    GroupPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/VisibleGroup'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+        - items
+        - total
+        - limit
+        - offset
+      title: GroupPage
+    GroupPatch:
+      properties:
+        name:
+          anyOf:
+            - type: string
+              maxLength: 128
+              minLength: 1
+            - type: 'null'
+          title: Name
+        description:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: 'null'
+          title: Description
+      additionalProperties: false
+      type: object
+      title: GroupPatch
+    GroupRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        status:
+          type: string
+          title: Status
+        sort_order:
+          type: integer
+          title: Sort Order
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        archived_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+          title: Archived At
+        version:
+          type: integer
+          title: Version
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - status
+        - sort_order
+        - created_at
+        - updated_at
+        - archived_at
+        - version
+      title: GroupRead
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    Lifecycle:
+      properties:
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+        - reason
+      title: Lifecycle
+    Login:
+      properties:
+        username:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Username
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+          title: Password
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - username
+        - password
+      title: Login
+    OTP:
+      properties:
+        code:
+          type: string
+          maxLength: 6
+          minLength: 6
+          format: password
+          title: Code
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - code
+      title: OTP
+    Ordering:
+      properties:
+        ids:
+          anyOf:
+            - items:
+                type: string
+                format: uuid
+              type: array
+              maxItems: 100
+            - type: 'null'
+          title: Ids
+        move_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Move Id
+        before_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Before Id
+      additionalProperties: false
+      type: object
+      title: Ordering
+    PasswordChange:
+      properties:
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+          title: Password
+          writeOnly: true
+        code:
+          anyOf:
+            - type: string
+              maxLength: 6
+              minLength: 6
+              format: password
+              writeOnly: true
+            - type: 'null'
+          title: Code
+        new_password:
+          type: string
+          maxLength: 256
+          minLength: 15
+          format: password
+          title: New Password
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - password
+        - new_password
+      title: PasswordChange
+    Reauthentication:
+      properties:
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+          title: Password
+          writeOnly: true
+        code:
+          anyOf:
+            - type: string
+              maxLength: 6
+              minLength: 6
+              format: password
+              writeOnly: true
+            - type: 'null'
+          title: Code
+      additionalProperties: false
+      type: object
+      required:
+        - password
+      title: Reauthentication
+    Recovery:
+      properties:
+        code:
+          type: string
+          maxLength: 80
+          minLength: 20
+          format: password
+          title: Code
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - code
+      title: Recovery
+    RecoveryHandoff:
+      properties:
+        recovery_token:
+          type: string
+          maxLength: 100
+          minLength: 70
+          format: password
+          title: Recovery Token
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - recovery_token
+      title: RecoveryHandoff
+    ReplaceAccess:
+      properties:
+        version:
+          type: integer
+          minimum: 0.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        grants:
+          items:
+            $ref: '#/components/schemas/Grant'
+          type: array
+          maxItems: 100
+          title: Grants
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+        - grants
+      title: ReplaceAccess
+    RoleCreate:
+      properties:
+        code:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{2,63}$
+          title: Code
+        name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Name
+        description:
+          type: string
+          maxLength: 512
+          title: Description
+          default: ''
+        permissions:
+          items:
+            type: string
+          type: array
+          maxItems: 40
+          title: Permissions
+      additionalProperties: false
+      type: object
+      required:
+        - code
+        - name
+        - permissions
+      title: RoleCreate
+    RolePatch:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Name
+        description:
+          type: string
+          maxLength: 512
+          title: Description
+          default: ''
+        permissions:
+          items:
+            type: string
+          type: array
+          maxItems: 40
+          title: Permissions
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+        - name
+        - permissions
+      title: RolePatch
+    ServerCreate:
+      properties:
+        display_name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Display Name
+        description:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: 'null'
+          title: Description
+        environment:
+          anyOf:
+            - type: string
+              maxLength: 64
+              minLength: 1
+            - type: 'null'
+          title: Environment
+        criticality:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+          title: Criticality
+          default: medium
+        exposure:
+          type: string
+          enum:
+            - internal
+            - restricted
+            - internet_exposed
+            - unknown
+          title: Exposure
+          default: unknown
+        request_id:
+          type: string
+          format: uuid
+          title: Request Id
+      additionalProperties: false
+      type: object
+      required:
+        - display_name
+        - request_id
+      title: ServerCreate
+    ServerPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ServerRead'
+          type: array
+          title: Items
+        total:
+          type: integer
+          title: Total
+        limit:
+          type: integer
+          title: Limit
+        offset:
+          type: integer
+          title: Offset
+      type: object
+      required:
+        - items
+        - total
+        - limit
+        - offset
+      title: ServerPage
+    ServerPatch:
+      properties:
+        display_name:
+          anyOf:
+            - type: string
+              maxLength: 128
+              minLength: 1
+            - type: 'null'
+          title: Display Name
+        description:
+          anyOf:
+            - type: string
+              maxLength: 2000
+            - type: 'null'
+          title: Description
+        environment:
+          anyOf:
+            - type: string
+              maxLength: 64
+              minLength: 1
+            - type: 'null'
+          title: Environment
+        criticality:
+          anyOf:
+            - type: string
+              enum:
+                - low
+                - medium
+                - high
+                - critical
+            - type: 'null'
+          title: Criticality
+        exposure:
+          anyOf:
+            - type: string
+              enum:
+                - internal
+                - restricted
+                - internet_exposed
+                - unknown
+            - type: 'null'
+          title: Exposure
+      additionalProperties: false
+      type: object
+      title: ServerPatch
+    ServerRead:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        display_name:
+          type: string
+          title: Display Name
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        environment:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Environment
+        criticality:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+            - critical
+          title: Criticality
+        exposure:
+          type: string
+          enum:
+            - internal
+            - restricted
+            - internet_exposed
+            - unknown
+          title: Exposure
+        status:
+          type: string
+          title: Status
+        primary_group_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Primary Group Id
+        display_order:
+          type: integer
+          title: Display Order
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        archived_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+          title: Archived At
+        version:
+          type: integer
+          title: Version
+      type: object
+      required:
+        - id
+        - display_name
+        - description
+        - environment
+        - criticality
+        - exposure
+        - status
+        - primary_group_id
+        - display_order
+        - created_at
+        - updated_at
+        - archived_at
+        - version
+      title: ServerRead
+    UserCreate:
+      properties:
+        username:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Username
+        email:
+          type: string
+          maxLength: 254
+          minLength: 3
+          pattern: ^[^\s@]+@[^\s@]+\.[^\s@]+$
+          title: Email
+        display_name:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Display Name
+      additionalProperties: false
+      type: object
+      required:
+        - username
+        - email
+        - display_name
+      title: UserCreate
+    UserPatch:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+        display_name:
+          anyOf:
+            - type: string
+              maxLength: 128
+              minLength: 1
+            - type: 'null'
+          title: Display Name
+        email:
+          anyOf:
+            - type: string
+              maxLength: 254
+              minLength: 3
+              pattern: ^[^\s@]+@[^\s@]+\.[^\s@]+$
+            - type: 'null'
+          title: Email
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+      title: UserPatch
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+    Version:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        reason:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+        - version
+        - reason
+      title: Version
+    VisibleGroup:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+            - type: string
+            - type: 'null'
+          title: Description
+        status:
+          type: string
+          title: Status
+        sort_order:
+          type: integer
+          title: Sort Order
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        archived_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+          title: Archived At
+        version:
+          type: integer
+          title: Version
+        visible_servers:
+          type: integer
+          title: Visible Servers
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - status
+        - sort_order
+        - created_at
+        - updated_at
+        - archived_at
+        - version
+        - visible_servers
+      title: VisibleGroup
+    Problem:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - code
+        - request_id
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+        request_id:
+          type: string
+          format: uuid
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-cve-session
+    CsrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token

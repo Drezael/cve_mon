@@ -1,0 +1,108 @@
+{
+  "$defs": {
+    "Quiet": {
+      "additionalProperties": false,
+      "properties": {
+        "timezone": {
+          "default": "Europe/Berlin",
+          "title": "Timezone",
+          "type": "string"
+        },
+        "start": {
+          "default": "22:00:00",
+          "format": "time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "default": "07:00:00",
+          "format": "time",
+          "title": "End",
+          "type": "string"
+        },
+        "weekdays": {
+          "items": {
+            "type": "integer"
+          },
+          "maxItems": 7,
+          "minItems": 1,
+          "title": "Weekdays",
+          "type": "array"
+        }
+      },
+      "title": "Quiet",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "enabled": {
+      "default": true,
+      "title": "Enabled",
+      "type": "boolean"
+    },
+    "mode": {
+      "default": "immediate",
+      "enum": [
+        "immediate",
+        "digest"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "minimum_priority": {
+      "default": "unrated",
+      "enum": [
+        "unrated",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Minimum Priority",
+      "type": "string"
+    },
+    "digest_hours": {
+      "default": 24,
+      "enum": [
+        1,
+        24,
+        168
+      ],
+      "title": "Digest Hours",
+      "type": "integer"
+    },
+    "timezone": {
+      "default": "Europe/Berlin",
+      "title": "Timezone",
+      "type": "string"
+    },
+    "language": {
+      "const": "de",
+      "default": "de",
+      "title": "Language",
+      "type": "string"
+    },
+    "quiet": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Quiet"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "event_types": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Event Types",
+      "type": "array"
+    }
+  },
+  "title": "Preferences",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

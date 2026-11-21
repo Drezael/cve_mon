@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.1",
+  "server_id": "9d23ec36-6cf8-4ce0-8118-8f7dd106b265",
+  "inventory_id": "0f0e1bbb-0e19-43ed-b8c5-74be19823b71",
+  "captured_at": "2026-11-07T10:53:56.088049+00:00",
+  "collector": {
+    "name": "ansible",
+    "version": "2.21.5"
+  },
+  "os": {
+    "status": "complete",
+    "data": {
+      "distribution": "Ubuntu",
+      "release": "24.04",
+      "architecture": "x86_64",
+      "kernel": "6.8.0-48-generic",
+      "family": "Debian"
+    }
+  },
+  "packages": {
+    "status": "complete",
+    "items": [
+      {
+        "architecture": "amd64",
+        "name": "apache2",
+        "package_manager": "dpkg",
+        "version": "1:2.4.58-1ubuntu8.4"
+      }
+    ]
+  },
+  "services": {
+    "status": "complete",
+    "items": [
+      {
+        "enabled": true,
+        "manager": "systemd",
+        "name": "apache2.service",
+        "state": "running"
+      }
+    ]
+  },
+  "hardware": {
+    "cpu_count": 2,
+    "memory_mb": 2048
+  },
+  "docker": {
+    "status": "available"
+  },
+  "containers": {
+    "status": "complete",
+    "items": []
+  },
+  "images": {
+    "status": "complete",
+    "items": [
+      {
+        "architecture": "amd64",
+        "image_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "references": [
+          "local/example:1"
+        ],
+        "repo_digests": []
+      }
+    ]
+  },
+  "collection_status": "complete",
+  "diagnostics": []
+}

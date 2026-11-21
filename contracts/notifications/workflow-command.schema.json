@@ -1,0 +1,22 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "run_id": {
+      "format": "uuid",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "run_id",
+    "request_id"
+  ],
+  "title": "Command",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

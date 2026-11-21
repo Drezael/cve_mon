@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "finding_id",
+        "server_id",
+        "episode_id",
+        "correlation_id",
+        "cve_id",
+        "change_type",
+        "lifecycle_status",
+        "matching_status",
+        "priority",
+        "row_version",
+        "occurred_at",
+        "schema_version"
+      ],
+      "properties": {
+        "finding_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "server_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "episode_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "cve_id": {
+          "type": "string"
+        },
+        "change_type": {
+          "type": "string"
+        },
+        "lifecycle_status": {
+          "enum": [
+            "open",
+            "in_progress",
+            "resolved",
+            "closed"
+          ]
+        },
+        "matching_status": {
+          "type": "string"
+        },
+        "priority": {
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "unrated"
+          ]
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "schema_version": {
+          "const": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "policy_id",
+        "label",
+        "actor_user_id"
+      ],
+      "properties": {
+        "policy_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "label": {
+          "type": "string"
+        },
+        "actor_user_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

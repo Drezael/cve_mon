@@ -1,0 +1,107 @@
+{
+  "schema_version": "1.3",
+  "captured_at": "2026-11-14T15:42:29.371588+00:00",
+  "collection_status": "complete",
+  "collector": {
+    "name": "ansible",
+    "version": "2.21.5",
+    "controller_id": "cve-monitor-demo"
+  },
+  "os": {
+    "status": "complete",
+    "data": {
+      "distribution": "Debian",
+      "release": "12",
+      "codename": "bookworm",
+      "family": "Debian",
+      "platform": "Linux",
+      "architecture": "x86_64",
+      "kernel": "6.1.0-40-amd64"
+    }
+  },
+  "packages": {
+    "status": "complete",
+    "items": [
+      {
+        "name": "pac-resolver",
+        "version": "4.2.0",
+        "architecture": "all",
+        "package_manager": "npm"
+      }
+    ]
+  },
+  "services": {
+    "status": "complete",
+    "items": []
+  },
+  "hardware": {
+    "cpu_count": 2,
+    "memory_mb": 2048
+  },
+  "docker": {
+    "status": "available"
+  },
+  "containers": {
+    "status": "complete",
+    "items": [
+      {
+        "container_id": "72f2c4faf6004ad2fe0b1168058561fef4e379ef4fca2b318c94e69d272abdff",
+        "name": "demo-vulnerable-webapp",
+        "image_reference": "example.invalid/cve-demo-webapp:1.0.0",
+        "image_id": "sha256:7bfe806b3d8007f29c08e008fb20e5d1ff4f04051ab97893baee6254afb04d1f",
+        "state": "running",
+        "collection_status": "complete"
+      }
+    ]
+  },
+  "images": {
+    "status": "complete",
+    "items": [
+      {
+        "image_id": "sha256:7bfe806b3d8007f29c08e008fb20e5d1ff4f04051ab97893baee6254afb04d1f",
+        "references": [
+          "example.invalid/cve-demo-webapp:1.0.0"
+        ],
+        "repo_digests": []
+      }
+    ]
+  },
+  "diagnostics": [],
+  "inventory_id": "629f3197-c46d-4a95-81a1-a58e8b81b76d",
+  "host": {
+    "monitoring_id": "3c0d2cd3-1641-456c-a8bc-046805662e2c",
+    "hostname": "demo-vulnerable-host-and-container",
+    "fqdn": "demo-vulnerable-host-and-container.example.test"
+  },
+  "container_software": {
+    "status": "complete",
+    "items": [
+      {
+        "container_id": "72f2c4faf6004ad2fe0b1168058561fef4e379ef4fca2b318c94e69d272abdff",
+        "image_id": "sha256:7bfe806b3d8007f29c08e008fb20e5d1ff4f04051ab97893baee6254afb04d1f",
+        "scope": "image",
+        "status": "complete",
+        "captured_at": "2026-11-14T15:42:29.371588+00:00",
+        "document": {
+          "scanner": "syft",
+          "scanner_version": "1.57.1",
+          "os": {
+            "id": "alpine",
+            "version": "3.24"
+          },
+          "packages": [
+            {
+              "name": "minimist",
+              "version": "0.0.8",
+              "type": "npm",
+              "purl": "pkg:npm/minimist@0.0.8",
+              "locations": [
+                "/app/node_modules/minimist/package.json"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

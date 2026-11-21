@@ -1,0 +1,795 @@
+# Four unmodified vendor images; API, processing and sources share one application image.
+name: ${COMPOSE_PROJECT_NAME:-cve-monitoring}
+services:
+  cve-nginx:
+    image: "nginx:1.30.6-alpine@sha256:\
+      583b7f2fce1cdb8da5ad5c39ebd3c33b98b87d493190e548bdee1fa8c619c311"
+    command:
+      - nginx
+      - -g
+      - daemon off;
+    user: ${NGINX_UID:-1000}:${NGINX_GID:-1000}
+    read_only: true
+    cap_drop:
+      - ALL
+    sysctls:
+      net.ipv4.ip_forward: '0'
+      net.ipv6.conf.all.forwarding: '0'
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    restart: unless-stopped
+    stop_signal: SIGQUIT
+    stop_grace_period: 15s
+    mem_limit: 128m
+    cpus: 0.5
+    pids_limit: 64
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 4096
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,uid=${NGINX_UID:-1000},gid=${NGINX_GID:-1000},mode=0700
+    ports:
+      - ${INGRESS_BIND_IP:-127.0.0.1}:${INGRESS_HTTP_PORT:-8080}:8080
+      - ${INGRESS_BIND_IP:-127.0.0.1}:${INGRESS_HTTPS_PORT:-8443}:8443
+    volumes:
+      - type: bind
+        source: ./infrastructure/nginx/nginx.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/nginx/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /etc/nginx/cve
+        read_only: true
+        bind:
+          create_host_path: false
+    networks:
+      - cve_ingress
+      - cve_internal
+    labels:
+      org.cve-monitoring.managed: phase-02
+      org.cve-monitoring.project: ${COMPOSE_PROJECT_NAME:-cve-monitoring}
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:8081/healthz
+      interval: 5s
+      timeout: 2s
+      start_period: 3s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  cve-postgres:
+    image: "postgres:18.6-alpine3.24@sha256:\
+      9ba53c7d41ea093baf5c1ba635ba5434c4f979880527d49bb7d9237d3193085b"
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+    environment:
+      POSTGRES_USER: postgres_admin
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_admin
+      POSTGRES_INITDB_ARGS: --auth-local=peer --auth-host=scram-sha-256
+      PGDATA: /var/lib/postgresql/18/docker
+    secrets:
+      - postgres_admin
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    stop_signal: SIGINT
+    stop_grace_period: 30s
+    mem_limit: 2048m
+    cpus: 4.0
+    pids_limit: 192
+    shm_size: 512m
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+      - /var/run/postgresql:rw,noexec,nosuid,size=16m,mode=3775
+    networks:
+      - cve_data
+    labels:
+      org.cve-monitoring.managed: phase-03
+      org.cve-monitoring.project: ${COMPOSE_PROJECT_NAME:-cve-monitoring}
+    healthcheck:
+      test:
+        - CMD
+        - /opt/cve-health/check-ready.sh
+      interval: 3s
+      timeout: 2s
+      start_period: 5s
+      retries: 15
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    volumes:
+      - type: bind
+        source: >-
+          ${MOUNT_BASE:-./.runtime}/storage/${COMPOSE_PROJECT_NAME:-cve-monitoring}/postgres-data
+        target: /var/lib/postgresql
+        bind:
+          create_host_path: false
+      - ./infrastructure/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./infrastructure/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./infrastructure/postgres/pg_ident.conf:/etc/postgresql/pg_ident.conf:ro
+      - ./infrastructure/postgres/initdb:/docker-entrypoint-initdb.d:ro
+      - ./infrastructure/postgres/health:/opt/cve-health:ro
+      - type: bind
+        source: >-
+          ${SECRETS_BASE:-./.runtime}/storage/${COMPOSE_PROJECT_NAME:-cve-monitoring}/postgres-tls
+        target: /var/run/postgresql/tls
+        read_only: true
+        bind:
+          create_host_path: false
+  cve-mail-relay:
+    image: "boky/postfix:5.2.1-alpine@sha256:\
+      f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b"
+    environment:
+      LOG_FORMAT: json
+      ANONYMIZE_EMAILS: '0'
+      ALLOWED_SENDER_DOMAINS: example.invalid
+      HOSTNAME: cve-mail-relay
+    user: 0:0
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETUID
+      - SETGID
+      - KILL
+    security_opt:
+      - no-new-privileges:true
+    sysctls:
+      net.ipv4.ip_forward: '0'
+      net.ipv6.conf.all.forwarding: '0'
+    restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: 256m
+    cpus: 1.0
+    pids_limit: 96
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 4096
+    tmpfs:
+      - /run:rw,noexec,nosuid,size=16m,mode=1777
+      - /var/log:rw,noexec,nosuid,size=16m,mode=0755
+      - /etc/opendkim:rw,noexec,nosuid,size=4m,mode=0755
+      - /etc/opendkim/keys:rw,noexec,nosuid,size=4m,mode=0700
+      - /etc/rspamd:rw,noexec,nosuid,size=4m,mode=0755
+      - /var/lib/rspamd:rw,noexec,nosuid,size=4m,mode=0755
+      - /etc/rsyslog.d:rw,noexec,nosuid,size=4m,mode=0755
+      - /etc/rsyslog.d-before:rw,noexec,nosuid,size=4m,mode=0755
+      - /etc/rsyslog.d-metrics:rw,noexec,nosuid,size=4m,mode=0755
+      - /var/run:rw,noexec,nosuid,size=16m,mode=1777
+      - /run/postfix:rw,noexec,nosuid,size=16m,mode=0750
+      - /etc/postfix:rw,noexec,nosuid,size=8m,mode=0755
+      - /var/lib/postfix:rw,noexec,nosuid,size=16m,mode=0755
+      - /tmp:rw,noexec,nosuid,size=16m,mode=1777
+    networks:
+      cve_internal:
+        aliases: [cve-mail-submit]
+      cve_outbound: {}
+    volumes:
+      - type: bind
+        source: >-
+          ${MOUNT_BASE:-./.runtime}/storage/${COMPOSE_PROJECT_NAME:-cve-monitoring}/postfix-queue
+        target: /var/spool/postfix
+        bind:
+          create_host_path: false
+      - ./infrastructure/mail/rsyslog.conf:/etc/rsyslog.conf:ro
+      - ./infrastructure/mail:/opt/cve-mail:ro
+      - ./infrastructure/mail/init.sh:/docker-init.d/90-cve-configuration.sh:ro
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/mail/${COMPOSE_PROJECT_NAME:-cve-monitoring}/state
+        target: /mail-state
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/mail/${COMPOSE_PROJECT_NAME:-cve-monitoring}/secrets
+        target: /mail-secrets
+        read_only: true
+        bind:
+          create_host_path: false
+      - ./infrastructure/status/postfix.py:/opt/cve-status/postfix.py:ro
+      - ./infrastructure/status/postfix.sh:/opt/cve-status/postfix.sh:ro
+      - ${MOUNT_BASE:-./.runtime}/status/${COMPOSE_PROJECT_NAME:-cve-monitoring}/postfix:/run/cve-status/postfix
+    healthcheck:
+      test:
+        - CMD
+        - /bin/sh
+        - /opt/cve-status/postfix.sh
+      interval: 5s
+      timeout: 3s
+      start_period: 5s
+      retries: 8
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      org.cve-monitoring.managed: phase-05
+      org.cve-monitoring.project: ${COMPOSE_PROJECT_NAME:-cve-monitoring}
+  cve-api:
+    image: cve-application:0.24.0
+    build:
+      context: ./.runtime/application-image
+    user: ${NGINX_UID:-1000}:${NGINX_GID:-1000}
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 20s
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 64
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 4096
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+    sysctls:
+      net.ipv4.ip_forward: '0'
+      net.ipv6.conf.all.forwarding: '0'
+    networks:
+      cve_internal:
+        aliases:
+          - cve-api
+      cve_data:
+        aliases:
+          - cve-api
+    environment:
+      CVE_APPLICATION_PROFILE: api
+      # Used only when no instance default language has been saved yet.
+      CVE_DEFAULT_LANGUAGE: en
+      CVE_SMTP_HOST: ${SMTP_HOST:-}
+      CVE_SMTP_PORT: ${SMTP_PORT:-587}
+      CVE_SMTP_SENDER: ${SMTP_SENDER:-}
+      CVE_SMTP_USERNAME: ${SMTP_USERNAME:-}
+      CVE_SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      CVE_API_APP_ENV: ${APP_ENV:-production}
+      CVE_API_STATUS__PAUSED: false
+      CVE_API_STATUS__APP_ENV: ${APP_ENV:-production}
+      CVE_API_STATUS__DATABASE__HOST: cve-postgres
+      CVE_API_STATUS__DATABASE__USERNAME: status_probe
+      CVE_API_STATUS__DATABASE__PASSWORD_FILE: /run/cve-api/status_probe.password
+      CVE_API_STATUS__DATABASE__CA_FILE: /run/cve-api/ca.crt
+      CVE_API_STATUS__REPORTS_DIR: /run/cve-status
+      CVE_API_STATUS__DASHBOARD_CA: /run/cve-api/dashboard-ca.crt
+      CVE_API_STATUS__NOTIFICATION_CA: /run/cve-api/notification-ca.crt
+      CVE_API_STATUS__DASHBOARD_HOST: ${DASHBOARD_DOMAIN}
+      CVE_API_STATUS__PROBE_KEY_FILE: /run/cve-api/status-probe.key
+      CVE_API_LOG_LEVEL: INFO
+      CVE_API_DATABASE__HOST: cve-postgres
+      CVE_API_DATABASE__USERNAME: api_reader
+      CVE_API_DATABASE__PASSWORD_FILE: /run/cve-api/api_reader.password
+      CVE_API_DATABASE__CA_FILE: /run/cve-api/ca.crt
+      CVE_API_ALLOWED_HOSTS: >-
+        ["cve-api","localhost","127.0.0.1",
+        "${DASHBOARD_DOMAIN}","inventory.internal"]
+      CVE_API_AUTH__DATABASE__HOST: cve-postgres
+      CVE_API_AUTH__DATABASE__USERNAME: api_security
+      CVE_API_AUTH__DATABASE__PASSWORD_FILE: /run/cve-api/api_security.password
+      CVE_API_AUTH__DATABASE__CA_FILE: /run/cve-api/ca.crt
+      CVE_API_AUTH__ADMINISTRATION_DATABASE__HOST: cve-postgres
+      CVE_API_AUTH__ADMINISTRATION_DATABASE__USERNAME: dashboard_admin
+      CVE_API_AUTH__ADMINISTRATION_DATABASE__PASSWORD_FILE: /run/cve-api/dashboard_admin.password
+      CVE_API_AUTH__ADMINISTRATION_DATABASE__CA_FILE: /run/cve-api/ca.crt
+      CVE_API_INVENTORY__DATABASE__HOST: cve-postgres
+      CVE_API_INVENTORY__DATABASE__USERNAME: api_ingest
+      CVE_API_INVENTORY__DATABASE__PASSWORD_FILE: /run/cve-api/api_ingest.password
+      CVE_API_INVENTORY__DATABASE__CA_FILE: /run/cve-api/ca.crt
+      CVE_API_INVENTORY__DATABASE__POOL_SIZE: '2'
+      CVE_API_INVENTORY__DATABASE__STATEMENT_TIMEOUT_MS: '15000'
+      CVE_API_INVENTORY__ORIGIN: https://inventory.internal
+      CVE_API_INVENTORY__GATEWAY_FILE: /run/cve-api/inventory-gateway.key
+      CVE_API_INVENTORY__TOKEN_KEY_FILE: /run/cve-api/inventory-token.key
+      CVE_API_INVENTORY__CLIENT_CA_FILE: /run/cve-api/inventory-client-ca.crt
+      CVE_API_INVENTORY__CLIENT_CRL_FILE: /run/cve-api/inventory-client-ca.crl
+      CVE_API_INVENTORY__MAX_BYTES: 10485760
+      CVE_API_AUTH__ORIGIN: ${DASHBOARD_ORIGIN}
+      CVE_API_AUTH__KEYRING_FILE: /run/cve-api/auth-keys.json
+      CVE_API_AUTH__GATEWAY_FILE: /run/cve-api/auth-gateway.key
+      CVE_API_AUTH__ARGON_MEMORY: 19456
+      CVE_API_AUTH__ARGON_CONCURRENCY: 2
+      CVE_API_AUTH__LOGIN_LIMIT: 10
+      CVE_API_AUTH__IP_LIMIT: 60
+      CVE_API_HTTP_PORT: '8000'
+    volumes:
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/services/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /run/cve-api
+        read_only: true
+        bind:
+          create_host_path: false
+      - ./.runtime/status/${COMPOSE_PROJECT_NAME:-cve-monitoring}:/run/cve-status:ro
+      - ${MOUNT_BASE:-./.runtime}/status/${COMPOSE_PROJECT_NAME:-cve-monitoring}/postfix:/run/cve-status/postfix:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -m
+        - cve_common.application
+        - health
+      interval: 5s
+      timeout: 12s
+      start_period: 15s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      org.cve-monitoring.managed: compact-application
+      org.cve-monitoring.project: ${COMPOSE_PROJECT_NAME:-cve-monitoring}
+  cve-processing:
+    image: cve-application:0.24.0
+    user: ${NGINX_UID:-1000}:${NGINX_GID:-1000}
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 20s
+    mem_limit: 6144m
+    cpus: 6.0
+    pids_limit: 384
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 4096
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+    sysctls:
+      net.ipv4.ip_forward: '0'
+      net.ipv6.conf.all.forwarding: '0'
+    networks:
+      cve_data:
+        aliases:
+          - cve-event-dispatcher
+          - cve-inventory
+          - cve-matcher
+          - cve-findings
+          - cve-notification
+          - cve-importer
+          - cve-enricher
+      cve_outbound:
+        aliases:
+          - cve-importer
+          - cve-enricher
+      cve_internal:
+        aliases:
+          - cve-event-dispatcher
+          - cve-notification
+    environment:
+      CVE_APPLICATION_PROFILE: processing
+      CVE_DISPATCHER_APP_ENV: ${APP_ENV:-production}
+      CVE_DISPATCHER_DATABASE__HOST: cve-postgres
+      CVE_DISPATCHER_DATABASE__USERNAME: event_dispatcher
+      CVE_DISPATCHER_DATABASE__PASSWORD_FILE: /run/cve-dispatcher/event_dispatcher.password
+      CVE_DISPATCHER_DATABASE__CA_FILE: /run/cve-dispatcher/ca.crt
+      CVE_DISPATCHER_TARGETS_FILE: /run/cve-dispatcher/targets.json
+      CVE_DISPATCHER_CONCURRENCY: 2
+      CVE_DISPATCHER_LEASE_SECONDS: 15
+      CVE_DISPATCHER_HEARTBEAT_SECONDS: 3
+      CVE_DISPATCHER_POLL_SECONDS: 0.5
+      CVE_DISPATCHER_SHUTDOWN_SECONDS: 5
+      CVE_DISPATCHER_HTTP_PORT: '8001'
+      CVE_INVENTORY_APP_ENV: ${APP_ENV:-production}
+      CVE_INVENTORY_DATABASE__HOST: cve-postgres
+      CVE_INVENTORY_DATABASE__USERNAME: inventory_processor
+      CVE_INVENTORY_DATABASE__PASSWORD_FILE: /run/cve-inventory/inventory_processor.password
+      CVE_INVENTORY_DATABASE__CA_FILE: /run/cve-inventory/ca.crt
+      CVE_INVENTORY_CONCURRENCY: 1
+      CVE_INVENTORY_LEASE_SECONDS: 15
+      CVE_INVENTORY_HEARTBEAT_SECONDS: 3
+      CVE_INVENTORY_POLL_SECONDS: 0.5
+      CVE_INVENTORY_SHUTDOWN_SECONDS: 5
+      CVE_INVENTORY_HTTP_PORT: '8002'
+      CVE_MATCHER_APP_ENV: ${APP_ENV:-production}
+      CVE_MATCHER_DATABASE__HOST: cve-postgres
+      CVE_MATCHER_DATABASE__USERNAME: matcher
+      CVE_MATCHER_DATABASE__PASSWORD_FILE: /run/cve-matcher/matcher.password
+      CVE_MATCHER_DATABASE__CA_FILE: /run/cve-matcher/ca.crt
+      CVE_MATCHER_GUARD_PROOF_FILE: /run/cve-matcher/guard.ready
+      CVE_MATCHER_DATABASE__POOL_SIZE: '5'
+      CVE_MATCHER_DATABASE__STATEMENT_TIMEOUT_MS: '30000'
+      CVE_MATCHER_PROCESSES: 2
+      CVE_MATCHER_CONCURRENCY: 4
+      CVE_MATCHER_LEASE_SECONDS: 15
+      CVE_MATCHER_HEARTBEAT_SECONDS: 3
+      CVE_MATCHER_POLL_SECONDS: 0.5
+      CVE_MATCHER_SHUTDOWN_SECONDS: 5
+      CVE_MATCHER_HTTP_PORT: '8003'
+      CVE_FINDINGS_MAINTENANCE_SECONDS: 60
+      CVE_FINDINGS_APP_ENV: ${APP_ENV:-production}
+      CVE_FINDINGS_DATABASE__HOST: cve-postgres
+      CVE_FINDINGS_DATABASE__USERNAME: findings_writer
+      CVE_FINDINGS_DATABASE__PASSWORD_FILE: /run/cve-findings/findings_writer.password
+      CVE_FINDINGS_DATABASE__CA_FILE: /run/cve-findings/ca.crt
+      CVE_FINDINGS_GUARD_PROOF_FILE: /run/cve-findings/guard.ready
+      CVE_FINDINGS_DATABASE__POOL_SIZE: '5'
+      CVE_FINDINGS_DATABASE__STATEMENT_TIMEOUT_MS: '30000'
+      CVE_FINDINGS_CONCURRENCY: 4
+      CVE_FINDINGS_LEASE_SECONDS: 15
+      CVE_FINDINGS_HEARTBEAT_SECONDS: 3
+      CVE_FINDINGS_POLL_SECONDS: 0.5
+      CVE_FINDINGS_SHUTDOWN_SECONDS: 5
+      CVE_FINDINGS_HTTP_PORT: '8004'
+      CVE_NOTIFICATION_MAINTENANCE_SECONDS: 60
+      CVE_NOTIFICATION_CONFIGURATION_DIR: /run/cve-notification
+      CVE_NOTIFICATION_APP_ENV: ${APP_ENV:-production}
+      CVE_NOTIFICATION_DATABASE__HOST: cve-postgres
+      CVE_NOTIFICATION_DATABASE__USERNAME: notification
+      CVE_NOTIFICATION_DATABASE__PASSWORD_FILE: /run/cve-notification/notification.password
+      CVE_NOTIFICATION_DATABASE__CA_FILE: /run/cve-notification/db-ca.crt
+      CVE_NOTIFICATION_GUARD_PROOF_FILE: /run/cve-notification/guard.ready
+      CVE_NOTIFICATION_DATABASE__POOL_SIZE: '5'
+      CVE_NOTIFICATION_DATABASE__STATEMENT_TIMEOUT_MS: '30000'
+      CVE_NOTIFICATION_CONCURRENCY: 1
+      CVE_NOTIFICATION_LEASE_SECONDS: 15
+      CVE_NOTIFICATION_HEARTBEAT_SECONDS: 3
+      CVE_NOTIFICATION_POLL_SECONDS: 0.5
+      CVE_NOTIFICATION_SHUTDOWN_SECONDS: 5
+      CVE_NOTIFICATION_HTTP_PORT: '8000'
+      CVE_IMPORTER_APP_ENV: ${APP_ENV:-production}
+      CVE_IMPORTER_DATABASE__HOST: cve-postgres
+      CVE_IMPORTER_DATABASE__USERNAME: importer
+      CVE_IMPORTER_DATABASE__PASSWORD_FILE: /run/cve-importer/importer.password
+      CVE_IMPORTER_DATABASE__CA_FILE: /run/cve-importer/ca.crt
+      CVE_IMPORTER_DATABASE__POOL_SIZE: '5'
+      CVE_IMPORTER_DATABASE__STATEMENT_TIMEOUT_MS: '30000'
+      CVE_IMPORTER_CONFIGURATION_FILE: /run/cve-importer/sources.json
+      CVE_IMPORTER_EGRESS_PROOF_FILE: /run/cve-importer/egress.ready
+      CVE_IMPORTER_SCRATCH_DIRECTORY: /work/importer
+      CVE_IMPORTER_CONCURRENCY: 2
+      CVE_IMPORTER_LEASE_SECONDS: 15
+      CVE_IMPORTER_HEARTBEAT_SECONDS: 3
+      CVE_IMPORTER_POLL_SECONDS: 0.5
+      CVE_IMPORTER_SHUTDOWN_SECONDS: 5
+      CVE_IMPORTER_HTTP_PORT: '8005'
+      CVE_ENRICHER_APP_ENV: ${APP_ENV:-production}
+      CVE_ENRICHER_DATABASE__HOST: cve-postgres
+      CVE_ENRICHER_DATABASE__USERNAME: enricher
+      CVE_ENRICHER_DATABASE__PASSWORD_FILE: /run/cve-enricher/enricher.password
+      CVE_ENRICHER_DATABASE__CA_FILE: /run/cve-enricher/ca.crt
+      CVE_ENRICHER_DATABASE__POOL_SIZE: '8'
+      CVE_ENRICHER_DATABASE__STATEMENT_TIMEOUT_MS: '30000'
+      CVE_ENRICHER_CONFIGURATION_FILE: /run/cve-enricher/sources.json
+      CVE_ENRICHER_EGRESS_PROOF_FILE: /run/cve-enricher/egress.ready
+      CVE_ENRICHER_SCRATCH_DIRECTORY: /work/enricher
+      CVE_ENRICHER_CONCURRENCY: 4
+      CVE_ENRICHER_PROCESSES: 2
+      CVE_ENRICHER_LEASE_SECONDS: 15
+      CVE_ENRICHER_HEARTBEAT_SECONDS: 3
+      CVE_ENRICHER_POLL_SECONDS: 0.5
+      CVE_ENRICHER_SHUTDOWN_SECONDS: 5
+      CVE_ENRICHER_HTTP_PORT: '8006'
+    volumes:
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/cve-importer/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /run/cve-importer
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: >-
+          ${MOUNT_BASE:-./.runtime}/cve-importer/${COMPOSE_PROJECT_NAME:-cve-monitoring}/scratch
+        target: /work/importer
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/cve-enricher/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /run/cve-enricher
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: >-
+          ${MOUNT_BASE:-./.runtime}/cve-enricher/${COMPOSE_PROJECT_NAME:-cve-monitoring}/scratch
+        target: /work/enricher
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/automation/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /run/cve-dispatcher
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: >-
+          ${SECRETS_BASE:-./.runtime}/inventory-processor/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /run/cve-inventory
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/cve-matcher/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /run/cve-matcher
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/cve-findings/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /run/cve-findings
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/notifications/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /run/cve-notification
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./.runtime/application/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /run/cve-application
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -m
+        - cve_common.application
+        - health
+      interval: 5s
+      timeout: 12s
+      start_period: 15s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      org.cve-monitoring.managed: compact-application
+      org.cve-monitoring.project: ${COMPOSE_PROJECT_NAME:-cve-monitoring}
+  cve-sources:
+    image: cve-application:0.24.0
+    user: ${NGINX_UID:-1000}:${NGINX_GID:-1000}
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 20s
+    mem_limit: 1024m
+    cpus: 2.0
+    pids_limit: 256
+    ulimits:
+      nofile:
+        soft: 4096
+        hard: 4096
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+      - /work/ansible:rw,noexec,nosuid,size=512m,mode=0700,uid=${NGINX_UID:-1000},gid=${NGINX_GID:-1000}
+    sysctls:
+      net.ipv4.ip_forward: '0'
+      net.ipv6.conf.all.forwarding: '0'
+    networks:
+      cve_data:
+        aliases:
+          - cve-automation
+      cve_ssh: {}
+    environment:
+      CVE_APPLICATION_PROFILE: sources
+      CVE_ANSIBLE_APP_ENV: ${APP_ENV:-production}
+      CVE_ANSIBLE_DATABASE__HOST: cve-postgres
+      CVE_ANSIBLE_DATABASE__USERNAME: ansible_worker
+      CVE_ANSIBLE_DATABASE__PASSWORD_FILE: /run/cve-ansible/ansible_worker.password
+      CVE_ANSIBLE_DATABASE__CA_FILE: /run/cve-ansible/ca.crt
+      CVE_ANSIBLE_KEYRING_FILE: /run/cve-ansible/ssh-keys.json
+      CVE_ANSIBLE_WORK_DIRECTORY: /work/ansible
+      CVE_ANSIBLE_CONCURRENCY: 2
+      CVE_ANSIBLE_HTTP_PORT: '8000'
+    volumes:
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/ansible/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /run/cve-ansible
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./.runtime/application/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /run/cve-application
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -m
+        - cve_common.application
+        - health
+      interval: 5s
+      timeout: 12s
+      start_period: 15s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      org.cve-monitoring.managed: compact-application
+      org.cve-monitoring.project: ${COMPOSE_PROJECT_NAME:-cve-monitoring}
+  cve-n8n:
+    image: n8nio/n8n:2.46.7@sha256:e97b4f576cd21de5c7676858f7006126581faeca8046d9d23fda0e06468008d4
+    entrypoint: ["/bin/sh", "/opt/cve-n8n/start.sh"]
+    user: ${NGINX_UID:-1000}:${NGINX_GID:-1000}
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 20s
+    mem_limit: 1536m
+    cpus: 1.0
+    pids_limit: 128
+    ulimits:
+      nofile:
+        soft: 2048
+        hard: 2048
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+      - /home/node/.cache:rw,noexec,nosuid,size=64m,uid=${NGINX_UID:-1000},gid=${NGINX_GID:-1000},mode=0700
+    sysctls:
+      net.ipv4.ip_forward: '0'
+      net.ipv6.conf.all.forwarding: '0'
+    networks:
+      - cve_internal
+      - cve_data
+      - cve_outbound
+    environment:
+      EXECUTIONS_MODE: regular
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: cve-postgres
+      DB_POSTGRESDB_PORT: '5432'
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: n8n_app
+      DB_POSTGRESDB_PASSWORD_FILE: /run/cve-n8n/n8n_app.password
+      DB_POSTGRESDB_SSL_ENABLED: 'true'
+      DB_POSTGRESDB_SSL_CA_FILE: /run/cve-n8n/db-ca.crt
+      DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED: 'true'
+      N8N_ENCRYPTION_KEY_FILE: /run/cve-n8n/encryption.key
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: 'true'
+      N8N_PROTOCOL: https
+      N8N_HOST: cve-n8n
+      N8N_PORT: '5678'
+      N8N_SSL_CERT: /run/cve-n8n/n8n.crt
+      N8N_SSL_KEY: /run/cve-n8n/n8n.key
+      NODE_EXTRA_CA_CERTS: /run/cve-n8n/trust-bundle.crt
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: none
+      EXECUTIONS_DATA_SAVE_ON_ERROR: none
+      EXECUTIONS_DATA_PRUNE: 'true'
+      EXECUTIONS_DATA_MAX_AGE: '168'
+      EXECUTIONS_DATA_PRUNE_MAX_COUNT: '10000'
+      # A timed-out control call must not starve the independent 30-second watchdog.
+      N8N_CONCURRENCY_PRODUCTION_LIMIT: '4'
+      N8N_DIAGNOSTICS_ENABLED: 'false'
+      N8N_VERSION_NOTIFICATIONS_ENABLED: 'false'
+      N8N_TEMPLATES_ENABLED: 'false'
+      N8N_PERSONALIZATION_ENABLED: 'false'
+      N8N_COMMUNITY_PACKAGES_ENABLED: 'false'
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: 'true'
+      N8N_BLOCK_FILE_ACCESS_TO_N8N_FILES: 'true'
+      N8N_PUBLIC_API_DISABLED: 'true'
+      N8N_DISABLE_UI: 'true'
+      N8N_RUNNERS_ENABLED: 'false'
+      NODES_INCLUDE: >-
+        ["n8n-nodes-base.webhook", "n8n-nodes-base.httpRequest",
+         "n8n-nodes-base.scheduleTrigger", "n8n-nodes-base.executeWorkflow",
+         "n8n-nodes-base.executeWorkflowTrigger", "n8n-nodes-base.if", "n8n-nodes-base.noOp",
+         "n8n-nodes-base.postgres"]
+      GENERIC_TIMEZONE: UTC
+      TZ: UTC
+    volumes:
+      - type: bind
+        source: ./infrastructure/n8n
+        target: /opt/cve-n8n
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./workflows/n8n
+        target: /opt/cve-workflows
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/n8n/${COMPOSE_PROJECT_NAME:-cve-monitoring}/config
+        target: /run/cve-n8n
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${MOUNT_BASE:-./.runtime}/n8n/${COMPOSE_PROJECT_NAME:-cve-monitoring}/data
+        target: /home/node/.n8n
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          const https=require('https'),fs=require('fs');
+          https.get('https://localhost:5678/healthz/readiness',
+          {ca:fs.readFileSync('/run/cve-n8n/ca.crt')},
+          r=>{r.resume();process.exit(r.statusCode===200?0:1)})
+          .on('error',()=>process.exit(1))
+      interval: 5s
+      timeout: 3s
+      start_period: 40s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      org.cve-monitoring.managed: phase-19
+      org.cve-monitoring.project: ${COMPOSE_PROJECT_NAME:-cve-monitoring}
+
+networks:
+  cve_ingress:
+    driver: bridge
+    enable_ipv6: false
+  cve_internal:
+    driver: bridge
+    internal: true
+    enable_ipv6: false
+  cve_data:
+    driver: bridge
+    internal: true
+    enable_ipv6: false
+  cve_ssh:
+    driver: bridge
+    enable_ipv6: false
+  cve_outbound:
+    driver: bridge
+    enable_ipv6: false
+secrets:
+  postgres_admin:
+    file: "${SECRETS_BASE:-./.runtime}/database/${COMPOSE_PROJECT_\
+      NAME:-cve-monitoring}/secrets/postgres_admin.password"

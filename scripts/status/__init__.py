@@ -1,0 +1,1 @@
+"""Scoped local monitoring configuration."""

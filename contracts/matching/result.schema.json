@@ -1,0 +1,163 @@
+{
+  "$defs": {
+    "Decision": {
+      "additionalProperties": false,
+      "properties": {
+        "component_id": {
+          "title": "Component Id",
+          "type": "string"
+        },
+        "context": {
+          "default": "host",
+          "title": "Context",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "affected",
+            "not_affected",
+            "potentially_affected",
+            "unknown",
+            "not_applicable"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "rule_id": {
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "data_quality": {
+          "default": "partial",
+          "enum": [
+            "complete",
+            "partial",
+            "conflicted"
+          ],
+          "title": "Data Quality",
+          "type": "string"
+        },
+        "adapter": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Adapter"
+        },
+        "installed_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Installed Version"
+        },
+        "comparison_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comparison Version"
+        },
+        "evidence": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "conflicts": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Conflicts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "component_id",
+        "status",
+        "reason",
+        "rule_id"
+      ],
+      "title": "Decision",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "data_quality": {
+      "default": "partial",
+      "enum": [
+        "complete",
+        "partial",
+        "conflicted"
+      ],
+      "title": "Data Quality",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "affected",
+        "not_affected",
+        "potentially_affected",
+        "unknown",
+        "not_applicable"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "reason": {
+      "title": "Reason",
+      "type": "string"
+    },
+    "rule_version": {
+      "const": "matching-1",
+      "default": "matching-1",
+      "title": "Rule Version",
+      "type": "string"
+    },
+    "components": {
+      "items": {
+        "$ref": "#/$defs/Decision"
+      },
+      "title": "Components",
+      "type": "array"
+    },
+    "coverage": {
+      "additionalProperties": true,
+      "title": "Coverage",
+      "type": "object"
+    }
+  },
+  "required": [
+    "status",
+    "reason",
+    "components",
+    "coverage"
+  ],
+  "title": "Evaluation",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cve-monitoring.invalid/contracts/matching/result.schema.json"
+}

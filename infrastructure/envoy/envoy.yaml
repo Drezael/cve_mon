@@ -1,0 +1,176 @@
+node:
+  id: cve-egress-proxy
+  cluster: cve-egress
+admin:
+  access_log: []
+  address:
+    pipe:
+      path: /tmp/envoy-admin.sock
+      mode: 384
+static_resources:
+  listeners:
+    - name: http_forward
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 3128
+      per_connection_buffer_limit_bytes: 65536
+      filter_chains: []
+      default_filter_chain: &id001
+        filters:
+          - name: envoy.filters.network.direct_response
+            typed_config:
+              '@type': >-
+                type.googleapis.com/envoy.extensions.filters.network.direct_response.v3.Config
+    - name: smtp_tcp
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 1587
+      filter_chains: []
+      default_filter_chain: *id001
+    - name: internal_health
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 9901
+      filter_chains:
+        - filter_chain_match:
+            source_prefix_ranges:
+              - address_prefix: 127.0.0.1
+                prefix_len: 32
+          filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                '@type': >-
+                  type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: health
+                codec_type: HTTP1
+                use_remote_address: true
+                internal_address_config:
+                  cidr_ranges: []
+                generate_request_id: true
+                preserve_external_request_id: false
+                stream_idle_timeout: 120s
+                request_timeout: 30s
+                request_headers_timeout: 5s
+                max_request_headers_kb: 16
+                http_protocol_options:
+                  allow_absolute_url: true
+                common_http_protocol_options:
+                  headers_with_underscores_action: REJECT_REQUEST
+                  idle_timeout: 120s
+                  max_requests_per_connection: 100
+                upgrade_configs: []
+                route_config:
+                  name: routes_status
+                  virtual_hosts:
+                    - name: status
+                      domains:
+                        - '*'
+                      request_headers_to_remove:
+                        - proxy-authorization
+                        - x-envoy-original-dst-host
+                        - x-envoy-upstream-rq-timeout-ms
+                        - x-envoy-upstream-rq-per-try-timeout-ms
+                        - x-envoy-internal
+                        - x-forwarded-for
+                        - x-forwarded-host
+                        - x-original-url
+                      routes:
+                        - name: internal/healthz
+                          match:
+                            path: /healthz
+                            headers:
+                              - name: :method
+                                string_match:
+                                  exact: GET
+                          route:
+                            cluster: local_admin
+                            prefix_rewrite: /ready
+                            timeout: 2s
+                          response_headers_to_add:
+                            - header:
+                                key: cache-control
+                                value: no-store
+                        - name: internal/metrics
+                          match:
+                            path: /metrics
+                            headers:
+                              - name: :method
+                                string_match:
+                                  exact: GET
+                          route:
+                            cluster: local_admin
+                            prefix_rewrite: /stats/prometheus
+                            timeout: 2s
+                          response_headers_to_add:
+                            - header:
+                                key: cache-control
+                                value: no-store
+                        - name: default-deny
+                          match:
+                            prefix: /
+                          direct_response:
+                            status: 403
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                      suppress_envoy_headers: true
+                access_log:
+                  - name: envoy.access_loggers.stdout
+                    typed_config:
+                      '@type': >-
+                        type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                      log_format:
+                        json_format:
+                          time: '%START_TIME%'
+                          listener: health
+                          client: status
+                          target_rule: '%ROUTE_NAME%'
+                          upstream: '%UPSTREAM_HOST%'
+                          status: '%RESPONSE_CODE%'
+                          flags: '%RESPONSE_FLAGS%'
+                          duration_ms: '%DURATION%'
+                          bytes_received: '%BYTES_RECEIVED%'
+                          bytes_sent: '%BYTES_SENT%'
+                          correlation_id: '%CONNECTION_ID%'
+      default_filter_chain: *id001
+  clusters:
+    - name: smtp_smarthost
+      type: STATIC
+      connect_timeout: 1s
+      load_assignment:
+        cluster_name: smtp_smarthost
+        endpoints: []
+    - name: local_admin
+      type: STATIC
+      connect_timeout: 1s
+      load_assignment:
+        cluster_name: local_admin
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    pipe:
+                      path: /tmp/envoy-admin.sock
+overload_manager:
+  refresh_interval: 0.25s
+  resource_monitors:
+    - name: envoy.resource_monitors.global_downstream_max_connections
+      typed_config:
+        '@type': >-
+          type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
+        max_active_downstream_connections: 64
+    - name: envoy.resource_monitors.fixed_heap
+      typed_config:
+        '@type': >-
+          type.googleapis.com/envoy.extensions.resource_monitors.fixed_heap.v3.FixedHeapConfig
+        max_heap_size_bytes: 134217728
+  actions:
+    - name: envoy.overload_actions.stop_accepting_requests
+      triggers:
+        - name: envoy.resource_monitors.fixed_heap
+          threshold:
+            value: 0.95

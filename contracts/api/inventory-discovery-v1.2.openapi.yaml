@@ -1,0 +1,900 @@
+openapi: 3.1.0
+info:
+  title: Server discovery and inventory acceptance
+  version: 1.2.0
+  description: Dateibasierte Registrierung und Wiedererkennung; bestehende Formate
+    1.0 und 1.1 bleiben verfügbar.
+paths:
+  /api/v1/dashboard/inventories/upload:
+    post:
+      security:
+        - Session: []
+          CsrfToken: []
+      description: Berechtigung server:inventory:manage. Serverdaten stehen im unveränderten
+        JSON-File. Ein optionaler server_id-Formwert bindet eine neue Monitoring-ID
+        an einen zugänglichen Bestandsserver.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Inventory 1.2, UTF-8 JSON
+                server_id:
+                  type: string
+                  format: uuid
+                server_metadata:
+                  type: string
+                  maxLength: 16384
+                  contentMediaType: application/json
+                  description: 'Optionale, getrennte Server-Stammdaten: display_name,
+                    description, environment, criticality und exposure. Nur Eigentümer
+                    oder Administrator; atomar mit Inventarannahme. Identitäts-
+                    und Softwarefelder sind hier verboten.'
+      responses:
+        '202': &id001
+          description: Inventar angenommen; der Server ist angelegt oder zugeordnet.
+            Verarbeitung erfolgt über n8n.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receipt'
+        '409':
+          description: Widersprüchliche Kennung oder Inventar-ID; keine Teilanlage.
+        '403':
+          description: Berechtigung fehlt.
+        '404':
+          description: Zuordnung nicht verfügbar.
+        '422':
+          description: Datei ungültig.
+  /api/v1/inventories:
+    post:
+      security:
+        - CollectorCertificate: []
+          BearerToken: []
+      description: Ein inventory:discover-Token übernimmt die Rechte seines aktiven
+        Benutzers und kann mehrere Server erfassen.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inventory'
+      responses:
+        '202': *id001
+        '401':
+          description: Zugang ungültig oder Benutzerrechte entzogen.
+        '409':
+          description: Kennungskonflikt; keine Teilanlage.
+components:
+  schemas:
+    Inventory:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      title: CVE Monitoring Inventory v1.2
+      description: Unveränderlicher Inventarvertrag; unbekannte Felder sind auf
+        jeder Objektebene verboten.
+      type: object
+      additionalProperties: false
+      properties:
+        schema_version:
+          const: '1.2'
+        inventory_id:
+          $ref: '#/components/schemas/Inventory/$defs/uuid'
+        captured_at:
+          $ref: '#/components/schemas/Inventory/$defs/timestamp'
+        collection_status:
+          enum:
+            - complete
+            - partial
+            - failed
+        collector:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              const: ansible
+            version:
+              type: string
+              minLength: 1
+              maxLength: 64
+            controller_id:
+              type: string
+              minLength: 1
+              maxLength: 128
+          required:
+            - name
+            - version
+        os:
+          $ref: '#/components/schemas/Inventory/$defs/os_section'
+        packages:
+          $ref: '#/components/schemas/Inventory/$defs/package_section'
+        services:
+          $ref: '#/components/schemas/Inventory/$defs/service_section'
+        containers:
+          $ref: '#/components/schemas/Inventory/$defs/container_section'
+        images:
+          $ref: '#/components/schemas/Inventory/$defs/image_section'
+        docker:
+          type: object
+          additionalProperties: false
+          properties:
+            status:
+              enum:
+                - available
+                - not_installed
+                - unreachable
+                - failed
+            error_code:
+              type: string
+              minLength: 1
+              maxLength: 64
+          required:
+            - status
+        hardware:
+          type: object
+          additionalProperties: false
+          properties:
+            cpu_count:
+              type: integer
+              minimum: 1
+            memory_mb:
+              type: integer
+              minimum: 1
+            virtualization_type:
+              type: string
+              minLength: 1
+              maxLength: 128
+            virtualization_role:
+              type: string
+              minLength: 1
+              maxLength: 64
+          required: []
+        diagnostics:
+          type: array
+          maxItems: 100000
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              section:
+                enum:
+                  - os
+                  - packages
+                  - services
+                  - docker
+                  - containers
+                  - images
+              code:
+                type: string
+                pattern: ^[a-z0-9_]{1,64}$
+            required:
+              - section
+              - code
+        host:
+          type: object
+          additionalProperties: false
+          required:
+            - monitoring_id
+            - hostname
+          properties:
+            monitoring_id:
+              $ref: '#/components/schemas/Inventory/$defs/uuid'
+            hostname:
+              type: string
+              minLength: 1
+              maxLength: 128
+              pattern: ^[A-Za-z0-9][A-Za-z0-9._-]*$
+            fqdn:
+              type: string
+              minLength: 1
+              maxLength: 253
+              pattern: ^[A-Za-z0-9][A-Za-z0-9._-]*$
+            machine_id_hash:
+              type: string
+              pattern: ^[a-f0-9]{64}$
+            ssh_host_key_fingerprint:
+              type: string
+              pattern: ^SHA256:[A-Za-z0-9+/]{43}$
+      required:
+        - schema_version
+        - inventory_id
+        - captured_at
+        - collection_status
+        - collector
+        - os
+        - packages
+        - services
+        - containers
+        - images
+        - docker
+        - host
+      $defs:
+        uuid:
+          type: string
+          minLength: 1
+          maxLength: 36
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+        timestamp:
+          type: string
+          minLength: 1
+          maxLength: 40
+          format: date-time
+          pattern: (Z|[+-][0-9]{2}:[0-9]{2})$
+        os_data:
+          type: object
+          additionalProperties: false
+          properties:
+            distribution:
+              type: string
+              minLength: 1
+              maxLength: 128
+            release:
+              type: string
+              minLength: 1
+              maxLength: 128
+            architecture:
+              type: string
+              minLength: 1
+              maxLength: 64
+            kernel:
+              type: string
+              minLength: 1
+              maxLength: 256
+            family:
+              type: string
+              minLength: 1
+              maxLength: 256
+            codename:
+              type: string
+              minLength: 1
+              maxLength: 256
+            kernel_version:
+              type: string
+              minLength: 1
+              maxLength: 256
+            platform:
+              type: string
+              minLength: 1
+              maxLength: 256
+          required: []
+          minProperties: 1
+        os_section:
+          type: object
+          additionalProperties: false
+          properties:
+            status:
+              enum:
+                - complete
+                - partial
+                - failed
+                - not_collected
+            data:
+              $ref: '#/components/schemas/Inventory/$defs/os_data'
+            error_code:
+              type: string
+              minLength: 1
+              maxLength: 64
+          required:
+            - status
+          allOf:
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - partial
+              then:
+                required:
+                  - data
+              else:
+                not:
+                  required:
+                    - data
+            - if:
+                properties:
+                  status:
+                    const: complete
+              then:
+                properties:
+                  data:
+                    required:
+                      - distribution
+                      - release
+                      - architecture
+                      - kernel
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              then:
+                not:
+                  required:
+                    - error_code
+        package:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 256
+            version:
+              type: string
+              minLength: 1
+              maxLength: 512
+            architecture:
+              type: string
+              minLength: 1
+              maxLength: 64
+            package_manager:
+              enum:
+                - dpkg
+                - rpm
+                - apk
+                - pip
+                - npm
+                - other
+            source_package:
+              type: object
+              additionalProperties: false
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 256
+                version:
+                  type: string
+                  minLength: 1
+                  maxLength: 512
+              required:
+                - name
+            epoch:
+              type: string
+              minLength: 1
+              maxLength: 32
+            release:
+              type: string
+              minLength: 1
+              maxLength: 256
+          required:
+            - name
+            - version
+            - architecture
+            - package_manager
+        package_section:
+          type: object
+          additionalProperties: false
+          properties:
+            status:
+              enum:
+                - complete
+                - partial
+                - failed
+                - not_collected
+            items:
+              type: array
+              maxItems: 100000
+              items:
+                $ref: '#/components/schemas/Inventory/$defs/package'
+            error_code:
+              type: string
+              minLength: 1
+              maxLength: 64
+          required:
+            - status
+          allOf:
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - partial
+              then:
+                required:
+                  - items
+              else:
+                not:
+                  required:
+                    - items
+            - if:
+                properties:
+                  status:
+                    const: partial
+              then:
+                properties:
+                  items:
+                    minItems: 1
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              then:
+                not:
+                  required:
+                    - error_code
+        service:
+          type: object
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              minLength: 1
+              maxLength: 256
+            state:
+              enum:
+                - running
+                - stopped
+                - failed
+                - unknown
+            enabled:
+              type:
+                - boolean
+                - 'null'
+            version:
+              type: string
+              minLength: 1
+              maxLength: 512
+            manager:
+              type: string
+              minLength: 1
+              maxLength: 64
+          required:
+            - name
+            - state
+        service_section:
+          type: object
+          additionalProperties: false
+          properties:
+            status:
+              enum:
+                - complete
+                - partial
+                - failed
+                - not_collected
+            items:
+              type: array
+              maxItems: 100000
+              items:
+                $ref: '#/components/schemas/Inventory/$defs/service'
+            error_code:
+              type: string
+              minLength: 1
+              maxLength: 64
+          required:
+            - status
+          allOf:
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - partial
+              then:
+                required:
+                  - items
+              else:
+                not:
+                  required:
+                    - items
+            - if:
+                properties:
+                  status:
+                    const: partial
+              then:
+                properties:
+                  items:
+                    minItems: 1
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              then:
+                not:
+                  required:
+                    - error_code
+        container:
+          type: object
+          additionalProperties: false
+          properties:
+            container_id:
+              type: string
+              minLength: 1
+              maxLength: 128
+            image_reference:
+              type: string
+              minLength: 1
+              maxLength: 512
+            image_digest:
+              type: string
+              minLength: 1
+              maxLength: 71
+              pattern: ^sha256:[0-9a-f]{64}$
+            state:
+              enum:
+                - running
+                - stopped
+                - paused
+                - unknown
+            collection_status:
+              enum:
+                - complete
+                - partial
+                - failed
+            name:
+              type: string
+              minLength: 1
+              maxLength: 256
+            image_id:
+              type: string
+              pattern: ^sha256:[0-9a-f]{64}$
+            created_at:
+              $ref: '#/components/schemas/Inventory/$defs/timestamp'
+            status:
+              type: string
+              minLength: 1
+              maxLength: 128
+          required:
+            - container_id
+            - image_reference
+            - state
+            - collection_status
+        container_section:
+          type: object
+          additionalProperties: false
+          properties:
+            status:
+              enum:
+                - complete
+                - partial
+                - failed
+                - not_collected
+            items:
+              type: array
+              maxItems: 100000
+              items:
+                $ref: '#/components/schemas/Inventory/$defs/container'
+            error_code:
+              type: string
+              minLength: 1
+              maxLength: 64
+          required:
+            - status
+          allOf:
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - partial
+              then:
+                required:
+                  - items
+              else:
+                not:
+                  required:
+                    - items
+            - if:
+                properties:
+                  status:
+                    const: partial
+              then:
+                properties:
+                  items:
+                    minItems: 1
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              then:
+                not:
+                  required:
+                    - error_code
+        image:
+          type: object
+          additionalProperties: false
+          properties:
+            image_id:
+              type: string
+              pattern: ^sha256:[0-9a-f]{64}$
+            references:
+              type: array
+              maxItems: 100000
+              items:
+                type: string
+                minLength: 1
+                maxLength: 512
+            repo_digests:
+              type: array
+              maxItems: 100000
+              items:
+                type: string
+                minLength: 1
+                maxLength: 1024
+            architecture:
+              type: string
+              minLength: 1
+              maxLength: 64
+            created_at:
+              $ref: '#/components/schemas/Inventory/$defs/timestamp'
+          required:
+            - image_id
+            - references
+            - repo_digests
+        image_section:
+          type: object
+          additionalProperties: false
+          properties:
+            status:
+              enum:
+                - complete
+                - partial
+                - failed
+                - not_collected
+            items:
+              type: array
+              maxItems: 100000
+              items:
+                $ref: '#/components/schemas/Inventory/$defs/image'
+            error_code:
+              type: string
+              minLength: 1
+              maxLength: 64
+          required:
+            - status
+          allOf:
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - partial
+              then:
+                required:
+                  - items
+              else:
+                not:
+                  required:
+                    - items
+            - if:
+                properties:
+                  status:
+                    const: partial
+              then:
+                properties:
+                  items:
+                    minItems: 1
+            - if:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              then:
+                not:
+                  required:
+                    - error_code
+      allOf:
+        - if:
+            properties:
+              collection_status:
+                const: complete
+          then:
+            required:
+              - packages
+            properties:
+              os:
+                properties:
+                  status:
+                    const: complete
+              packages:
+                properties:
+                  status:
+                    const: complete
+              services:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              containers:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              images:
+                properties:
+                  status:
+                    enum:
+                      - complete
+                      - not_collected
+              docker:
+                properties:
+                  status:
+                    enum:
+                      - available
+                      - not_installed
+        - if:
+            properties:
+              collection_status:
+                const: failed
+          then:
+            properties:
+              os:
+                properties:
+                  status:
+                    enum:
+                      - failed
+                      - not_collected
+              packages:
+                properties:
+                  status:
+                    enum:
+                      - failed
+                      - not_collected
+              services:
+                properties:
+                  status:
+                    enum:
+                      - failed
+                      - not_collected
+              containers:
+                properties:
+                  status:
+                    enum:
+                      - failed
+                      - not_collected
+              images:
+                properties:
+                  status:
+                    enum:
+                      - failed
+                      - not_collected
+        - if:
+            properties:
+              collection_status:
+                const: partial
+          then:
+            anyOf:
+              - required:
+                  - os
+                properties:
+                  os:
+                    properties:
+                      status:
+                        enum:
+                          - complete
+                          - partial
+              - required:
+                  - packages
+                properties:
+                  packages:
+                    properties:
+                      status:
+                        enum:
+                          - complete
+                          - partial
+              - required:
+                  - services
+                properties:
+                  services:
+                    properties:
+                      status:
+                        enum:
+                          - complete
+                          - partial
+              - required:
+                  - containers
+                properties:
+                  containers:
+                    properties:
+                      status:
+                        enum:
+                          - complete
+                          - partial
+              - required:
+                  - images
+                properties:
+                  images:
+                    properties:
+                      status:
+                        enum:
+                          - complete
+                          - partial
+        - if:
+            properties:
+              docker:
+                properties:
+                  status:
+                    const: not_installed
+          then:
+            properties:
+              containers:
+                properties:
+                  status:
+                    const: not_collected
+              images:
+                properties:
+                  status:
+                    const: not_collected
+    Receipt:
+      additionalProperties: false
+      properties:
+        submission_id:
+          format: uuid
+          title: Submission Id
+          type: string
+        inventory_id:
+          format: uuid
+          title: Inventory Id
+          type: string
+        server_id:
+          format: uuid
+          title: Server Id
+          type: string
+        status:
+          const: accepted
+          title: Status
+          type: string
+        duplicate:
+          title: Duplicate
+          type: boolean
+        source:
+          enum:
+            - ansible_api
+            - dashboard_file
+          title: Source
+          type: string
+        received_at:
+          format: date-time
+          title: Received At
+          type: string
+        status_url:
+          title: Status Url
+          type: string
+        monitoring_id:
+          type: string
+          format: uuid
+      required:
+        - submission_id
+        - inventory_id
+        - server_id
+        - status
+        - duplicate
+        - source
+        - received_at
+        - status_url
+      title: Receipt
+      type: object
+      $schema: https://json-schema.org/draft/2020-12/schema
+      $id: urn:cve-monitoring:submission-receipt:phase11
+  securitySchemes:
+    Session:
+      type: apiKey
+      in: cookie
+      name: __Host-cve-session
+    CsrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+    BearerToken:
+      type: http
+      scheme: bearer
+    CollectorCertificate:
+      type: mutualTLS

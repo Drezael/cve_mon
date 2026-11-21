@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cve-monitoring.invalid/contracts/matching/coverage.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sections",
+    "scope",
+    "unmapped_assertions",
+    "container_packages",
+    "running_kernel",
+    "global_negative"
+  ],
+  "properties": {
+    "sections": {
+      "type": "object",
+      "additionalProperties": {
+        "enum": [
+          "complete",
+          "partial",
+          "failed",
+          "not_collected"
+        ]
+      }
+    },
+    "scope": {
+      "const": "snapshot"
+    },
+    "unmapped_assertions": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "container_packages": {
+      "const": "unavailable"
+    },
+    "running_kernel": {
+      "const": "unmapped"
+    },
+    "global_negative": {
+      "const": false
+    }
+  }
+}

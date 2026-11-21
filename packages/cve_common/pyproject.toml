@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools==84.2.1", "wheel==0.48.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+license = "PolyForm-Noncommercial-1.0.0"
+name = "cve-common"
+version = "0.7.0"
+requires-python = ">=3.12,<3.13"
+description = "Shared runtime foundation and native CVE document readers"
+dependencies = ["fastapi==0.162.0", "pydantic==2.14.3", "pydantic-settings==2.16.2", "SQLAlchemy[asyncio]==2.1.8", "psycopg[binary]==3.3.8", "httpx==0.28.1", "cvss==3.6"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cve_common = ["py.typed"]

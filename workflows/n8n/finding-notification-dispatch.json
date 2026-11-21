@@ -1,0 +1,162 @@
+{
+  "id": "cve-notification-dispatch",
+  "name": "finding-notification-dispatch",
+  "active": false,
+  "versionId": "1ae6d330-0012-5815-ac03-a92196d3f514",
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "2da9fd7f-75bf-5aba-af14-9a28556c6fc6",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "finding-notification-dispatch",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "cve-notification-webhook-v1",
+          "name": "CVE Notification Webhook"
+        }
+      }
+    },
+    {
+      "id": "claim",
+      "name": "Claim",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://cve-notification:8000/internal/v1/notifications/workflows/claim",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ run_id: $(\"Trigger\").item.json.body.run_id, request_id: $(\"Trigger\").item.json.body.request_id }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "cve-notification-service-v1",
+          "name": "CVE Notification Service"
+        }
+      }
+    },
+    {
+      "id": "execute",
+      "name": "Execute",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://cve-notification:8000/internal/v1/notifications/workflows/execute",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ run_id: $(\"Trigger\").item.json.body.run_id, request_id: $(\"Trigger\").item.json.body.request_id }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "cve-notification-service-v1",
+          "name": "CVE Notification Service"
+        }
+      }
+    },
+    {
+      "id": "complete",
+      "name": "Complete",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://cve-notification:8000/internal/v1/notifications/workflows/complete",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ run_id: $(\"Trigger\").item.json.body.run_id, request_id: $(\"Trigger\").item.json.body.request_id }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "cve-notification-service-v1",
+          "name": "CVE Notification Service"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Claim",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claim": {
+      "main": [
+        [
+          {
+            "node": "Execute",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute": {
+      "main": [
+        [
+          {
+            "node": "Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 60,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "timezone": "UTC"
+  },
+  "meta": {
+    "contractVersion": 1
+  }
+}

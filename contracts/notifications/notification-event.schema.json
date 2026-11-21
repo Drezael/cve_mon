@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Notification source payload 1",
+  "description": "Finding payload contract plus the notification-owned finite exception warning. Source/envelope authorization remains mandatory.",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "finding_id",
+        "server_id",
+        "episode_id",
+        "correlation_id",
+        "cve_id",
+        "change_type",
+        "lifecycle_status",
+        "matching_status",
+        "priority",
+        "row_version",
+        "occurred_at",
+        "schema_version"
+      ],
+      "properties": {
+        "finding_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "server_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "episode_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "cve_id": {
+          "type": "string"
+        },
+        "change_type": {
+          "enum": [
+            "assigned",
+            "closed",
+            "confirmed_affected",
+            "created",
+            "deadline_approaching",
+            "exception_approved",
+            "exception_expired",
+            "exception_revoked",
+            "overdue",
+            "potentially_affected",
+            "priority_changed",
+            "reopened",
+            "resolved"
+          ]
+        },
+        "lifecycle_status": {
+          "enum": [
+            "open",
+            "in_progress",
+            "resolved",
+            "closed"
+          ]
+        },
+        "matching_status": {
+          "type": "string"
+        },
+        "priority": {
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "unrated"
+          ]
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "schema_version": {
+          "const": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "finding_id",
+        "server_id",
+        "episode_id",
+        "correlation_id",
+        "cve_id",
+        "change_type",
+        "lifecycle_status",
+        "matching_status",
+        "priority",
+        "row_version",
+        "occurred_at",
+        "schema_version",
+        "exception_id"
+      ],
+      "properties": {
+        "finding_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "server_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "episode_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "correlation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "cve_id": {
+          "type": "string"
+        },
+        "change_type": {
+          "const": "exception_approaching"
+        },
+        "lifecycle_status": {
+          "enum": [
+            "open",
+            "in_progress",
+            "resolved",
+            "closed"
+          ]
+        },
+        "matching_status": {
+          "type": "string"
+        },
+        "priority": {
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "unrated"
+          ]
+        },
+        "row_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "occurred_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "schema_version": {
+          "const": 1
+        },
+        "exception_id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+# Ausschließlich Entwicklungswerkzeuge; noch kein Anwendungspaket.
+[tool.ruff]
+cache-dir = ".runtime/cache/ruff"
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+cache_dir = ".runtime/cache/mypy"
+python_version = "3.12"
+strict = true
+explicit_package_bases = true
+mypy_path = ["packages/cve_common/src", "services/api/src", "services/event-dispatcher/src", "services/inventory/src", "services/importer/src", "services/enricher/src", "services/matcher/src", "services/findings/src", "services/notification/src", "services/automation/src"]
+files = ["cve_mon", "scripts", "tests", "database", "infrastructure/mail", "infrastructure/acme", "packages/cve_common/src", "services/api/src", "services/event-dispatcher/src", "services/inventory/src", "services/importer/src", "services/enricher/src", "services/matcher/src", "services/findings/src", "services/notification/src", "services/automation/src"]
+
+[tool.pytest.ini_options]
+cache_dir = ".runtime/cache/pytest"
+minversion = "9.0"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--import-mode=importlib -ra --strict-config --strict-markers -m 'not orchestration and not deployment and not hardening and not status_integration and not dashboard_administration and not dashboard and not infrastructure and not database and not egress and not mail and not services_integration and not automation and not authentication and not authorization and not server_administration and not inventory_upload and not inventory_processor and not cve_importer and not cve_enricher and not matching and not findings and not notifications'"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "orchestration: Isolated central n8n stage control, recovery, roles and live workflow tests",
+    "deployment: Phase-24 isolated pinned-release installation and recovery",
+    "hardening: Isolated Phase-23 security, workload and recovery tests",
+    "status_integration: Isolated status PostgreSQL, HTTP, worker, resilience and browser tests",
+    "dashboard_administration: Real Phase-21 mutations, RBAC, processing and browser tests",
+    "dashboard: Native Phase-20 TLS, read APIs, browser and authorization tests",
+    "notifications: Isolated n8n, notification, SMTP and native safety tests",
+    "findings: Isolated finding lifecycle, PostgreSQL, API, RBAC and worker tests",
+    "matching: Isolierte Matching-/Versions-/PostgreSQL-/Worker-Tests",
+    "cve_enricher: Isolierte Enrichment-/CVSS-/EPSS-/PostgreSQL-/Envoy-Tests",
+    "cve_importer: Isolierte Quellen-/PostgreSQL-/Envoy-/Importer-Tests",
+    "inventory_processor: Isolierte PostgreSQL-/Worker-/Snapshot-Tests",
+    "inventory_upload: Isolierte reale mTLS-/Token-/Dashboard-/Inventarannahme-Tests",
+    "server_administration: Isolierte reale Server-/Gruppen-/Primärgruppen-/Sortiertests",
+    "authorization: Isolierte reale RBAC-/ACL-/Administratorschutz-Tests",
+    "authentication: Echte isolierte PostgreSQL-/HTTP-/MFA-/Nginx-Tests",
+    "automation: Echte isolierte Job-/Outbox-/Dispatcher-Integrationstests",
+    "services_integration: Echte isolierte Python-/API-/PostgreSQL-Tests",
+    "mail: Echte isolierte Postfix-/Envoy-/SMTP-/Queue-Tests",
+    "egress: Echte isolierte Envoy-/DNS-/SMTP-/Namespace-Sicherheitstests",
+    "database: Echte isolierte PostgreSQL-Tests via make db-test",
+    "infrastructure: Echte Docker-/TLS-Netzwerktests, explizit via make infra-test",
+    "integration: Tests mit externen Komponenten (spätere Phasen)",
+    "security: Sicherheitsprüfungen mit synthetischen Testdaten",
+]
+
+[tool.coverage.run]
+source = ["scripts"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.pip-tools.compile]
+generate-hashes = true
+allow-unsafe = true
+strip-extras = true
+
+# PostgreSQL-DDL bleibt als überprüfbarer SQL-Block in den Revisionen.
+[tool.ruff.lint.per-file-ignores]
+"database/migrations/versions/*.py" = ["E501"]

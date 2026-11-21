@@ -1,0 +1,1126 @@
+openapi: 3.1.0
+info:
+  title: CVE local browser authentication
+  version: 0.8.0
+  description: 'Phase 8: dashboard HTTPS origin only. No general user management or public password
+    reset. Private ingress gate is set by Nginx, never by browser code.'
+paths:
+  /api/v1/auth/csrf:
+    get:
+      tags:
+        - authentication
+      summary: Csrf
+      operationId: csrf_api_v1_auth_csrf_get
+      responses:
+        '200':
+          description: Authorized authentication state; credentials only during enrollment as
+            documented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResult'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+  /api/v1/auth/login:
+    post:
+      tags:
+        - authentication
+      summary: Login
+      operationId: login_api_v1_auth_login_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Login'
+        required: true
+      responses:
+        '200':
+          description: Authorized authentication state; credentials only during enrollment as
+            documented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResult'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - LoginCookie: []
+          CsrfToken: []
+        - SessionCookie: []
+          CsrfToken: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+  /api/v1/auth/mfa/verify:
+    post:
+      tags:
+        - authentication
+      summary: Verify
+      operationId: verify_api_v1_auth_mfa_verify_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTP'
+        required: true
+      responses:
+        '200':
+          description: Authorized authentication state; credentials only during enrollment as
+            documented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResult'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+  /api/v1/auth/mfa/enroll/start:
+    post:
+      tags:
+        - authentication
+      summary: Enroll
+      operationId: enroll_api_v1_auth_mfa_enroll_start_post
+      responses:
+        '200':
+          description: Authorized authentication state; credentials only during enrollment as
+            documented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResult'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+  /api/v1/auth/mfa/enroll/confirm:
+    post:
+      tags:
+        - authentication
+      summary: Confirm
+      operationId: confirm_api_v1_auth_mfa_enroll_confirm_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OTP'
+        required: true
+      responses:
+        '200':
+          description: Authorized authentication state; credentials only during enrollment as
+            documented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResult'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+  /api/v1/auth/mfa/recovery:
+    post:
+      tags:
+        - authentication
+      summary: Recovery
+      operationId: recovery_api_v1_auth_mfa_recovery_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Recovery'
+        required: true
+      responses:
+        '200':
+          description: Authorized authentication state; credentials only during enrollment as
+            documented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResult'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+  /api/v1/auth/session:
+    get:
+      tags:
+        - authentication
+      summary: Session Info
+      operationId: session_info_api_v1_auth_session_get
+      responses:
+        '200':
+          description: Authorized authentication state; credentials only during enrollment as
+            documented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResult'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+  /api/v1/auth/logout:
+    post:
+      tags:
+        - authentication
+      summary: Logout
+      operationId: logout_api_v1_auth_logout_post
+      responses:
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '204':
+          description: Session cookie deleted; server-side sessions revoked
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+  /api/v1/auth/logout-all:
+    post:
+      tags:
+        - authentication
+      summary: Logout All
+      operationId: logout_all_api_v1_auth_logout_all_post
+      responses:
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '204':
+          description: Session cookie deleted; server-side sessions revoked
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+  /api/v1/auth/reauthenticate:
+    post:
+      tags:
+        - authentication
+      summary: Reauthenticate
+      operationId: reauthenticate_api_v1_auth_reauthenticate_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reauthentication'
+        required: true
+      responses:
+        '200':
+          description: Authorized authentication state; credentials only during enrollment as
+            documented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResult'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+  /api/v1/auth/password/change:
+    post:
+      tags:
+        - authentication
+      summary: Change Password
+      operationId: change_password_api_v1_auth_password_change_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+        required: true
+      responses:
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '204':
+          description: Session cookie deleted; server-side sessions revoked
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+  /api/v1/auth/mfa/disable:
+    post:
+      tags:
+        - authentication
+      summary: Disable optional MFA after fresh own reauthentication
+      operationId: disable_mfa_api_v1_auth_mfa_disable_post
+      responses:
+        '200':
+          description: Authorized authentication state; credentials only during enrollment as
+            documented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResult'
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+  /api/v1/auth/mfa/enroll/cancel:
+    post:
+      tags:
+        - authentication
+      summary: Cancel pending own MFA enrollment
+      operationId: cancel_enrollment_api_v1_auth_mfa_enroll_cancel_post
+      responses:
+        '400':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '413':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Generic safe error
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '204':
+          description: Unconfirmed enrollment cancelled; active factor preserved
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      description: 'Exact Origin required for mutations; same dashboard host and session-bound
+        CSRF. Secure, HttpOnly, SameSite=Strict, Path=/ cookies without Domain. Cache-Control:
+        no-store.'
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    Login:
+      properties:
+        username:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Username
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+          title: Password
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - username
+        - password
+      title: Login
+    OTP:
+      properties:
+        code:
+          type: string
+          maxLength: 6
+          minLength: 6
+          format: password
+          title: Code
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - code
+      title: OTP
+    PasswordChange:
+      properties:
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+          title: Password
+          writeOnly: true
+        code:
+          anyOf:
+            - type: string
+              maxLength: 6
+              minLength: 6
+              format: password
+              writeOnly: true
+            - type: 'null'
+          title: Code
+        new_password:
+          type: string
+          maxLength: 256
+          minLength: 15
+          format: password
+          title: New Password
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - password
+        - new_password
+      title: PasswordChange
+    Reauthentication:
+      properties:
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+          title: Password
+          writeOnly: true
+        code:
+          anyOf:
+            - type: string
+              maxLength: 6
+              minLength: 6
+              format: password
+              writeOnly: true
+            - type: 'null'
+          title: Code
+      additionalProperties: false
+      type: object
+      required:
+        - password
+      title: Reauthentication
+    Recovery:
+      properties:
+        code:
+          type: string
+          maxLength: 80
+          minLength: 20
+          format: password
+          title: Code
+          writeOnly: true
+      additionalProperties: false
+      type: object
+      required:
+        - code
+      title: Recovery
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+    Problem:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - title
+        - status
+        - code
+        - request_id
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+        request_id:
+          type: string
+          format: uuid
+    AuthenticationResult:
+      type: object
+      additionalProperties: false
+      properties:
+        state:
+          enum:
+            - unauthenticated
+            - password_verified
+            - mfa_setup_required
+            - mfa_pending
+            - mfa_recovery
+            - authenticated
+            - reauthentication_required
+        csrf_token:
+          type: string
+          minLength: 43
+          maxLength: 43
+        user_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        mfa_verified:
+          type: boolean
+        recovery_codes_remaining:
+          type: integer
+          minimum: 0
+          maximum: 10
+        provisioning_uri:
+          type: string
+          description: One authorized enrollment only; no-store, never log.
+        recovery_codes:
+          type: array
+          minItems: 10
+          maxItems: 10
+          items:
+            type: string
+            minLength: 43
+            maxLength: 43
+        mfa_enabled:
+          type: boolean
+          description: User-controlled MFA opt-in; independent of role.
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-cve-session
+    LoginCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-cve-login
+    CsrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+servers:
+  - url: https://{dashboard_host}
+    variables:
+      dashboard_host:
+        default: dashboard.example.test:8443

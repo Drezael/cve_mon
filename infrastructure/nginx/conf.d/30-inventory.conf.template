@@ -1,0 +1,16 @@
+server {
+    listen 8443 ssl;
+    server_name ${INVENTORY_DOMAIN};
+    include /etc/nginx/cve/snippets/tls.conf;
+    include /etc/nginx/cve/snippets/security-headers.conf;
+    ssl_client_certificate /etc/nginx/cve/tls/client-ca.crt;
+    ssl_verify_client on;
+    ssl_crl /etc/nginx/cve/tls/client-ca.crl;
+    ssl_verify_depth 2;
+    if ($valid_sni_host = 0) { return 421; }
+    limit_conn connections 5;
+    limit_req zone=upload burst=${RATE_BURST} nodelay;
+    include /etc/nginx/cve/snippets/errors.conf;
+    include /etc/nginx/cve/snippets/inventory-technical-routes.conf;
+    location / { return 404; }
+}

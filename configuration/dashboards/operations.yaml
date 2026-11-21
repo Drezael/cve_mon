@@ -1,0 +1,26 @@
+version: 1
+title: Betrieb und Verarbeitung
+description: Administratives Dashboard; admin und zusätzliche Aktionsrechte erforderlich
+layout:
+  columns: 2
+refresh_interval_seconds: 300
+widgets:
+  - id: summary
+    type: summary
+    title: Sicherheitslage
+    span: 2
+  - id: database
+    type: database
+    title: CVE-Datenbank
+    span: 2
+  - id: workflow
+    type: workflow
+    title: Zentrale Steuerung
+    span: 2
+  - id: matching
+    type: distribution
+    title: Matching-Aktualität
+    source: matching
+  - id: inventory
+    type: inventory_quality
+    title: Inventarqualität

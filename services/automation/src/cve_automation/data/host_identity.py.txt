@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+"""Read a stable monitoring identity without creating state on the target."""
+
+import hashlib
+import hmac
+import json
+import socket
+import subprocess
+from pathlib import Path
+from uuid import NAMESPACE_URL, UUID, uuid5
+
+
+def main() -> None:
+    host = {"hostname": socket.gethostname()}
+    fqdn = socket.getfqdn()
+    if fqdn:
+        host["fqdn"] = fqdn
+    try:
+        machine = Path("/etc/machine-id").read_text().strip()
+        if len(machine) == 32 and all(c in "0123456789abcdef" for c in machine):
+            host["machine_id_hash"] = hmac.new(
+                b"cve-monitoring/machine-id/v1", machine.encode(), hashlib.sha256
+            ).hexdigest()
+    except OSError:
+        pass
+    try:
+        result = subprocess.run(
+            ["ssh-keygen", "-l", "-E", "sha256", "-f", "/etc/ssh/ssh_host_ed25519_key.pub"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+        )
+        host["ssh_host_key_fingerprint"] = result.stdout.split()[1]
+    except (OSError, subprocess.SubprocessError, IndexError):
+        pass
+    # Retain old identities when present; new identities need no writes on the target.
+    previous = Path.home() / ".local/state/cve-monitoring/host-id"
+    try:
+        monitoring_id = str(UUID(previous.read_text().strip()))
+    except (OSError, ValueError):
+        seed = host.get("machine_id_hash") or host.get("ssh_host_key_fingerprint") or fqdn
+        monitoring_id = str(uuid5(NAMESPACE_URL, "cve-monitoring/host/" + seed))
+    host["monitoring_id"] = monitoring_id
+    print(json.dumps({"host": host, "created": False}))
+
+
+if __name__ == "__main__":
+    main()

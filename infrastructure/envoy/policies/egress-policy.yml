@@ -1,0 +1,107 @@
+version: 1
+clients:
+  - importer
+  - enricher
+  - n8n
+  - mail-relay
+  - status
+dns:
+  address: 127.0.0.11
+  port: 53
+  refresh_seconds: 30
+  timeout_seconds: 2
+limits:
+  max_connections: 64
+  max_pending_requests: 32
+  max_requests: 64
+  request_timeout_seconds: 30
+  idle_timeout_seconds: 120
+  max_request_bytes: 1048576
+rules:
+  - id: importer-api-github-com
+    client: importer
+    host: api.github.com
+    port: 443
+    protocol: https
+    methods:
+      - CONNECT
+    enabled: true
+    purpose: Phase 15 source; TLS paths checked by importer
+  - id: importer-github-com
+    client: importer
+    host: github.com
+    port: 443
+    protocol: https
+    methods:
+      - CONNECT
+    enabled: true
+    purpose: Phase 15 source; TLS paths checked by importer
+  - id: importer-release-assets-githubusercontent-com
+    client: importer
+    host: release-assets.githubusercontent.com
+    port: 443
+    protocol: https
+    methods:
+      - CONNECT
+    enabled: true
+    purpose: Phase 15 source; TLS paths checked by importer
+  - id: importer-objects-githubusercontent-com
+    client: importer
+    host: objects.githubusercontent.com
+    port: 443
+    protocol: https
+    methods:
+      - CONNECT
+    enabled: true
+    purpose: Phase 15 source; TLS paths checked by importer
+  - id: importer-services-nvd-nist-gov
+    client: importer
+    host: services.nvd.nist.gov
+    port: 443
+    protocol: https
+    methods:
+      - CONNECT
+    enabled: true
+    purpose: Phase 15 source; TLS paths checked by importer
+  - id: importer-www-cisa-gov
+    client: importer
+    host: www.cisa.gov
+    port: 443
+    protocol: https
+    methods:
+      - CONNECT
+    enabled: true
+    purpose: Phase 15 source; TLS paths checked by importer
+  - id: importer-ubuntu-com
+    client: importer
+    host: ubuntu.com
+    port: 443
+    protocol: https
+    methods:
+      - CONNECT
+    enabled: true
+    purpose: Phase 15 source; TLS paths checked by importer
+  - id: importer-storage-googleapis-com
+    client: importer
+    host: storage.googleapis.com
+    port: 443
+    protocol: https
+    methods:
+      - CONNECT
+    enabled: true
+    purpose: Phase 15 source; TLS paths checked by importer
+  - id: enricher-epss
+    client: enricher
+    host: epss.empiricalsecurity.com
+    port: 443
+    protocol: https
+    methods:
+      - CONNECT
+    enabled: true
+    purpose: Phase 16 FIRST EPSS daily dataset only
+smtp:
+  enabled: false
+  client: mail-relay
+  host: smtp.example.invalid
+  port: 587
+  purpose: Vor Phase 5 echten Betreiber-Smarthost explizit festlegen

@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "clients": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "importer",
+          "enricher",
+          "n8n",
+          "mail-relay",
+          "status",
+          "sources"
+        ]
+      }
+    },
+    "dns": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "refresh_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        }
+      },
+      "required": [
+        "address",
+        "port",
+        "refresh_seconds",
+        "timeout_seconds"
+      ]
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_connections": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        },
+        "max_pending_requests": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        },
+        "max_requests": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        },
+        "request_timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 120
+        },
+        "idle_timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        },
+        "max_request_bytes": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 10485760
+        }
+      },
+      "required": [
+        "max_connections",
+        "max_pending_requests",
+        "max_requests",
+        "request_timeout_seconds",
+        "idle_timeout_seconds",
+        "max_request_bytes"
+      ]
+    },
+    "rules": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,47}$"
+          },
+          "client": {
+            "enum": [
+              "importer",
+              "enricher",
+              "n8n",
+              "sources"
+            ]
+          },
+          "host": {
+            "type": "string",
+            "pattern": "^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$"
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "protocol": {
+            "enum": [
+              "http",
+              "https"
+            ]
+          },
+          "methods": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "CONNECT",
+                "GET",
+                "HEAD",
+                "POST"
+              ]
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 512
+          }
+        },
+        "required": [
+          "id",
+          "client",
+          "host",
+          "port",
+          "protocol",
+          "methods",
+          "enabled",
+          "purpose"
+        ]
+      }
+    },
+    "smtp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "client": {
+          "const": "mail-relay"
+        },
+        "host": {
+          "type": "string",
+          "pattern": "^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 8
+        },
+        "routes": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "host": {
+                "type": "string",
+                "pattern": "^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$"
+              },
+              "port": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "listen_port": {
+                "type": "integer",
+                "minimum": 20000,
+                "maximum": 29999
+              }
+            },
+            "required": [
+              "host",
+              "port",
+              "listen_port"
+            ]
+          }
+        }
+      },
+      "required": [
+        "enabled",
+        "client",
+        "host",
+        "port",
+        "purpose"
+      ]
+    }
+  },
+  "required": [
+    "version",
+    "clients",
+    "dns",
+    "limits",
+    "rules",
+    "smtp"
+  ]
+}

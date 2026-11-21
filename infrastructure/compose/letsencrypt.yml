@@ -1,0 +1,64 @@
+# Optionaler ACME-Dienst: nur vom Controller bei LETSENCRYPT_ENABLED=true geladen.
+services:
+  cve-certbot:
+    image: "certbot/dns-cloudflare:v5.10.0@sha256:\
+      6d5e1e84f687ce81786c97cbeccb9dda94d86bbb29a81dbb85527bd68008d77d"
+    entrypoint: [python, /opt/cve-acme/renew.py]
+    user: ${NGINX_UID:-1000}:${NGINX_GID:-1000}
+    environment:
+      ACME_DOMAIN: ${DASHBOARD_DOMAIN}
+      ACME_EMAIL: ${LETSENCRYPT_EMAIL}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,mode=1777
+    networks: [cve_outbound]
+    volumes:
+      - type: bind
+        source: ./infrastructure/acme/renew.py
+        target: /opt/cve-acme/renew.py
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${MOUNT_BASE:-./.runtime}/acme/${COMPOSE_PROJECT_NAME:-cve-monitoring}/config
+        target: /etc/letsencrypt
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${MOUNT_BASE:-./.runtime}/acme/${COMPOSE_PROJECT_NAME:-cve-monitoring}/work
+        target: /var/lib/letsencrypt
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${MOUNT_BASE:-./.runtime}/acme/${COMPOSE_PROJECT_NAME:-cve-monitoring}/logs
+        target: /var/log/letsencrypt
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${SECRETS_BASE:-./.runtime}/acme-credentials/${COMPOSE_PROJECT_NAME:-cve-monitoring}
+        target: /run/cve-acme
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: [CMD, python, /opt/cve-acme/renew.py, health]
+      interval: 60s
+      timeout: 5s
+      start_period: 120s
+      retries: 2
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      org.cve-monitoring.managed: acme
+      org.cve-monitoring.project: ${COMPOSE_PROJECT_NAME:-cve-monitoring}

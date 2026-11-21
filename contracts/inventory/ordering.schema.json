@@ -1,0 +1,51 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "ids": {
+      "anyOf": [
+        {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 100,
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ids"
+    },
+    "move_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Move Id"
+    },
+    "before_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Before Id"
+    }
+  },
+  "title": "Ordering",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

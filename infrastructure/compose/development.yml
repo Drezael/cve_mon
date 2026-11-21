@@ -1,0 +1,8 @@
+# Ports stehen ausschließlich in der Basis; kein additiver Merge öffentlicher Bindings.
+name: ${COMPOSE_PROJECT_NAME:-cve-monitoring-dev}
+services:
+  cve-nginx:
+    restart: 'no'
+    logging:
+      options:
+        max-size: 5m

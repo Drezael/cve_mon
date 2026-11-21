@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "name",
+    "kind",
+    "env_file",
+    "minimum_free_bytes",
+    "minimum_available_memory_bytes",
+    "minimum_cpus",
+    "certificate_minimum_seconds"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{2,47}$"
+    },
+    "kind": {
+      "enum": [
+        "development",
+        "integration",
+        "staging",
+        "production"
+      ]
+    },
+    "env_file": {
+      "type": "string",
+      "minLength": 1
+    },
+    "minimum_free_bytes": {
+      "type": "integer",
+      "minimum": 1073741824
+    },
+    "minimum_available_memory_bytes": {
+      "type": "integer",
+      "minimum": 1073741824
+    },
+    "minimum_cpus": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "certificate_minimum_seconds": {
+      "type": "integer",
+      "minimum": 60
+    },
+    "approval_public_key_file": {
+      "type": "string",
+      "minLength": 1
+    },
+    "migration_plan_file": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "production"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "approval_public_key_file"
+        ]
+      }
+    }
+  ]
+}

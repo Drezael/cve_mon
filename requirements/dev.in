@@ -1,0 +1,25 @@
+# Direkte Entwicklungswerkzeuge; Änderungen mit pip-compile unter Python 3.12 auflösen.
+pip==26.3
+pip-tools==7.6.2
+pytest==9.2.0
+pytest-cov==7.1.0
+ruff==0.17.4
+mypy==2.4.1
+yamllint==1.38.0
+jsonschema==4.26.0
+PyYAML==6.0.3
+types-PyYAML==6.0.12.20261103
+types-jsonschema==4.26.0.20261006
+detect-secrets==1.5.0
+# Vertragsvalidierung der Phase-0-Artefakte, ausschließlich Entwicklungswerkzeuge.
+openapi-spec-validator==0.9.0
+rfc3339-validator==0.1.4
+# Phase 3: Migrationen und PostgreSQL-Integrationstests, keine Fachservices.
+alembic==1.20.1
+psycopg[binary]==3.3.8
+SQLAlchemy==2.1.8
+# Phase 6: runtime graph plus async tests and reproducible local wheel builds.
+-r runtime.in
+pytest-asyncio==1.4.1.post1
+setuptools==84.2.1
+wheel==0.48.0

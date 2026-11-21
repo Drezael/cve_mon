@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Immutable enrichment result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "identity",
+    "identity_kind",
+    "rule_version",
+    "lifecycle",
+    "descriptions",
+    "dates",
+    "weaknesses",
+    "references",
+    "relations",
+    "cvss",
+    "affected",
+    "conflicts",
+    "kev",
+    "inputs",
+    "primary_description",
+    "quality"
+  ],
+  "properties": {
+    "descriptions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "dates": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "weaknesses": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "cvss": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "affected": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "identity": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:+-]{0,255}$"
+    },
+    "identity_kind": {
+      "enum": [
+        "cve",
+        "advisory"
+      ]
+    },
+    "rule_version": {
+      "const": "enrichment-1"
+    },
+    "lifecycle": {
+      "type": "object",
+      "required": [
+        "value",
+        "provenance"
+      ],
+      "properties": {
+        "value": {
+          "enum": [
+            "unknown",
+            "published",
+            "rejected",
+            "withdrawn"
+          ]
+        },
+        "provenance": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    },
+    "kev": {
+      "type": "object",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "unknown",
+            "present",
+            "absent"
+          ]
+        }
+      }
+    },
+    "primary_description": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "quality": {
+      "enum": [
+        "complete",
+        "partial",
+        "conflicted"
+      ]
+    }
+  }
+}

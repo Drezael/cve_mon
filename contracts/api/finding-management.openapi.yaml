@@ -1,0 +1,1274 @@
+openapi: 3.1.0
+info:
+  title: Finding Management
+  version: 0.18.0
+paths:
+  /api/v1/findings/summary:
+    get:
+      tags:
+        - findings
+      summary: List Findings
+      operationId: finding_list_findings_get_summary
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Limit
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100000
+            minimum: 0
+            default: 0
+            title: Offset
+        - name: sort
+          in: query
+          required: false
+          schema:
+            enum:
+              - priority
+              - first_detected
+              - last_evaluated
+              - deadline
+              - server
+              - cve
+            type: string
+            default: priority
+            title: Sort
+        - name: direction
+          in: query
+          required: false
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+            default: asc
+            title: Direction
+        - name: server_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                format: uuid
+              - type: 'null'
+            title: Server Id
+        - name: group_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                format: uuid
+              - type: 'null'
+            title: Group Id
+        - name: lifecycle
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - enum:
+                  - open
+                  - in_progress
+                  - resolved
+                  - closed
+                type: string
+              - type: 'null'
+            title: Lifecycle
+        - name: priority
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - enum:
+                  - critical
+                  - high
+                  - medium
+                  - low
+                  - unrated
+                type: string
+              - type: 'null'
+            title: Priority
+        - name: cve_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                maxLength: 256
+                pattern: ^CVE-[0-9]{4}-[0-9]{4,}$
+              - type: 'null'
+            title: Cve Id
+        - name: overdue
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: boolean
+              - type: 'null'
+            title: Overdue
+        - name: stale
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: boolean
+              - type: 'null'
+            title: Stale
+        - name: assigned
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: boolean
+              - type: 'null'
+            title: Assigned
+        - name: assignee
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                format: uuid
+              - type: 'null'
+            title: Assignee
+        - name: exception
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: boolean
+              - type: 'null'
+            title: Exception
+        - name: kev
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: boolean
+              - type: 'null'
+            title: Kev
+        - name: archived
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: boolean
+              - type: 'null'
+            title: Archived
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response List Findings Api V1 Findings Summary Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      x-permission: finding:read
+      x-object-scope: findings_read
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+  /api/v1/findings:
+    get:
+      tags:
+        - findings
+      summary: List Findings
+      operationId: finding_list_findings_get
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Limit
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100000
+            minimum: 0
+            default: 0
+            title: Offset
+        - name: sort
+          in: query
+          required: false
+          schema:
+            enum:
+              - priority
+              - first_detected
+              - last_evaluated
+              - deadline
+              - server
+              - cve
+            type: string
+            default: priority
+            title: Sort
+        - name: direction
+          in: query
+          required: false
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+            default: asc
+            title: Direction
+        - name: server_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                format: uuid
+              - type: 'null'
+            title: Server Id
+        - name: group_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                format: uuid
+              - type: 'null'
+            title: Group Id
+        - name: lifecycle
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - enum:
+                  - open
+                  - in_progress
+                  - resolved
+                  - closed
+                type: string
+              - type: 'null'
+            title: Lifecycle
+        - name: priority
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - enum:
+                  - critical
+                  - high
+                  - medium
+                  - low
+                  - unrated
+                type: string
+              - type: 'null'
+            title: Priority
+        - name: cve_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                maxLength: 256
+                pattern: ^CVE-[0-9]{4}-[0-9]{4,}$
+              - type: 'null'
+            title: Cve Id
+        - name: overdue
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: boolean
+              - type: 'null'
+            title: Overdue
+        - name: stale
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: boolean
+              - type: 'null'
+            title: Stale
+        - name: assigned
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: boolean
+              - type: 'null'
+            title: Assigned
+        - name: assignee
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                format: uuid
+              - type: 'null'
+            title: Assignee
+        - name: exception
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: boolean
+              - type: 'null'
+            title: Exception
+        - name: kev
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: boolean
+              - type: 'null'
+            title: Kev
+        - name: archived
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: boolean
+              - type: 'null'
+            title: Archived
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response List Findings Api V1 Findings Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      x-permission: finding:read
+      x-object-scope: findings_read
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+  /api/v1/findings/policies:
+    get:
+      tags:
+        - findings
+      summary: Policies
+      operationId: finding_policies_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Policies Api V1 Findings Policies Get
+      security:
+        - SessionCookie: []
+      x-permission: finding:read
+      x-object-scope: findings_read
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+    post:
+      tags:
+        - findings
+      summary: Approve Policy
+      operationId: finding_approve_policy_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Approve Policy Api V1 Findings Policies Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permission: finding:update
+      x-object-scope: findings_manage
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+  /api/v1/findings/{finding_id}:
+    get:
+      tags:
+        - findings
+      summary: Detail
+      operationId: finding_detail_get
+      parameters:
+        - name: finding_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Finding Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Detail Api V1 Findings  Finding Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      x-permission: finding:read
+      x-object-scope: findings_read
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+  /api/v1/findings/{finding_id}/{section}:
+    get:
+      tags:
+        - findings
+      summary: Related
+      operationId: finding_related_get
+      parameters:
+        - name: finding_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Finding Id
+        - name: section
+          in: path
+          required: true
+          schema:
+            enum:
+              - history
+              - episodes
+              - evidence
+              - exceptions
+              - notes
+              - reviews
+              - mitigations
+              - assignments
+              - priority
+              - deadlines
+            type: string
+            title: Section
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Limit
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100000
+            minimum: 0
+            default: 0
+            title: Offset
+        - name: result_id
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - type: string
+                format: uuid
+              - type: 'null'
+            title: Result Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Related Api V1 Findings  Finding Id   Section  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      x-permission: finding:read
+      x-object-scope: findings_read
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+  /api/v1/findings/{finding_id}/triage:
+    post:
+      tags:
+        - findings
+      summary: Triage
+      operationId: finding_triage_post
+      parameters:
+        - name: finding_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Finding Id
+        - in: header
+          name: If-Match
+          required: true
+          schema:
+            type: string
+            pattern: ^"[1-9][0-9]*"$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Triage'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Triage Api V1 Findings  Finding Id  Triage Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permission: finding:update
+      x-object-scope: findings_manage
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+  /api/v1/findings/{finding_id}/notes:
+    post:
+      tags:
+        - findings
+      summary: Note
+      operationId: finding_note_post
+      parameters:
+        - name: finding_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Finding Id
+        - in: header
+          name: If-Match
+          required: true
+          schema:
+            type: string
+            pattern: ^"[1-9][0-9]*"$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Note'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Note Api V1 Findings  Finding Id  Notes Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permission: finding:update
+      x-object-scope: findings_manage
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+  /api/v1/findings/{finding_id}/assignments:
+    post:
+      tags:
+        - findings
+      summary: Assign
+      operationId: finding_assign_post
+      parameters:
+        - name: finding_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Finding Id
+        - in: header
+          name: If-Match
+          required: true
+          schema:
+            type: string
+            pattern: ^"[1-9][0-9]*"$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Assignment'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Assign Api V1 Findings  Finding Id  Assignments
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permission: finding:update
+      x-object-scope: findings_manage
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+  /api/v1/findings/{finding_id}/reviews:
+    post:
+      tags:
+        - findings
+      summary: Review
+      operationId: finding_review_post
+      parameters:
+        - name: finding_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Finding Id
+        - in: header
+          name: If-Match
+          required: true
+          schema:
+            type: string
+            pattern: ^"[1-9][0-9]*"$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Review'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Review Api V1 Findings  Finding Id  Reviews Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permission: finding:update
+      x-object-scope: findings_manage
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+  /api/v1/findings/{finding_id}/mitigations:
+    post:
+      tags:
+        - findings
+      summary: Mitigate
+      operationId: finding_mitigate_post
+      parameters:
+        - name: finding_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Finding Id
+        - in: header
+          name: If-Match
+          required: true
+          schema:
+            type: string
+            pattern: ^"[1-9][0-9]*"$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Mitigation'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Mitigate Api V1 Findings  Finding Id  Mitigations
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permission: finding:update
+      x-object-scope: findings_manage
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+  /api/v1/findings/{finding_id}/exceptions:
+    post:
+      tags:
+        - findings
+      summary: Exception Request
+      operationId: finding_exception_request_post
+      parameters:
+        - name: finding_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Finding Id
+        - in: header
+          name: If-Match
+          required: true
+          schema:
+            type: string
+            pattern: ^"[1-9][0-9]*"$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExceptionRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Exception Request Api V1 Findings  Finding Id  Exceptions
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permission: finding:update
+      x-object-scope: findings_manage
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+  /api/v1/findings/{finding_id}/exceptions/{exception_id}/{action}:
+    post:
+      tags:
+        - findings
+      summary: Exception Decide
+      operationId: finding_exception_decide_post
+      parameters:
+        - name: finding_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Finding Id
+        - name: exception_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Exception Id
+        - name: action
+          in: path
+          required: true
+          schema:
+            enum:
+              - approve
+              - reject
+              - revoke
+            type: string
+            title: Action
+        - in: header
+          name: If-Match
+          required: true
+          schema:
+            type: string
+            pattern: ^"[1-9][0-9]*"$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reason'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Exception Decide Api V1 Findings  Finding Id  Exceptions  Exception
+                  Id   Action  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permission: finding:update
+      x-object-scope: findings_manage
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+  /api/v1/findings/{finding_id}/close:
+    post:
+      tags:
+        - findings
+      summary: Close
+      operationId: finding_close_post
+      parameters:
+        - name: finding_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Finding Id
+        - in: header
+          name: If-Match
+          required: true
+          schema:
+            type: string
+            pattern: ^"[1-9][0-9]*"$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reason'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Close Api V1 Findings  Finding Id  Close Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+          CsrfToken: []
+      x-permission: finding:update
+      x-object-scope: findings_manage
+      description: Verified dashboard session; current server ACL and function rights
+        are revalidated in the transaction. Notes are plain text. Privileged close,
+        confirmed-false-positive, exception decisions and policy approval require
+        explicit rights and fresh MFA.
+components:
+  schemas:
+    Assignment:
+      properties:
+        reason:
+          type: string
+          maxLength: 2048
+          minLength: 3
+          title: Reason
+        assignee_user_id:
+          anyOf:
+            - type: string
+              format: uuid
+            - type: 'null'
+          title: Assignee User Id
+      additionalProperties: false
+      type: object
+      required:
+        - reason
+        - assignee_user_id
+      title: Assignment
+    ExceptionRequest:
+      properties:
+        reason:
+          type: string
+          maxLength: 2048
+          minLength: 3
+          title: Reason
+        valid_from:
+          type: string
+          format: date-time
+          title: Valid From
+        valid_until:
+          type: string
+          format: date-time
+          title: Valid Until
+        scope:
+          type: string
+          enum:
+            - basis
+            - episode
+          title: Scope
+          default: basis
+        risk_context:
+          type: string
+          maxLength: 2048
+          minLength: 3
+          title: Risk Context
+      additionalProperties: false
+      type: object
+      required:
+        - reason
+        - valid_from
+        - valid_until
+        - risk_context
+      title: ExceptionRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    Mitigation:
+      properties:
+        reason:
+          type: string
+          maxLength: 2048
+          minLength: 3
+          title: Reason
+        description:
+          type: string
+          maxLength: 2048
+          minLength: 3
+          title: Description
+        evidence:
+          type: string
+          maxLength: 4096
+          minLength: 3
+          title: Evidence
+        scope:
+          type: string
+          maxLength: 256
+          minLength: 3
+          title: Scope
+        valid_until:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+          title: Valid Until
+      additionalProperties: false
+      type: object
+      required:
+        - reason
+        - description
+        - evidence
+        - scope
+      title: Mitigation
+    Note:
+      properties:
+        reason:
+          type: string
+          maxLength: 2048
+          minLength: 3
+          title: Reason
+        text:
+          type: string
+          maxLength: 4096
+          minLength: 1
+          title: Text
+      additionalProperties: false
+      type: object
+      required:
+        - reason
+        - text
+      title: Note
+    Policy:
+      properties:
+        rule_version:
+          type: string
+          const: findings-1
+          title: Rule Version
+          default: findings-1
+        automatic_resolution:
+          type: boolean
+          title: Automatic Resolution
+          default: false
+        exception_four_eyes:
+          type: boolean
+          title: Exception Four Eyes
+          default: false
+        max_snapshot_age_hours:
+          anyOf:
+            - type: integer
+              maximum: 8760.0
+              minimum: 1.0
+            - type: 'null'
+          title: Max Snapshot Age Hours
+        kev_floor:
+          type: string
+          enum:
+            - critical
+            - high
+            - medium
+            - low
+            - unrated
+          title: Kev Floor
+          default: high
+        epss_high_threshold:
+          anyOf:
+            - type: number
+              maximum: 1.0
+              minimum: 0.0
+            - type: string
+            - type: 'null'
+          title: Epss High Threshold
+        deadlines_hours:
+          additionalProperties:
+            type: integer
+          propertyNames:
+            enum:
+              - critical
+              - high
+              - medium
+              - low
+              - unrated
+          type: object
+          title: Deadlines Hours
+        deadline_warning_hours:
+          anyOf:
+            - type: integer
+              maximum: 8760.0
+              minimum: 1.0
+            - type: 'null'
+          title: Deadline Warning Hours
+      additionalProperties: false
+      type: object
+      title: Policy
+    PolicyRequest:
+      properties:
+        reason:
+          type: string
+          maxLength: 2048
+          minLength: 3
+          title: Reason
+        label:
+          type: string
+          pattern: ^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,63}$
+          title: Label
+        configuration:
+          $ref: '#/components/schemas/Policy'
+      additionalProperties: false
+      type: object
+      required:
+        - reason
+        - label
+        - configuration
+      title: PolicyRequest
+    Reason:
+      properties:
+        reason:
+          type: string
+          maxLength: 2048
+          minLength: 3
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+        - reason
+      title: Reason
+    Review:
+      properties:
+        reason:
+          type: string
+          maxLength: 2048
+          minLength: 3
+          title: Reason
+        decision:
+          type: string
+          enum:
+            - confirmed
+            - suspected_false_positive
+            - confirmed_false_positive
+            - needs_review
+          title: Decision
+        evidence:
+          type: string
+          maxLength: 4096
+          minLength: 3
+          title: Evidence
+        result_id:
+          type: string
+          format: uuid
+          title: Result Id
+      additionalProperties: false
+      type: object
+      required:
+        - reason
+        - decision
+        - evidence
+        - result_id
+      title: Review
+    Triage:
+      properties:
+        reason:
+          type: string
+          maxLength: 2048
+          minLength: 3
+          title: Reason
+        action:
+          type: string
+          enum:
+            - start
+            - confirm
+            - needs_review
+            - suspect_false_positive
+            - fix_check
+          title: Action
+      additionalProperties: false
+      type: object
+      required:
+        - reason
+        - action
+      title: Triage
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-cve-session
+    CsrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+servers:
+  - url: https://dashboard.example.invalid

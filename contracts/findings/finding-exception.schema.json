@@ -1,0 +1,45 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "maxLength": 2048,
+      "minLength": 3,
+      "title": "Reason",
+      "type": "string"
+    },
+    "valid_from": {
+      "format": "date-time",
+      "title": "Valid From",
+      "type": "string"
+    },
+    "valid_until": {
+      "format": "date-time",
+      "title": "Valid Until",
+      "type": "string"
+    },
+    "scope": {
+      "default": "basis",
+      "enum": [
+        "basis",
+        "episode"
+      ],
+      "title": "Scope",
+      "type": "string"
+    },
+    "risk_context": {
+      "maxLength": 2048,
+      "minLength": 3,
+      "title": "Risk Context",
+      "type": "string"
+    }
+  },
+  "required": [
+    "reason",
+    "valid_from",
+    "valid_until",
+    "risk_context"
+  ],
+  "title": "ExceptionRequest",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.2",
+  "captured_at": "2026-11-14T09:03:11.393539+00:00",
+  "collection_status": "complete",
+  "collector": {
+    "name": "ansible",
+    "version": "2.21.5",
+    "controller_id": "cve-monitor-demo"
+  },
+  "os": {
+    "status": "complete",
+    "data": {
+      "distribution": "Debian",
+      "release": "12",
+      "codename": "bookworm",
+      "family": "Debian",
+      "platform": "Linux",
+      "architecture": "x86_64",
+      "kernel": "6.1.0-40-amd64"
+    }
+  },
+  "packages": {
+    "status": "complete",
+    "items": [
+      {
+        "name": "pac-resolver",
+        "version": "4.2.0",
+        "architecture": "all",
+        "package_manager": "npm"
+      }
+    ]
+  },
+  "services": {
+    "status": "complete",
+    "items": []
+  },
+  "hardware": {
+    "cpu_count": 2,
+    "memory_mb": 2048
+  },
+  "docker": {
+    "status": "not_installed"
+  },
+  "containers": {
+    "status": "not_collected"
+  },
+  "images": {
+    "status": "not_collected"
+  },
+  "diagnostics": [],
+  "inventory_id": "9dfa45ea-3e3e-41e6-bf1f-e1ab4d4f095d",
+  "host": {
+    "monitoring_id": "a54be845-b39f-4782-90f0-f57150623452",
+    "hostname": "demo-vulnerable-01",
+    "fqdn": "demo-vulnerable-01.example.test"
+  }
+}

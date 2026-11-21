@@ -1,0 +1,228 @@
+{
+  "$defs": {
+    "Quiet": {
+      "additionalProperties": false,
+      "properties": {
+        "timezone": {
+          "default": "Europe/Berlin",
+          "title": "Timezone",
+          "type": "string"
+        },
+        "start": {
+          "default": "22:00:00",
+          "format": "time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "default": "07:00:00",
+          "format": "time",
+          "title": "End",
+          "type": "string"
+        },
+        "weekdays": {
+          "items": {
+            "type": "integer"
+          },
+          "maxItems": 7,
+          "minItems": 1,
+          "title": "Weekdays",
+          "type": "array"
+        }
+      },
+      "title": "Quiet",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "enabled": {
+      "default": true,
+      "title": "Enabled",
+      "type": "boolean"
+    },
+    "event_types": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Event Types",
+      "type": "array"
+    },
+    "minimum_priority": {
+      "default": "high",
+      "enum": [
+        "unrated",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Minimum Priority",
+      "type": "string"
+    },
+    "priority_direction": {
+      "default": "increase",
+      "enum": [
+        "increase",
+        "any"
+      ],
+      "title": "Priority Direction",
+      "type": "string"
+    },
+    "lifecycle": {
+      "items": {
+        "enum": [
+          "open",
+          "in_progress",
+          "resolved",
+          "closed"
+        ],
+        "type": "string"
+      },
+      "title": "Lifecycle",
+      "type": "array"
+    },
+    "technical": {
+      "items": {
+        "enum": [
+          "affected",
+          "potentially_affected",
+          "unknown",
+          "not_affected",
+          "not_applicable"
+        ],
+        "type": "string"
+      },
+      "title": "Technical",
+      "type": "array"
+    },
+    "kev_only": {
+      "default": false,
+      "title": "Kev Only",
+      "type": "boolean"
+    },
+    "minimum_cvss": {
+      "anyOf": [
+        {
+          "maximum": 10.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Minimum Cvss"
+    },
+    "minimum_epss": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Minimum Epss"
+    },
+    "recipients": {
+      "default": "assignee",
+      "enum": [
+        "assignee",
+        "administrators",
+        "authorized",
+        "server_owner"
+      ],
+      "title": "Recipients",
+      "type": "string"
+    },
+    "mode": {
+      "default": "immediate",
+      "enum": [
+        "immediate",
+        "digest"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "mandatory": {
+      "default": false,
+      "title": "Mandatory",
+      "type": "boolean"
+    },
+    "critical_bypass": {
+      "default": false,
+      "title": "Critical Bypass",
+      "type": "boolean"
+    },
+    "suppress_active_exception": {
+      "default": false,
+      "title": "Suppress Active Exception",
+      "type": "boolean"
+    },
+    "rate_per_hour": {
+      "default": 10,
+      "maximum": 100,
+      "minimum": 1,
+      "title": "Rate Per Hour",
+      "type": "integer"
+    },
+    "max_deferral_hours": {
+      "default": 168,
+      "maximum": 720,
+      "minimum": 1,
+      "title": "Max Deferral Hours",
+      "type": "integer"
+    },
+    "exception_warning_hours": {
+      "default": 24,
+      "maximum": 720,
+      "minimum": 1,
+      "title": "Exception Warning Hours",
+      "type": "integer"
+    },
+    "digest_hours": {
+      "default": 24,
+      "enum": [
+        1,
+        24,
+        168
+      ],
+      "title": "Digest Hours",
+      "type": "integer"
+    },
+    "quiet": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Quiet"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "allowed_domains": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 50,
+      "title": "Allowed Domains",
+      "type": "array"
+    }
+  },
+  "title": "Rule",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

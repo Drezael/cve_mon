@@ -1,0 +1,93 @@
+version: 1
+title: Alle Ressourcenquellen
+description: Alle Kennzahlen, Verteilungen und Bestandsansichten
+layout:
+  columns: 3
+refresh_interval_seconds: 0
+widgets:
+  - id: metric-active-servers
+    type: metric
+    title: active_servers
+    metric: active_servers
+  - id: metric-servers-affected
+    type: metric
+    title: servers_affected
+    metric: servers_affected
+  - id: metric-open-findings
+    type: metric
+    title: open_findings
+    metric: open_findings
+  - id: metric-critical
+    type: metric
+    title: critical
+    metric: critical
+  - id: metric-high
+    type: metric
+    title: high
+    metric: high
+  - id: metric-overdue
+    type: metric
+    title: overdue
+    metric: overdue
+  - id: metric-kev
+    type: metric
+    title: kev
+    metric: kev
+  - id: metric-unknown
+    type: metric
+    title: unknown
+    metric: unknown
+  - id: distribution-priorities
+    type: distribution
+    title: priorities
+    source: priorities
+  - id: distribution-lifecycle
+    type: distribution
+    title: lifecycle
+    source: lifecycle
+  - id: distribution-technical
+    type: distribution
+    title: technical
+    source: technical
+  - id: distribution-inventory
+    type: distribution
+    title: inventory
+    source: inventory
+  - id: distribution-matching
+    type: distribution
+    title: matching
+    source: matching
+  - id: distribution-kev-priorities
+    type: distribution
+    title: kev_priorities
+    source: kev_priorities
+  - id: summary
+    type: summary
+    title: Sicherheitszusammenfassung
+    span: 3
+  - id: quality
+    type: inventory_quality
+    title: Inventarqualität
+  - id: trend
+    type: trend
+    title: Finding-Ereignisse
+    days: 30
+    span: 2
+  - id: servers
+    type: servers
+    title: Sichtbare Server
+    limit: 10
+    sort: name
+    span: 3
+  - id: findings
+    type: findings
+    title: Offene Findings
+    limit: 10
+    filters:
+      lifecycle: open
+    span: 3
+  - id: notes
+    type: text
+    title: Hinweise
+    text: Alle Quellen verwenden die Rechte des angemeldeten Kontos.
+    span: 3

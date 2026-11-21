@@ -1,0 +1,3 @@
+# Finding-Triage
+
+Stabile Finding- und Matching-Identitäten bleiben unverändert. Fachoperationen: start/confirm/needs_review/suspect_false_positive/fix_check, Zuweisung aus serverseitig geprüften zulässigen Bearbeitern, plain-text Notizen, Reviews mit aktueller result_id und Evidenz, kompensierende Maßnahmen. Bestätigter Fehlalarm benötigt finding:review:confirm und Step-up. Alle Requests verwenden die geladene Finding-Version. Eine Triageentscheidung setzt keinen freien technischen Status. Bestehende Belege und Historien bleiben lesbar; der spätere Matcher kann Findings weiter aktualisieren und wiedereröffnen.

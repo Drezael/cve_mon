@@ -1,0 +1,65 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "server_id": {
+      "format": "uuid",
+      "title": "Server Id",
+      "type": "string"
+    },
+    "snapshot_id": {
+      "format": "uuid",
+      "title": "Snapshot Id",
+      "type": "string"
+    },
+    "identity": {
+      "pattern": "^CVE-[0-9]{4}-[0-9]{4,}$",
+      "title": "Identity",
+      "type": "string"
+    },
+    "enrichment_revision_id": {
+      "format": "uuid",
+      "title": "Enrichment Revision Id",
+      "type": "string"
+    },
+    "result_id": {
+      "format": "uuid",
+      "title": "Result Id",
+      "type": "string"
+    },
+    "rule_version": {
+      "const": "matching-1",
+      "title": "Rule Version",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "affected",
+        "not_affected",
+        "potentially_affected",
+        "unknown",
+        "not_applicable"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "current_version": {
+      "minimum": 1,
+      "title": "Current Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "server_id",
+    "snapshot_id",
+    "identity",
+    "enrichment_revision_id",
+    "result_id",
+    "rule_version",
+    "status",
+    "current_version"
+  ],
+  "title": "Event",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cve-monitoring.invalid/contracts/matching/event.schema.json"
+}

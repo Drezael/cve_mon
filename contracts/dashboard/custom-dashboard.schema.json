@@ -1,0 +1,560 @@
+{
+  "$defs": {
+    "DistributionWidget": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "source": {
+          "default": "priorities",
+          "enum": [
+            "priorities",
+            "lifecycle",
+            "technical",
+            "inventory",
+            "matching",
+            "kev_priorities"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "span": {
+          "default": 1,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Span",
+          "type": "integer"
+        },
+        "title": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "const": "distribution",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "type"
+      ],
+      "title": "DistributionWidget",
+      "type": "object"
+    },
+    "FindingFilters": {
+      "additionalProperties": false,
+      "properties": {
+        "group_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group Id"
+        },
+        "kev": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kev"
+        },
+        "lifecycle": {
+          "anyOf": [
+            {
+              "enum": [
+                "open",
+                "in_progress",
+                "resolved",
+                "closed"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lifecycle"
+        },
+        "overdue": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Overdue"
+        },
+        "priority": {
+          "anyOf": [
+            {
+              "enum": [
+                "critical",
+                "high",
+                "medium",
+                "low",
+                "unrated"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Priority"
+        },
+        "server_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Server Id"
+        }
+      },
+      "title": "FindingFilters",
+      "type": "object"
+    },
+    "FindingsWidget": {
+      "additionalProperties": false,
+      "properties": {
+        "filters": {
+          "$ref": "#/$defs/FindingFilters"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "limit": {
+          "default": 10,
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "span": {
+          "default": 1,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Span",
+          "type": "integer"
+        },
+        "title": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "const": "findings",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "type"
+      ],
+      "title": "FindingsWidget",
+      "type": "object"
+    },
+    "Layout": {
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "default": 2,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Columns",
+          "type": "integer"
+        }
+      },
+      "title": "Layout",
+      "type": "object"
+    },
+    "MetricWidget": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "metric": {
+          "enum": [
+            "active_servers",
+            "servers_affected",
+            "open_findings",
+            "critical",
+            "high",
+            "overdue",
+            "kev",
+            "unknown"
+          ],
+          "title": "Metric",
+          "type": "string"
+        },
+        "span": {
+          "default": 1,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Span",
+          "type": "integer"
+        },
+        "title": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "const": "metric",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "type",
+        "metric"
+      ],
+      "title": "MetricWidget",
+      "type": "object"
+    },
+    "OverviewWidget": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "span": {
+          "default": 1,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Span",
+          "type": "integer"
+        },
+        "title": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "summary",
+            "inventory_quality",
+            "database",
+            "workflow"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "type"
+      ],
+      "title": "OverviewWidget",
+      "type": "object"
+    },
+    "ServerFilters": {
+      "additionalProperties": false,
+      "properties": {
+        "distribution": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Distribution"
+        },
+        "group_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Group Id"
+        },
+        "search": {
+          "default": "",
+          "maxLength": 128,
+          "title": "Search",
+          "type": "string"
+        }
+      },
+      "title": "ServerFilters",
+      "type": "object"
+    },
+    "ServersWidget": {
+      "additionalProperties": false,
+      "properties": {
+        "filters": {
+          "$ref": "#/$defs/ServerFilters"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "limit": {
+          "default": 10,
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "sort": {
+          "default": "name",
+          "enum": [
+            "manual",
+            "name",
+            "inventory"
+          ],
+          "title": "Sort",
+          "type": "string"
+        },
+        "span": {
+          "default": 1,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Span",
+          "type": "integer"
+        },
+        "title": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "const": "servers",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "type"
+      ],
+      "title": "ServersWidget",
+      "type": "object"
+    },
+    "TextWidget": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "span": {
+          "default": 1,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Span",
+          "type": "integer"
+        },
+        "text": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "const": "text",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "type",
+        "text"
+      ],
+      "title": "TextWidget",
+      "type": "object"
+    },
+    "TrendWidget": {
+      "additionalProperties": false,
+      "properties": {
+        "days": {
+          "default": 30,
+          "enum": [
+            7,
+            30,
+            90
+          ],
+          "title": "Days",
+          "type": "integer"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]{0,47}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "span": {
+          "default": 1,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Span",
+          "type": "integer"
+        },
+        "title": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "const": "trend",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "type"
+      ],
+      "title": "TrendWidget",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "description": {
+      "default": "",
+      "maxLength": 1000,
+      "title": "Description",
+      "type": "string"
+    },
+    "layout": {
+      "$ref": "#/$defs/Layout"
+    },
+    "refresh_interval_seconds": {
+      "default": 0,
+      "maximum": 3600,
+      "minimum": 0,
+      "title": "Refresh Interval Seconds",
+      "type": "integer"
+    },
+    "title": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "version": {
+      "const": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "widgets": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "database": "#/$defs/OverviewWidget",
+            "distribution": "#/$defs/DistributionWidget",
+            "findings": "#/$defs/FindingsWidget",
+            "inventory_quality": "#/$defs/OverviewWidget",
+            "metric": "#/$defs/MetricWidget",
+            "servers": "#/$defs/ServersWidget",
+            "summary": "#/$defs/OverviewWidget",
+            "text": "#/$defs/TextWidget",
+            "trend": "#/$defs/TrendWidget",
+            "workflow": "#/$defs/OverviewWidget"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/MetricWidget"
+          },
+          {
+            "$ref": "#/$defs/DistributionWidget"
+          },
+          {
+            "$ref": "#/$defs/ServersWidget"
+          },
+          {
+            "$ref": "#/$defs/FindingsWidget"
+          },
+          {
+            "$ref": "#/$defs/TextWidget"
+          },
+          {
+            "$ref": "#/$defs/OverviewWidget"
+          },
+          {
+            "$ref": "#/$defs/TrendWidget"
+          }
+        ]
+      },
+      "maxItems": 24,
+      "minItems": 0,
+      "title": "Widgets",
+      "type": "array"
+    }
+  },
+  "required": [
+    "version",
+    "title",
+    "widgets"
+  ],
+  "title": "DashboardConfig",
+  "type": "object"
+}

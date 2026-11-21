@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Delivery result 1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "attempt_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "enum": [
+        "relay_accepted",
+        "retryable_failure",
+        "permanent_failure",
+        "submission_uncertain"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "smtp_code": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 200,
+          "maximum": 599
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "queue_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9]{5,64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "relay_instance": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "attempt_id",
+    "status",
+    "reason",
+    "relay_instance",
+    "created_at"
+  ]
+}

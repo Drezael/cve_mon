@@ -1,0 +1,26 @@
+# Python 3.12: shared, compatible, exact runtime stack; full graph/hashes in runtime.txt.
+fastapi==0.162.0
+uvicorn==0.54.0
+pydantic==2.14.3
+pydantic-settings==2.16.2
+SQLAlchemy[asyncio]==2.1.8
+psycopg[binary]==3.3.8
+httpx==0.28.1
+# Phase 8: vetted password hashing and authenticated MFA encryption.
+argon2-cffi==25.1.0
+cryptography==50.0.2
+
+# Phase 11: shared authoritative JSON Schema and bounded multipart decoding.
+jsonschema==4.26.0
+rfc3339-validator==0.1.4
+python-multipart==0.0.33
+
+# Phase 16: upstream-tested CVSS 2/3/4 parser/scorer (Red Hat Product Security).
+cvss==3.6
+
+# Integrated, pinned inventory execution.
+ansible-core==2.21.5
+ansible-runner==2.4.3
+
+# Declarative user dashboards; already pinned transitively by Ansible.
+PyYAML==6.0.3

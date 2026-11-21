@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "id",
+    "server_id",
+    "current_episode_id",
+    "latest_matching_result_id",
+    "cve_id",
+    "lifecycle_status",
+    "latest_matching_status",
+    "current_priority",
+    "version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "server_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "current_episode_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "latest_matching_result_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "cve_id": {
+      "type": "string",
+      "pattern": "^CVE-[0-9]{4}-[0-9]{4,}$"
+    },
+    "lifecycle_status": {
+      "enum": [
+        "open",
+        "in_progress",
+        "resolved",
+        "closed"
+      ]
+    },
+    "latest_matching_status": {
+      "enum": [
+        "affected",
+        "potentially_affected",
+        "not_affected",
+        "unknown",
+        "not_applicable"
+      ]
+    },
+    "current_priority": {
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "unrated"
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "additionalProperties": true
+}

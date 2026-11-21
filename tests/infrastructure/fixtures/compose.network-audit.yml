@@ -1,0 +1,10 @@
+# NUR docker compose config: niemals starten. Hält ungenutzte Netzdefinitionen
+# zur kanonischen Prüfung im Modell; das echte Deployment verwendet diese Datei nicht.
+services:
+  cve-nginx:
+    networks:
+      - cve_ingress
+      - cve_internal
+      - cve_data
+      - cve_outbound
+      - cve_ssh

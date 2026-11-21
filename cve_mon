@@ -1,0 +1,901 @@
+#!/usr/bin/env python3
+"""Single CVE Monitor entry point: setup, controlled startup, status, logs and shutdown."""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import fcntl
+import hashlib
+import json
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import time
+from collections.abc import Iterator
+from contextlib import contextmanager
+from dataclasses import replace
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+
+
+def setup_environment() -> None:
+    """Create only the project-local environment using the existing hash-locked files."""
+    interpreter = os.environ.get("PYTHON", "python3.12")
+    try:
+        subprocess.run(
+            [interpreter, "-c", "import sys; assert sys.version_info[:2] == (3, 12)"], check=True
+        )
+    except (OSError, subprocess.SubprocessError):
+        raise RuntimeError(
+            "Python 3.12 erforderlich; Interpreter nicht gefunden oder ungeeignet."
+        ) from None
+    environment = ROOT / ".venv"
+    python = environment / "bin/python"
+    if environment.exists() or environment.is_symlink():
+        if (
+            environment.is_symlink()
+            or not (environment / "pyvenv.cfg").is_file()
+            or not python.is_file()
+        ):
+            raise RuntimeError("Vorhandene .venv ist keine gültige lokale Umgebung.")
+    else:
+        subprocess.run([interpreter, "-m", "venv", str(environment)], check=True)
+    subprocess.run(
+        [
+            str(python),
+            "-c",
+            "import sys; assert sys.version_info[:2] == (3, 12) and sys.prefix != sys.base_prefix",
+        ],
+        check=True,
+    )
+    for lock in ["native-build.txt", "runtime.txt", "dev.txt"]:
+        command = [str(python), "-m", "pip", "install", "--require-hashes"]
+        if lock != "native-build.txt":
+            command.append("--no-build-isolation")
+        subprocess.run([*command, "-r", str(ROOT / "requirements" / lock)], cwd=ROOT, check=True)
+    packages = [
+        "packages/cve_common",
+        *[
+            "services/" + s
+            for s in [
+                "notification",
+                "findings",
+                "api",
+                "event-dispatcher",
+                "inventory",
+                "importer",
+                "matcher",
+                "enricher",
+                "automation",
+            ]
+        ],
+    ]
+    editable = [argument for package in packages for argument in ["-e", package]]
+    subprocess.run(
+        [str(python), "-m", "pip", "install", "--no-deps", "--no-build-isolation", *editable],
+        cwd=ROOT,
+        check=True,
+    )
+    subprocess.run([str(python), "-m", "pip", "check"], cwd=ROOT, check=True)
+    print("Python-Umgebung bereit. .env für Produktivbetrieb konfigurieren, dann ./cve_mon start")
+
+
+def select_interpreter() -> None:
+    if sys.argv[1:] == ["setup"]:
+        setup_environment()
+        raise SystemExit(0)
+    python = ROOT / ".venv/bin/python"
+    if Path(sys.prefix).resolve() != (ROOT / ".venv").resolve():
+        if python.is_file():
+            os.execv(str(python), [str(python), str(ROOT / "cve_mon"), *sys.argv[1:]])
+        if not sys.argv[1:] or sys.argv[1] in {"help", "--help", "-h"}:
+            print(
+                "CVE Monitor: ./cve_mon [--sudo] BEFEHL\n"
+                "Befehle: setup, config, start, build, status, health, logs, stop, down, reset\n"
+                "Zuerst ./cve_mon setup ausführen."
+            )
+            raise SystemExit(0)
+        raise RuntimeError("Lokale Python-Umgebung fehlt. Zuerst ./cve_mon setup ausführen.")
+
+
+if __name__ == "__main__":
+    try:
+        select_interpreter()
+    except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+        message = str(error) if isinstance(error, RuntimeError) else type(error).__name__
+        print("Einrichtung fehlgeschlagen: " + message, file=sys.stderr)
+        raise SystemExit(
+            error.returncode if isinstance(error, subprocess.CalledProcessError) else 1
+        ) from None
+
+from cve_common.deployment import APPLICATION_IMAGE, OPTIONAL_SERVICES, SERVICES  # noqa: E402
+
+from scripts.infrastructure.manage import Config, compose, docker_command, load_config, run  # noqa: E402
+from scripts.infrastructure.topology import physical  # noqa: E402
+
+
+class LaunchError(Exception):
+    """Actionable messages which contain no configuration secrets."""
+
+
+def process_failure(error: subprocess.CalledProcessError, config: Config | None) -> str:
+    """Show captured diagnostics without command arguments, stdout or credentials."""
+    from cve_common.logging.redaction import redact, register_secret
+    from pydantic import SecretStr
+
+    from scripts.database.manage import workdir
+
+    if config is not None:
+        for name in ("SMTP_PASSWORD", "CLOUDFLARE_API_TOKEN"):
+            if password := config.values.get(name):
+                register_secret(SecretStr(password))
+        try:
+            for path in (workdir(config) / "secrets").glob("*.password"):
+                if not path.is_symlink() and (password := path.read_text().strip()):
+                    register_secret(SecretStr(password))
+        except OSError:
+            # Without access to credentials, omit potentially sensitive diagnostics.
+            return f"Werkzeug fehlgeschlagen (Exit-Code {error.returncode}); Diagnose unterdrückt."
+    message = f"Werkzeug fehlgeschlagen (Exit-Code {error.returncode})."
+    if isinstance(error.stderr, str) and error.stderr.strip():
+        message += "\n" + str(redact(error.stderr)).strip()[:4000]
+    return message
+
+
+def docker_ready(*, daemon: bool) -> None:
+    if not shutil.which("docker"):
+        raise LaunchError("Docker mit Compose-Plugin fehlt.")
+    try:
+        run(["docker", "compose", "version"])
+        if daemon:
+            run([*docker_command(), "info", "--format", "{{.ServerVersion}}"])
+    except (OSError, subprocess.SubprocessError):
+        raise LaunchError(
+            "Docker/Compose nicht erreichbar. Bei freigegebenem passwortlosem sudo: "
+            "./cve_mon --sudo BEFEHL (oder CVE_DOCKER_SUDO=1)."
+        ) from None
+
+
+def frontend_fingerprint(root: Path) -> str:
+    base = root / "services/dashboard"
+    paths = list((base / "src").rglob("*")) + [
+        base / name
+        for name in [
+            "package.json",
+            "package-lock.json",
+            "index.html",
+            "tsconfig.json",
+            "vite.config.ts",
+            "toolchain.toml",
+        ]
+    ]
+    digest = hashlib.sha256()
+    for path in sorted(p for p in paths if p.is_file()):
+        digest.update(str(path.relative_to(base)).encode())
+        digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
+def frontend(config: Config, *, force: bool = False) -> None:
+    from scripts.dashboard.manage import npm
+    from scripts.deployment.contracts import atomic
+
+    base = config.root / "services/dashboard"
+    marker = config.root / ".runtime/application" / config.project / "dashboard-build.json"
+    fingerprint = frontend_fingerprint(config.root)
+    built = base / "dist/index.html"
+    if not force and built.is_file():
+        if marker.is_file() and json.loads(marker.read_text()).get("fingerprint") == fingerprint:
+            return
+        # Accept an existing build made with the documented dashboard tools.
+        sources = [p for p in (base / "src").rglob("*") if p.is_file()]
+        sources += [
+            base / name
+            for name in [
+                "package.json",
+                "package-lock.json",
+                "index.html",
+                "tsconfig.json",
+                "vite.config.ts",
+                "toolchain.toml",
+            ]
+        ]
+        if not marker.exists() and all(
+            p.stat().st_mtime_ns <= built.stat().st_mtime_ns for p in sources
+        ):
+            atomic(marker, {"fingerprint": fingerprint})
+            return
+    print("Dashboard bauen (gesperrte lokale Node-/npm-Werkzeuge) …", flush=True)
+    npm(config.root, "ci", "--ignore-scripts")
+    npm(config.root, "run", "build")
+    atomic(marker, {"fingerprint": fingerprint})
+
+
+def healthy(config: Config) -> bool:
+    raw = compose(config, ["ps", "--all", "--format", "json"]).stdout
+    rows = [json.loads(line) for line in raw.splitlines() if line.strip()]
+    if any(row["Service"] not in (*SERVICES, *OPTIONAL_SERVICES) for row in rows):
+        return False
+    if config.values.get("LETSENCRYPT_ENABLED") == "true" and not any(
+        row["Service"] == "cve-certbot"
+        and row.get("State") == "running"
+        and row.get("Health") == "healthy"
+        for row in rows
+    ):
+        return False
+    rows = [row for row in rows if row["Service"] in SERVICES]
+    return {r["Service"] for r in rows} == set(SERVICES) and all(
+        r.get("Health") == "healthy" and r.get("State") == "running" for r in rows
+    )
+
+
+def urls(config: Config) -> None:
+    from scripts.security.manage import origin
+
+    print("Dashboard: " + origin(config))
+
+
+@contextmanager
+def lifecycle(config: Config) -> Iterator[None]:
+    """Serialize public lifecycle commands without blocking n8n host-controller work."""
+    target = config.root / ".runtime/application" / config.project
+    target.mkdir(parents=True, exist_ok=True, mode=0o700)
+    fd = os.open(target / "lifecycle.lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, "a+") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        yield
+
+
+def start(config: Config) -> None:
+    from scripts.application.build import LABEL, build, fingerprint
+
+    if config.values["APP_ENV"] == "production":
+        from scripts.database import manage as db
+        from scripts.infrastructure import mail
+        from scripts.infrastructure.acme import bootstrap
+        from scripts.infrastructure.manage import certificate_preflight
+
+        bootstrap(config)
+        ensure_certificates(config)
+        certificate_preflight(config)
+        db.prepare(config)
+        if (db.workdir(config) / "private/development.json").exists() or (
+            mail.directory(config) / "development-only"
+        ).exists():
+            raise LaunchError("Serverbetrieb akzeptiert keine bestehende Entwicklungs-PKI.")
+    frontend(config)
+    # The existing builder reuses the unchanged shared image; vendor images are never built.
+    build(config)
+    current = run([*docker_command(), "image", "inspect", APPLICATION_IMAGE]).stdout
+    desired = json.loads(current)[0]
+    if desired["Config"]["Labels"].get(LABEL) != fingerprint(config.root):
+        raise LaunchError("Das Anwendungsimage entspricht nicht den aktuellen Quellen.")
+    if healthy(config):
+        ids = compose(
+            config, ["ps", "-q", "cve-api", "cve-processing", "cve-sources"]
+        ).stdout.split()
+        images = json.loads(run([*docker_command(), "inspect", *ids]).stdout)
+        if (
+            all(item["Image"] == desired["Id"] for item in images)
+            and current_schema(config)
+            and current_compose(config)
+            and workflows_ready(config)
+        ):
+            from scripts.dashboard.manage import activate
+
+            deployed = config.directory / "dashboard/index.html"
+            built = config.root / "services/dashboard/dist/index.html"
+            if not deployed.is_file() or deployed.read_bytes() != built.read_bytes():
+                activate(config)
+            if not controller_ready(config):
+                from scripts.automation_executor.agent import start as start_control
+
+                start_control(config)
+            print("CVE Monitor läuft bereits; bestehende Container bleiben unverändert.")
+            urls(config)
+            return
+    print("CVE Monitor mit Datenbankmigrationen und Namespace-Freigaben starten …", flush=True)
+    provision(config)
+    from scripts.infrastructure.acme import start as start_acme
+
+    start_acme(config)
+    if not healthy(config):
+        raise LaunchError("Der Start ist nicht vollständig gesund. Bitte status und logs prüfen.")
+    urls(config)
+
+
+def ensure_certificates(config: Config) -> None:
+    from scripts.infrastructure.tls import prepare
+
+    try:
+        prepare(config)
+    except ValueError as error:
+        raise LaunchError(str(error)) from None
+
+
+def provision(config: Config) -> None:
+    from cve_common.deployment import GROUPS, PORTS
+
+    from scripts.application.manage import prepare
+    from scripts.database import manage as db
+    from scripts.deployment.contracts import Environment
+    from scripts.deployment.orchestration import start_runtime
+    from scripts.infrastructure.manage import (
+        render,
+        resolved,
+        validate_model,
+    )
+    from scripts.services import manage as api
+
+    ids = compose(config, ["ps", "--all", "-q"]).stdout.split()
+    if ids:
+        rows = json.loads(run([*docker_command(), "inspect", *ids]).stdout)
+        if any(
+            item["Config"]["Labels"].get("com.docker.compose.service") in set(PORTS) - set(GROUPS)
+            for item in rows
+        ):
+            raise LaunchError("Legacy-Container erkannt; vorhandenen Migrationspfad verwenden.")
+    if validate_model(
+        resolved(config),
+        config.values["APP_ENV"] == "development",
+        config.root,
+        mount_base=config.mount_base,
+        secrets_base=config.secrets_base,
+    ):
+        raise LaunchError("Ungültiges Compose-Modell; keine Dienste gestartet.")
+    db.prepare(config)
+    ensure_certificates(config)
+    compose(config, ["up", "-d", "--wait", "--wait-timeout", "90", "cve-postgres"])
+    db.provision(config)
+    db.migrate(config)
+    prepare(config, "cve-processing")
+    prepare(config, "cve-sources")
+    api.prepare(config)
+    render(config)
+    target = Environment(
+        config.root / ".runtime/application" / config.project / "environment.json",
+        {"kind": "production" if config.values["APP_ENV"] == "production" else "staging"},
+        config,
+    )
+    start_runtime(target, config.root)
+
+
+def consistent_images(config: Config) -> bool:
+    ids = compose(config, ["ps", "-q", "cve-api", "cve-processing", "cve-sources"]).stdout.split()
+    if len(ids) != 3:
+        return False
+    rows = json.loads(run([*docker_command(), "inspect", *ids]).stdout)
+    return len({item["Image"] for item in rows}) == 1
+
+
+def current_schema(config: Config) -> bool:
+    from alembic.config import Config as AlembicConfig
+    from alembic.script import ScriptDirectory
+
+    from scripts.database import manage as db
+
+    with db.connect(config) as connection:
+        actual = connection.execute("SELECT version_num FROM public.alembic_version").fetchone()
+    head = ScriptDirectory.from_config(
+        AlembicConfig(str(config.root / "database/alembic.ini"))
+    ).get_current_head()
+    return bool(actual and actual["version_num"] == head)
+
+
+def current_compose(config: Config) -> bool:
+    expected = dict(
+        line.split()
+        for line in compose(config, ["config", "--hash", "*"], daemon=False).stdout.splitlines()
+        if line.strip()
+    )
+    ids = compose(config, ["ps", "--all", "-q"]).stdout.split()
+    if not ids:
+        return False
+    rows = json.loads(run([*docker_command(), "inspect", *ids]).stdout)
+    return all(
+        item["Config"]["Labels"].get("com.docker.compose.config-hash")
+        == expected.get(item["Config"]["Labels"].get("com.docker.compose.service"))
+        for item in rows
+    )
+
+
+def workflows_ready(config: Config) -> bool:
+    from scripts.database import manage as db
+
+    definitions = {
+        item["id"]: item
+        for path in (config.root / "workflows/n8n").glob("*.json")
+        for item in [json.loads(path.read_text())]
+    }
+    if not definitions:
+        return False
+    with db.connect(config, database="n8n") as connection:
+        exists = connection.execute(
+            "SELECT to_regclass('public.workflow_entity') AS name"
+        ).fetchone()
+        if not exists or not exists["name"]:
+            return False
+        rows = connection.execute(
+            'SELECT id,name,nodes,connections,settings,active,"versionId","activeVersionId" '
+            "FROM public.workflow_entity WHERE id=ANY(%s)",
+            (sorted(definitions),),
+        ).fetchall()
+    return len(rows) == len(definitions) and all(
+        row["active"]
+        and row["activeVersionId"] == row["versionId"]
+        and all(row[key] == definitions[row["id"]][key] for key in ("name", "nodes", "connections"))
+        and all(
+            (row["settings"] or {}).get(key) == value
+            for key, value in definitions[row["id"]].get("settings", {}).items()
+        )
+        for row in rows
+    )
+
+
+def controller_ready(config: Config) -> bool:
+    from cve_common.host_control import command
+
+    try:
+        response = asyncio.run(
+            command(config.secrets_base / "services" / config.project, {"operation": "health"})
+        )
+        return response.get("status") == 200
+    except (OSError, ValueError, TimeoutError):
+        return False
+
+
+def own_project(config: Config) -> None:
+    """Refuse a reused project name belonging to a different checkout or Compose file."""
+    ids = run(
+        [
+            *docker_command(),
+            "ps",
+            "-aq",
+            "--filter",
+            "label=com.docker.compose.project=" + config.project,
+        ]
+    ).stdout.split()
+    if not ids:
+        return
+    rows = json.loads(run([*docker_command(), "inspect", *ids]).stdout)
+    for item in rows:
+        labels = item["Config"]["Labels"]
+        files = labels.get("com.docker.compose.project.config_files", "").split(",")
+        if (
+            labels.get("com.docker.compose.project.working_dir") != str(config.root)
+            or str(config.root / "compose.yml") not in files
+        ):
+            raise LaunchError(
+                "Der Compose-Projektname gehört zu einem anderen Deployment; "
+                "keine Änderung ausgeführt."
+            )
+
+
+def stop_controller(config: Config) -> None:
+    """Stop only this project's host controller, never an unrelated PID or user unit."""
+    from scripts.automation_executor.agent import directory
+
+    unit = "cve-automation-control-" + config.project
+    if shutil.which("systemctl"):
+        active = subprocess.run(
+            ["systemctl", "--user", "is-active", "--quiet", unit], capture_output=True, check=False
+        )
+        if active.returncode == 0:
+            working = run(
+                ["systemctl", "--user", "show", "--property=WorkingDirectory", "--value", unit]
+            ).stdout.strip()
+            if working != str(config.root):
+                raise LaunchError("Hostcontroller gehört zu einem anderen Arbeitsverzeichnis.")
+            run(["systemctl", "--user", "stop", unit])
+    pidfile = directory(config) / "agent.pid"
+    if not pidfile.exists():
+        return
+    pid = int(pidfile.read_text())
+    commandline = Path("/proc") / str(pid) / "cmdline"
+    if commandline.exists():
+        args = commandline.read_bytes().decode().split("\0")
+        expected = str(directory(config) / "agent-config.json")
+        if pid <= 1 or args[1:5] != [
+            "-m",
+            "scripts.automation_executor.agent",
+            "--config",
+            expected,
+        ]:
+            raise LaunchError(
+                "Controller-PID konnte diesem Projekt nicht sicher zugeordnet werden."
+            )
+        os.kill(pid, signal.SIGTERM)
+        deadline = time.monotonic() + 15
+        while commandline.exists() and commandline.read_bytes():
+            if time.monotonic() >= deadline:
+                raise LaunchError("Hostcontroller wurde nicht rechtzeitig beendet.")
+            time.sleep(0.1)
+    pidfile.unlink(missing_ok=True)
+
+
+def stop(config: Config, *, remove: bool) -> None:
+    from scripts.automation_executor.agent import exclusive
+
+    with exclusive(config):
+        stop_controller(config)
+        compose(
+            config,
+            [
+                "stop",
+                "--timeout",
+                "45",
+                *SERVICES,
+                *(["cve-certbot"] if config.values.get("LETSENCRYPT_ENABLED") == "true" else []),
+            ],
+        )
+        if remove:
+            compose(config, ["down", "--timeout", "45"])
+    print(
+        "Container entfernt; Bind-Mount-Daten und Konfiguration bleiben erhalten."
+        if remove
+        else "CVE Monitor gestoppt; Daten und Container bleiben erhalten."
+    )
+
+
+def reset_paths(config: Config) -> list[Path]:
+    """Reset private repository configuration plus this project's external mutable data."""
+    from scripts.database.manage import workdir
+    from scripts.infrastructure.mounts import data_paths
+
+    paths = [
+        (
+            config.secrets_base / "storage" / config.project
+            if name == "storage"
+            else config.runtime_directory(name)
+        )
+        for name in (
+            "application",
+            "automation-executor",
+            "services",
+            "status",
+            "nginx",
+            "automation",
+            "ansible",
+            "inventory-processor",
+            "cve-importer",
+            "cve-enricher",
+            "cve-matcher",
+            "cve-findings",
+            "notifications",
+            "n8n",
+            "mail",
+            "envoy",
+            "storage",
+            "infrastructure",
+        )
+    ]
+    if (
+        not workdir(config).is_relative_to(config.secrets_base)
+        or workdir(config).parent == config.secrets_base
+    ):
+        raise LaunchError("Reset benötigt PG_WORK_DIR innerhalb von SECRETS_BASE.")
+    paths += [
+        config.secrets_base / "notifications" / (config.project + "-signing"),
+        workdir(config),
+    ]
+    if any(other != path and other.is_relative_to(path) for path in paths for other in paths):
+        raise LaunchError("Reset verweigert: Laufzeitpfade überlappen sich.")
+    for data in data_paths(config):
+        if not any(data.is_relative_to(path) for path in paths):
+            paths.append(data)
+    for path in paths:
+        for part in (path, *path.parents):
+            if part.is_symlink():
+                raise LaunchError("Reset verweigert: Laufzeitpfad enthält einen Symlink.")
+        if path.exists() and not path.is_dir():
+            raise LaunchError("Reset verweigert: Laufzeitpfad ist kein Verzeichnis.")
+    return paths
+
+
+def reset_volumes(config: Config) -> list[str]:
+    """Refuse name collisions with volumes belonging to another deployment."""
+    available = set(
+        run([*docker_command(), "volume", "ls", "--format", "{{.Name}}"]).stdout.splitlines()
+    )
+    names = []
+    for logical in ("postgres_data", "postgres_tls", "cve_postfix_queue", "cve_mailhog_data"):
+        name = config.project + "_" + logical
+        if name not in available:
+            continue
+        item = json.loads(run([*docker_command(), "volume", "inspect", name]).stdout)[0]
+        labels = item.get("Labels") or {}
+        if (
+            labels.get("com.docker.compose.project") != config.project
+            or labels.get("com.docker.compose.volume") != logical
+        ):
+            raise LaunchError("Reset verweigert: Fremdes Volume unter erwartetem Namen: " + name)
+        names.append(name)
+    return names
+
+
+def reset(config: Config, *, confirmation: str | None) -> None:
+    """Destroy this development project's live data only after explicit confirmation."""
+    from scripts.automation_executor.agent import exclusive
+    from scripts.infrastructure.storage import directory as storage_directory
+    from scripts.infrastructure.storage import remove as remove_storage
+
+    if config.values["APP_ENV"] != "development":
+        raise LaunchError("Datenreset ist ausschließlich für Entwicklungsprojekte erlaubt.")
+    if confirmation != config.project:
+        raise LaunchError(
+            "Datenreset löscht alle Projektdaten. Erforderlich: reset --confirm " + config.project
+        )
+    if config.compose_overrides:
+        raise LaunchError("Datenreset mit Compose-Overrides ist nicht erlaubt.")
+    own_project(config)
+    paths = reset_paths(config)
+    reset_volumes(config)
+    with exclusive(config):
+        stop_controller(config)
+        compose(
+            config,
+            [
+                "stop",
+                "--timeout",
+                "45",
+                *SERVICES,
+                *(["cve-certbot"] if config.values.get("LETSENCRYPT_ENABLED") == "true" else []),
+            ],
+        )
+        compose(config, ["down", "--timeout", "45"])
+        # Revalidate after shutdown; a failed stop/down must never reach deletion.
+        paths = reset_paths(config)
+        volumes = reset_volumes(config)
+        if volumes:
+            run([*docker_command(), "volume", "rm", *volumes])
+        remove_storage(config)
+        for path in paths:
+            if path in {
+                storage_directory(config),
+                config.secrets_base / "storage" / config.project,
+            }:
+                continue
+            if not path.exists():
+                continue
+            if path.parent.name in {"application", "automation-executor"}:
+                # Retain lock inodes so waiting lifecycle/erasure operations stay serialized.
+                for child in path.iterdir():
+                    if child.name in {"lifecycle.lock", "erasure.lock"}:
+                        continue
+                    if child.is_dir() and not child.is_symlink():
+                        shutil.rmtree(child)
+                    else:
+                        child.unlink()
+            else:
+                try:
+                    shutil.rmtree(path)
+                except PermissionError:
+                    from scripts.infrastructure.storage import remove_tree
+
+                    remove_tree(config, path)
+    print("Datenreset abgeschlossen: " + config.project + ".")
+    print("Neu initialisieren: ./cve_mon start (gegebenenfalls mit --sudo und --env-file).")
+
+
+def mail_test(config: Config, operation: str) -> None:
+    from scripts.hardening.runtime_images import ensure
+    from scripts.infrastructure.images import REFERENCES
+
+    if config.values["APP_ENV"] != "development":
+        raise LaunchError("Mailtests sind ausschließlich im Entwicklungsprofil erlaubt.")
+    overlay = config.root / "infrastructure/compose/mail-test.yml"
+    test_config = replace(config, compose_overrides=(*config.compose_overrides, overlay))
+    if operation == "start":
+        from scripts.infrastructure.manage import resolved, validate_model
+
+        errors = validate_model(
+            resolved(test_config),
+            True,
+            config.root,
+            mount_base=config.mount_base,
+            secrets_base=config.secrets_base,
+        )
+        if errors:
+            raise LaunchError("Ungültiges Mailtest-Profil: " + "; ".join(errors))
+        ensure(REFERENCES["mailhog"])
+        compose(test_config, ["up", "-d", "--no-deps", "--wait", "cve-mailhog"], managed=False)
+        print("Mailtest aktiv: http://127.0.0.1:8025 (SMTP intern: mailhog.cve.test:1025)")
+    elif operation == "stop":
+        compose(test_config, ["rm", "--stop", "--force", "cve-mailhog"])
+        print("Mailtest beendet; aufgefangene Testnachrichten bleiben erhalten.")
+    elif operation == "status":
+        print(compose(test_config, ["ps", "--all", "cve-mailhog"]).stdout, end="")
+    else:
+        print(compose(test_config, ["logs", "--tail", "100", "cve-mailhog"]).stdout, end="")
+
+
+def logs(config: Config, services: list[str], *, follow: bool, tail: int) -> None:
+    aliases = {s.removeprefix("cve-"): s for s in SERVICES}
+    allowed = (
+        *SERVICES,
+        *(["cve-certbot"] if config.values.get("LETSENCRYPT_ENABLED") == "true" else []),
+    )
+    aliases.update({"postfix": "cve-mail-relay", "certbot": "cve-certbot"})
+    targets = [
+        aliases.get(s, physical(s if s.startswith("cve-") else "cve-" + s)) for s in services
+    ]
+    if any(s not in allowed for s in targets):
+        raise LaunchError(
+            "Unbekannter Dienst. Erlaubt: "
+            + ", ".join(SERVICES)
+            + " (auch logische Worker wie matcher)."
+        )
+    arguments = [
+        "logs",
+        "--tail",
+        str(tail),
+        *(["--follow"] if follow else []),
+        *dict.fromkeys(targets),
+    ]
+    if not follow:
+        print(compose(config, arguments).stdout, end="")
+        return
+    # Streaming logs must not use the captured-output controller's 120-second limit.
+    prefix = docker_command()
+    if prefix[0] == "sudo":
+        prefix = ["sudo", "-n", "--preserve-env=" + ",".join(sorted(config.values)), "docker"]
+    command = [
+        *prefix,
+        "compose",
+        "--project-name",
+        config.project,
+        "-f",
+        str(config.root / "compose.yml"),
+    ]
+    if config.values["APP_ENV"] == "development":
+        command += ["-f", str(config.root / "infrastructure/compose/development.yml")]
+    if config.values.get("LETSENCRYPT_ENABLED") == "true":
+        command += ["-f", str(config.root / "infrastructure/compose/letsencrypt.yml")]
+    subprocess.run(
+        [*command, *arguments], cwd=config.root, env={**os.environ, **config.values}, check=True
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="CVE Monitor – Compose-Deployment für Entwicklung und Server",
+        epilog=(
+            "Setup: ./cve_mon setup. Microservice-Neustarts erfolgen intern über n8n im Dashboard."
+        ),
+    )
+    parser.add_argument(
+        "--sudo", action="store_true", help="Passwortloses sudo ausschließlich für Docker verwenden"
+    )
+    parser.add_argument(
+        "--env-file", type=Path, help="Andere Konfigurationsdatei; bestehende .env bleibt erhalten"
+    )
+    commands = parser.add_subparsers(dest="action")
+    for command, help_text in [
+        ("start", "Gesamten Stack kontrolliert starten"),
+        ("up", "Alias für start"),
+    ]:
+        commands.add_parser(command, help=help_text)
+    for command, description in [
+        ("setup", "Lokale Python-3.12-Umgebung einrichten"),
+        ("config", "Compose ohne Ausgabe von Secrets validieren"),
+        ("check", "Alias für config"),
+        ("build", "Gemeinsames Anwendungsimage und Dashboard bauen"),
+        ("status", "Containerstatus anzeigen"),
+        ("health", "Gesundheit der sieben Kerndienste und des Hostcontrollers prüfen"),
+        ("ps", "Alias für status"),
+        ("stop", "Stack stoppen, Daten behalten"),
+        ("down", "Container/Netze entfernen, Datenvolumes behalten"),
+        ("help", "Diese Hilfe anzeigen"),
+    ]:
+        commands.add_parser(command, help=description)
+    reset_parser = commands.add_parser("reset", help="Alle Daten des Entwicklungsprojekts löschen")
+    reset_parser.add_argument(
+        "--confirm", metavar="PROJEKTNAME", help="Projektname als Löschbestätigung"
+    )
+    capture = commands.add_parser(
+        "mail-test", help="Optionalen MailHog ausschließlich für Mailtests verwalten"
+    )
+    capture.add_argument("operation", choices=["start", "stop", "status", "logs"])
+    log = commands.add_parser("logs", help="Logs anzeigen")
+    log.add_argument("services", nargs="*")
+    log.add_argument("-f", "--follow", action="store_true", help="Logs fortlaufend streamen")
+    log.add_argument("--tail", type=int, default=100)
+    args = parser.parse_args(argv)
+    if args.action in {None, "help"}:
+        parser.print_help()
+        return 0
+    if args.action == "setup":
+        setup_environment()
+        return 0
+    if args.sudo:
+        os.environ["CVE_DOCKER_SUDO"] = "1"
+    if args.action == "logs" and not 0 <= args.tail <= 10000:
+        parser.error("--tail muss zwischen 0 und 10000 liegen")
+    config: Config | None = None
+    try:
+        config = load_config(env_file=args.env_file)
+        if args.env_file:
+            os.environ["CVE_ENV_FILE"] = str(args.env_file.resolve())
+        if args.action == "reset" and args.confirm != config.project:
+            raise LaunchError(
+                "Datenreset löscht alle Projektdaten. Erforderlich: reset --confirm "
+                + config.project
+            )
+        docker_ready(daemon=args.action not in {"config", "check"})
+        if args.action in {"config", "check"}:
+            from scripts.infrastructure.manage import resolved, validate_model
+
+            errors = validate_model(
+                resolved(config),
+                config.values["APP_ENV"] == "development",
+                config.root,
+                mount_base=config.mount_base,
+                secrets_base=config.secrets_base,
+            )
+            if errors:
+                raise LaunchError("Ungültiges Compose-Modell: " + "; ".join(errors))
+            print("Compose-Konfiguration OK: " + config.project)
+        elif args.action in {"status", "ps"}:
+            print(compose(config, ["ps", "--all"]).stdout, end="")
+            urls(config)
+        elif args.action == "health":
+            if (
+                not healthy(config)
+                or not consistent_images(config)
+                or not controller_ready(config)
+                or not current_schema(config)
+            ):
+                raise LaunchError("Container, Hostcontroller oder Datenbankstand nicht bereit.")
+            print("Gesund: sieben Kerndienste, Hostcontroller und Datenbank bereit.")
+        elif args.action == "mail-test":
+            own_project(config)
+            with lifecycle(config):
+                mail_test(config, args.operation)
+        elif args.action == "logs":
+            logs(config, args.services, follow=args.follow, tail=args.tail)
+        else:
+            if args.action != "build":
+                own_project(config)
+            if args.action in {"start", "up", "build"}:
+                from scripts.infrastructure.mounts import prepare as prepare_mounts
+                from scripts.infrastructure.secrets import prepare as prepare_secrets
+
+                config = replace(config, initialize_secrets=True)
+                prepare_secrets(config)
+                prepare_mounts(config)
+            with lifecycle(config):
+                if args.action in {"start", "up"}:
+                    start(config)
+                elif args.action == "build":
+                    from scripts.application.build import build
+
+                    frontend(config, force=True)
+                    build(config)
+                elif args.action == "reset":
+                    reset(config, confirmation=args.confirm)
+                else:
+                    stop(config, remove=args.action == "down")
+        return 0
+    except KeyboardInterrupt:
+        return 130
+    except (LaunchError, ValueError, OSError, subprocess.SubprocessError) as error:
+        print(
+            "Fehler: "
+            + (
+                process_failure(error, config)
+                if isinstance(error, subprocess.CalledProcessError)
+                else str(error)
+                if isinstance(error, (LaunchError, ValueError))
+                else type(error).__name__
+            ),
+            file=sys.stderr,
+        )
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

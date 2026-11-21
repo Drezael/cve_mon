@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Notification intent 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "recipient_user_id",
+    "rule_id",
+    "template_id",
+    "correlation_id",
+    "event_id",
+    "finding_id",
+    "digest_id",
+    "lease_owner",
+    "created_at",
+    "scheduled_at",
+    "window_start",
+    "window_end",
+    "lease_until",
+    "version",
+    "fencing_token",
+    "attempts",
+    "kind",
+    "reason",
+    "message_id",
+    "channel",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "recipient_user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "rule_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "template_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "event_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "finding_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "digest_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lease_owner": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scheduled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "window_start": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "window_end": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lease_until": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "fencing_token": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "attempts": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "kind": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "message_id": {
+      "type": "string"
+    },
+    "channel": {
+      "const": "email"
+    },
+    "status": {
+      "enum": [
+        "planned",
+        "suppressed",
+        "deferred",
+        "ready",
+        "leased",
+        "submitting",
+        "relay_accepted",
+        "retryable_failure",
+        "permanent_failure",
+        "submission_uncertain",
+        "upstream_accepted",
+        "bounced",
+        "delivery_confirmed",
+        "cancelled"
+      ]
+    }
+  }
+}

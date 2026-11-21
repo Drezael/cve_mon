@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools==84.2.1", "wheel==0.48.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+license = "PolyForm-Noncommercial-1.0.0"
+name = "cve-enricher"
+version = "0.16.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["cve-common==0.7.0", "uvicorn==0.54.0", "cvss==3.6"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+cve_enricher = ["py.typed"]

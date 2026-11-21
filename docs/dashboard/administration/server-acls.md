@@ -1,0 +1,3 @@
+# Server-ACLs
+
+Vollständige versionierte ACL mit separater Revision. Benutzer werden paginiert aus den zugelassenen Benutzeridentitäten ausgewählt; keine freie UUID-Eingabe. view, inventory_upload, findings_read und findings_manage werden einzeln gesetzt. Es werden keine versteckten Rechte ergänzt; inkonsistente und leere Grants werden abgewiesen. Entfernen ist ausdrücklich zu bestätigen. Backend prüft Grant-Scope und Zielzustand erneut. Aktuelle ACL und effektiver Zugriff werden nach Bestätigung neu geladen. Spätere API-Anfragen berücksichtigen Entzug unmittelbar; Clientfilter erweitern keine Berechtigung.

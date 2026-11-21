@@ -1,0 +1,64 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "submission_id": {
+      "format": "uuid",
+      "title": "Submission Id",
+      "type": "string"
+    },
+    "inventory_id": {
+      "format": "uuid",
+      "title": "Inventory Id",
+      "type": "string"
+    },
+    "server_id": {
+      "format": "uuid",
+      "title": "Server Id",
+      "type": "string"
+    },
+    "status": {
+      "const": "accepted",
+      "title": "Status",
+      "type": "string"
+    },
+    "duplicate": {
+      "title": "Duplicate",
+      "type": "boolean"
+    },
+    "source": {
+      "enum": [
+        "ansible_api",
+        "dashboard_file"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "received_at": {
+      "format": "date-time",
+      "title": "Received At",
+      "type": "string"
+    },
+    "status_url": {
+      "title": "Status Url",
+      "type": "string"
+    },
+    "monitoring_id": {
+      "type": "string",
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "submission_id",
+    "inventory_id",
+    "server_id",
+    "status",
+    "duplicate",
+    "source",
+    "received_at",
+    "status_url"
+  ],
+  "title": "Receipt",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cve-monitoring:submission-receipt:phase11"
+}

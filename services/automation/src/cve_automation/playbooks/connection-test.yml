@@ -1,0 +1,13 @@
+---
+- name: Verify the configured unprivileged SSH login
+  hosts: target
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Verify unprivileged target account
+      ansible.builtin.command:
+        argv: ['id', '-u']
+      register: target_uid
+      changed_when: false
+      failed_when: target_uid.stdout == '0'
+      no_log: true

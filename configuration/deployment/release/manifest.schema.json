@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "version",
+    "configuration_schema",
+    "migration_target",
+    "source",
+    "images",
+    "frontend",
+    "evidence",
+    "production_eligible",
+    "release_id"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "configuration_schema": {
+      "const": 1
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.]+)?$"
+    },
+    "release_id": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "migration_target": {
+      "type": "string",
+      "minLength": 1
+    },
+    "production_eligible": {
+      "type": "boolean"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "git_commit",
+        "clean",
+        "sha256",
+        "files"
+      ],
+      "properties": {
+        "git_commit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{40,64}$"
+        },
+        "clean": {
+          "type": "boolean"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "files": {
+          "$ref": "#/$defs/hashes"
+        }
+      }
+    },
+    "images": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "service",
+          "image_id",
+          "config_digests",
+          "source_reference"
+        ],
+        "properties": {
+          "service": {
+            "type": "string",
+            "pattern": "^cve-[a-z0-9-]+$"
+          },
+          "image_id": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "config_digests": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          },
+          "source_reference": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "frontend": {
+      "$ref": "#/$defs/hashes"
+    },
+    "evidence": {
+      "$ref": "#/$defs/hashes"
+    }
+  },
+  "$defs": {
+    "hashes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    }
+  }
+}

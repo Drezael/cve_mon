@@ -1,0 +1,979 @@
+openapi: 3.1.0
+info:
+  title: Notification management
+  version: 0.20.0
+paths:
+  /api/v1/dashboard/notifications/preferences:
+    get:
+      tags:
+        - notifications
+      summary: Preferences
+      operationId: get_notifications_preferences
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Preferences Api V1 Dashboard Notifications Preferences
+                  Get
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+    put:
+      tags:
+        - notifications
+      summary: Update Preferences
+      operationId: put_notifications_preferences
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferenceChange'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Update Preferences Api V1 Dashboard Notifications
+                  Preferences Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+      parameters:
+        - name: X-CSRF-Token
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+            pattern: ^"[0-9]+"$
+  /api/v1/dashboard/notifications/rules:
+    get:
+      tags:
+        - notifications
+      summary: Rules
+      operationId: get_notifications_rules
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Rules Api V1 Dashboard Notifications Rules Get
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+    post:
+      tags:
+        - notifications
+      summary: Create Rule
+      operationId: post_notifications_rules
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleChange'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Create Rule Api V1 Dashboard Notifications Rules
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+      parameters:
+        - name: X-CSRF-Token
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+            pattern: ^"[0-9]+"$
+  /api/v1/dashboard/notifications/rules/{identity}:
+    put:
+      tags:
+        - notifications
+      summary: Update Rule
+      operationId: put_notifications_rules_identity
+      parameters:
+        - name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Identity
+        - name: X-CSRF-Token
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+            pattern: ^"[0-9]+"$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleChange'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Update Rule Api V1 Dashboard Notifications Rules  Identity  Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+  /api/v1/dashboard/notifications/templates:
+    get:
+      tags:
+        - notifications
+      summary: Templates
+      operationId: get_notifications_templates
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Templates Api V1 Dashboard Notifications Templates
+                  Get
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+    post:
+      tags:
+        - notifications
+      summary: Update Template
+      operationId: post_notifications_templates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateChange'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Update Template Api V1 Dashboard Notifications Templates
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+      parameters:
+        - name: X-CSRF-Token
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: If-Match
+          in: header
+          required: true
+          schema:
+            type: string
+            pattern: ^"[0-9]+"$
+  /api/v1/dashboard/notifications/workflows:
+    get:
+      tags:
+        - notifications
+      summary: Administration
+      operationId: get_notifications_workflows
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Limit
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100000
+            minimum: 0
+            default: 0
+            title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Administration Api V1 Dashboard Notifications Workflows
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+  /api/v1/dashboard/notifications/deliveries:
+    get:
+      tags:
+        - notifications
+      summary: Administration
+      operationId: get_notifications_deliveries
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Limit
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100000
+            minimum: 0
+            default: 0
+            title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Administration Api V1 Dashboard Notifications Deliveries
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+  /api/v1/dashboard/notifications:
+    get:
+      tags:
+        - notifications
+      summary: Listing
+      operationId: get_notifications_
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            minimum: 1
+            default: 50
+            title: Limit
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            maximum: 100000
+            minimum: 0
+            default: 0
+            title: Offset
+        - name: status
+          in: query
+          required: false
+          schema:
+            anyOf:
+              - enum:
+                  - planned
+                  - suppressed
+                  - deferred
+                  - ready
+                  - leased
+                  - submitting
+                  - relay_accepted
+                  - retryable_failure
+                  - permanent_failure
+                  - submission_uncertain
+                  - upstream_accepted
+                  - bounced
+                  - delivery_confirmed
+                  - cancelled
+                type: string
+              - type: 'null'
+            title: Status
+        - name: order
+          in: query
+          required: false
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+            default: desc
+            title: Order
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Listing Api V1 Dashboard Notifications Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+  /api/v1/dashboard/notifications/{identity}/attempts:
+    get:
+      tags:
+        - notifications
+      summary: Detail
+      operationId: get_notifications_identity_attempts
+      parameters:
+        - name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Identity
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100000
+            default: 0
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Detail Api V1 Dashboard Notifications  Identity  Attempts
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+  /api/v1/dashboard/notifications/{identity}/history:
+    get:
+      tags:
+        - notifications
+      summary: Detail
+      operationId: get_notifications_identity_history
+      parameters:
+        - name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Identity
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100000
+            default: 0
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Detail Api V1 Dashboard Notifications  Identity  History
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+  /api/v1/dashboard/notifications/{identity}:
+    get:
+      tags:
+        - notifications
+      summary: Detail
+      operationId: get_notifications_identity
+      parameters:
+        - name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Identity
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100000
+            default: 0
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Detail Api V1 Dashboard Notifications  Identity  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+  /api/v1/dashboard/notifications/{identity}/transport-evidence:
+    post:
+      tags:
+        - notifications
+      summary: Evidence
+      operationId: post_notifications_identity_transport_evidence
+      parameters:
+        - name: identity
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            title: Identity
+        - name: X-CSRF-Token
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Evidence'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                title: Response Evidence Api V1 Dashboard Notifications  Identity  Transport
+                  Evidence Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+        - SessionCookie: []
+      description: Existing verified session and fresh RBAC/ACL; own-recipient scope
+        before counts. Mutations require CSRF; policy writes require fresh MFA.
+        No arbitrary recipients or mail destination.
+components:
+  schemas:
+    Evidence:
+      properties:
+        evidence_id:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Evidence Id
+        relay_instance:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Relay Instance
+        message_id:
+          type: string
+          maxLength: 256
+          minLength: 1
+          title: Message Id
+        queue_id:
+          anyOf:
+            - type: string
+              pattern: ^[A-Za-z0-9]{5,64}$
+            - type: 'null'
+          title: Queue Id
+        status:
+          type: string
+          enum:
+            - relay_accepted
+            - upstream_accepted
+            - bounced
+            - delivery_confirmed
+          title: Status
+        source:
+          type: string
+          enum:
+            - postfix
+            - verified_dsn
+          title: Source
+        reason:
+          type: string
+          maxLength: 1024
+          minLength: 3
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+        - evidence_id
+        - relay_instance
+        - message_id
+        - status
+        - source
+        - reason
+      title: Evidence
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    PreferenceChange:
+      properties:
+        preferences:
+          $ref: '#/components/schemas/Preferences'
+        reason:
+          type: string
+          maxLength: 1024
+          minLength: 3
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+        - preferences
+        - reason
+      title: PreferenceChange
+    Preferences:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+          default: true
+        mode:
+          type: string
+          enum:
+            - immediate
+            - digest
+          title: Mode
+          default: immediate
+        minimum_priority:
+          type: string
+          enum:
+            - unrated
+            - low
+            - medium
+            - high
+            - critical
+          title: Minimum Priority
+          default: unrated
+        digest_hours:
+          type: integer
+          enum:
+            - 1
+            - 24
+            - 168
+          title: Digest Hours
+          default: 24
+        timezone:
+          type: string
+          title: Timezone
+          default: Europe/Berlin
+        language:
+          type: string
+          const: de
+          title: Language
+          default: de
+        quiet:
+          anyOf:
+            - $ref: '#/components/schemas/Quiet'
+            - type: 'null'
+        event_types:
+          items:
+            type: string
+          type: array
+          title: Event Types
+      additionalProperties: false
+      type: object
+      title: Preferences
+    Quiet:
+      properties:
+        timezone:
+          type: string
+          title: Timezone
+          default: Europe/Berlin
+        start:
+          type: string
+          format: time
+          title: Start
+          default: '22:00:00'
+        end:
+          type: string
+          format: time
+          title: End
+          default: 07:00:00
+        weekdays:
+          items:
+            type: integer
+          type: array
+          maxItems: 7
+          minItems: 1
+          title: Weekdays
+      additionalProperties: false
+      type: object
+      title: Quiet
+    Rule:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+          default: true
+        event_types:
+          items:
+            type: string
+          type: array
+          minItems: 1
+          title: Event Types
+        minimum_priority:
+          type: string
+          enum:
+            - unrated
+            - low
+            - medium
+            - high
+            - critical
+          title: Minimum Priority
+          default: high
+        priority_direction:
+          type: string
+          enum:
+            - increase
+            - any
+          title: Priority Direction
+          default: increase
+        lifecycle:
+          items:
+            type: string
+            enum:
+              - open
+              - in_progress
+              - resolved
+              - closed
+          type: array
+          title: Lifecycle
+        technical:
+          items:
+            type: string
+            enum:
+              - affected
+              - potentially_affected
+              - unknown
+              - not_affected
+              - not_applicable
+          type: array
+          title: Technical
+        kev_only:
+          type: boolean
+          title: Kev Only
+          default: false
+        minimum_cvss:
+          anyOf:
+            - type: number
+              maximum: 10.0
+              minimum: 0.0
+            - type: string
+            - type: 'null'
+          title: Minimum Cvss
+        minimum_epss:
+          anyOf:
+            - type: number
+              maximum: 1.0
+              minimum: 0.0
+            - type: string
+            - type: 'null'
+          title: Minimum Epss
+        recipients:
+          type: string
+          enum:
+            - assignee
+            - administrators
+            - authorized
+          title: Recipients
+          default: assignee
+        mode:
+          type: string
+          enum:
+            - immediate
+            - digest
+          title: Mode
+          default: immediate
+        mandatory:
+          type: boolean
+          title: Mandatory
+          default: false
+        critical_bypass:
+          type: boolean
+          title: Critical Bypass
+          default: false
+        suppress_active_exception:
+          type: boolean
+          title: Suppress Active Exception
+          default: false
+        rate_per_hour:
+          type: integer
+          maximum: 100.0
+          minimum: 1.0
+          title: Rate Per Hour
+          default: 10
+        max_deferral_hours:
+          type: integer
+          maximum: 720.0
+          minimum: 1.0
+          title: Max Deferral Hours
+          default: 168
+        exception_warning_hours:
+          type: integer
+          maximum: 720.0
+          minimum: 1.0
+          title: Exception Warning Hours
+          default: 24
+        digest_hours:
+          type: integer
+          enum:
+            - 1
+            - 24
+            - 168
+          title: Digest Hours
+          default: 24
+        quiet:
+          anyOf:
+            - $ref: '#/components/schemas/Quiet'
+            - type: 'null'
+        allowed_domains:
+          items:
+            type: string
+          type: array
+          maxItems: 50
+          title: Allowed Domains
+      additionalProperties: false
+      type: object
+      title: Rule
+    RuleChange:
+      properties:
+        rule:
+          $ref: '#/components/schemas/Rule'
+        reason:
+          type: string
+          maxLength: 1024
+          minLength: 3
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+        - rule
+        - reason
+      title: RuleChange
+    Template:
+      properties:
+        name:
+          type: string
+          enum:
+            - finding
+            - digest
+          title: Name
+        language:
+          type: string
+          const: de
+          title: Language
+          default: de
+        subject:
+          type: string
+          maxLength: 160
+          minLength: 1
+          title: Subject
+        text:
+          type: string
+          maxLength: 8192
+          minLength: 1
+          title: Text
+        html:
+          type: string
+          maxLength: 8192
+          minLength: 1
+          title: Html
+      additionalProperties: false
+      type: object
+      required:
+        - name
+        - subject
+        - text
+        - html
+      title: Template
+    TemplateChange:
+      properties:
+        template:
+          $ref: '#/components/schemas/Template'
+        reason:
+          type: string
+          maxLength: 1024
+          minLength: 3
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+        - template
+        - reason
+      title: TemplateChange
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      title: ValidationError
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-cve-session

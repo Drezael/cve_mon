@@ -1,0 +1,123 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "format": "uuid",
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_type": {
+      "pattern": "^[a-z][a-z0-9_.-]{0,63}$",
+      "title": "Event Type",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": 1,
+      "maximum": 100,
+      "minimum": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "source": {
+      "pattern": "^[a-z][a-z0-9-]{0,63}$",
+      "title": "Source",
+      "type": "string"
+    },
+    "aggregate_type": {
+      "pattern": "^[a-z][a-z0-9_]{0,63}$",
+      "title": "Aggregate Type",
+      "type": "string"
+    },
+    "aggregate_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Aggregate Id",
+      "type": "string"
+    },
+    "aggregate_version": {
+      "maximum": 9223372036854775807,
+      "minimum": 1,
+      "title": "Aggregate Version",
+      "type": "integer"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "correlation_id": {
+      "format": "uuid",
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "idempotency_key": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "payload": {
+      "type": "object",
+      "propertyNames": {
+        "not": {
+          "pattern": "^(?:[aA][pP][iI]_[tT][oO][kK][eE][nN]|[aA][uU][tT][hH][oO][rR][iI][zZ][aA][tT][iI][oO][nN]|[cC][aA][lL][lL][bB][aA][cC][kK]_[uU][rR][lL]|[cC][lL][aA][sS][sS]|[cC][oO][mM][mM][aA][nN][dD]|[cC][oO][oO][kK][iI][eE]|[mM][fF][aA]_[sS][eE][cC][rR][eE][tT]|[mM][oO][dD][uU][lL][eE]|[pP][aA][sS][sS][wW][oO][rR][dD]|[pP][aA][sS][sS][wW][oO][rR][dD]_[hH][aA][sS][hH]|[pP][rR][iI][vV][aA][tT][eE]_[kK][eE][yY]|[pP][yY][tT][hH][oO][nN]|[sS][eE][cC][rR][eE][tT]|[sS][hH][eE][lL][lL]|[sS][mM][tT][pP]_[pP][aA][sS][sS][wW][oO][rR][dD]|[tT][aA][rR][gG][eE][tT]_[uU][rR][lL]|[tT][oO][kK][eE][nN]|[tT][oO][tT][pP]_[sS][eE][cC][rR][eE][tT]|[tT][rR][aA][nN][sS][pP][oO][rR][tT]|[uU][rR][lL])$"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/safe_value"
+      }
+    }
+  },
+  "required": [
+    "aggregate_id",
+    "aggregate_type",
+    "aggregate_version",
+    "correlation_id",
+    "event_id",
+    "event_type",
+    "idempotency_key",
+    "occurred_at",
+    "payload",
+    "schema_version",
+    "source"
+  ],
+  "title": "EventEnvelope",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cve:event-envelope-v1.schema",
+  "description": "Version 1 envelope; payload additionally validated by explicit code registry and PostgreSQL. Limit 16384 JSON bytes; no secret/executable/URL fields.",
+  "$defs": {
+    "safe_value": {
+      "anyOf": [
+        {
+          "type": "object",
+          "propertyNames": {
+            "not": {
+              "pattern": "^(?:[aA][pP][iI]_[tT][oO][kK][eE][nN]|[aA][uU][tT][hH][oO][rR][iI][zZ][aA][tT][iI][oO][nN]|[cC][aA][lL][lL][bB][aA][cC][kK]_[uU][rR][lL]|[cC][lL][aA][sS][sS]|[cC][oO][mM][mM][aA][nN][dD]|[cC][oO][oO][kK][iI][eE]|[mM][fF][aA]_[sS][eE][cC][rR][eE][tT]|[mM][oO][dD][uU][lL][eE]|[pP][aA][sS][sS][wW][oO][rR][dD]|[pP][aA][sS][sS][wW][oO][rR][dD]_[hH][aA][sS][hH]|[pP][rR][iI][vV][aA][tT][eE]_[kK][eE][yY]|[pP][yY][tT][hH][oO][nN]|[sS][eE][cC][rR][eE][tT]|[sS][hH][eE][lL][lL]|[sS][mM][tT][pP]_[pP][aA][sS][sS][wW][oO][rR][dD]|[tT][aA][rR][gG][eE][tT]_[uU][rR][lL]|[tT][oO][kK][eE][nN]|[tT][oO][tT][pP]_[sS][eE][cC][rR][eE][tT]|[tT][rR][aA][nN][sS][pP][oO][rR][tT]|[uU][rR][lL])$"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/safe_value"
+          }
+        },
+        {
+          "type": "array",
+          "maxItems": 1024,
+          "items": {
+            "$ref": "#/$defs/safe_value"
+          }
+        },
+        {
+          "type": [
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "type": "string",
+          "maxLength": 16384
+        }
+      ]
+    }
+  }
+}

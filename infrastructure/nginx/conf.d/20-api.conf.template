@@ -1,0 +1,16 @@
+server {
+    listen 8443 ssl;
+    server_name ${API_DOMAIN};
+    include /etc/nginx/cve/snippets/tls.conf;
+    include /etc/nginx/cve/snippets/security-headers.conf;
+    if ($valid_sni_host = 0) { return 421; }
+    limit_conn connections 10;
+    limit_req zone=web_requests burst=${RATE_BURST} nodelay;
+    include /etc/nginx/cve/snippets/errors.conf;
+    location = / { root /etc/nginx/cve/empty; try_files /__backend_absent__ =503; }
+    location /api/v1/dashboard/admin/ { return 403; }
+    location = /api/v1/dashboard/inventories/upload { return 404; }
+    include /etc/nginx/cve/snippets/api-routes.conf;
+    location ^~ /api/v1/auth/ { return 404; }
+    location / { return 404; }
+}

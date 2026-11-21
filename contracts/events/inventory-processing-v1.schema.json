@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Inventory processing event payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["submission_id", "server_id", "snapshot_id", "normalizer_version", "collection_status", "captured_at", "is_current", "error_code"],
+  "properties": {
+    "submission_id": {"type": "string", "format": "uuid"},
+    "server_id": {"type": "string", "format": "uuid"},
+    "snapshot_id": {"type": ["string", "null"], "format": "uuid"},
+    "normalizer_version": {"const": "inventory-1"},
+    "collection_status": {"enum": ["complete", "partial", "failed", null]},
+    "captured_at": {"type": "string", "format": "date-time"},
+    "is_current": {"type": "boolean"},
+    "error_code": {"type": ["string", "null"], "pattern": "^[a-z_]{1,64}$"}
+  }
+}

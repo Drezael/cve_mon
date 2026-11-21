@@ -1,0 +1,43 @@
+# Import in My dashboards; saving remains an explicit user action.
+version: 1
+title: Security overview
+description: Servers, findings and priorities visible to my account.
+layout:
+  columns: 2
+refresh_interval_seconds: 0
+widgets:
+  - id: servers
+    type: metric
+    title: Active servers
+    metric: active_servers
+  - id: findings
+    type: metric
+    title: Open findings
+    metric: open_findings
+  - id: priorities
+    type: distribution
+    title: Priorities
+    source: priorities
+    span: 2
+  - id: systems
+    type: servers
+    title: My servers
+    limit: 10
+    sort: name
+    span: 2
+    # filters:
+    #   group_id: "your-personal-group-uuid"
+  - id: active-findings
+    type: findings
+    title: Open vulnerabilities
+    limit: 10
+    filters:
+      lifecycle: open
+    span: 2
+  - id: notes
+    type: text
+    title: Notes
+    text: |
+      This dashboard uses the current account's existing permissions.
+      Customize the YAML and save your own dashboard.
+    span: 2

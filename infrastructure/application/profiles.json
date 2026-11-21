@@ -1,0 +1,266 @@
+{
+  "cve-api": {
+    "roles": [
+      "cve-api"
+    ],
+    "environment_keys": [
+      "CVE_API_ALLOWED_HOSTS",
+      "CVE_API_APP_ENV",
+      "CVE_API_AUTH__ADMINISTRATION_DATABASE__CA_FILE",
+      "CVE_API_AUTH__ADMINISTRATION_DATABASE__HOST",
+      "CVE_API_AUTH__ADMINISTRATION_DATABASE__PASSWORD_FILE",
+      "CVE_API_AUTH__ADMINISTRATION_DATABASE__USERNAME",
+      "CVE_API_AUTH__ARGON_CONCURRENCY",
+      "CVE_API_AUTH__ARGON_MEMORY",
+      "CVE_API_AUTH__DATABASE__CA_FILE",
+      "CVE_API_AUTH__DATABASE__HOST",
+      "CVE_API_AUTH__DATABASE__PASSWORD_FILE",
+      "CVE_API_AUTH__DATABASE__USERNAME",
+      "CVE_API_AUTH__GATEWAY_FILE",
+      "CVE_API_AUTH__IP_LIMIT",
+      "CVE_API_AUTH__KEYRING_FILE",
+      "CVE_API_AUTH__LOGIN_LIMIT",
+      "CVE_API_AUTH__ORIGIN",
+      "CVE_API_DATABASE__CA_FILE",
+      "CVE_API_DATABASE__HOST",
+      "CVE_API_DATABASE__PASSWORD_FILE",
+      "CVE_API_DATABASE__USERNAME",
+      "CVE_API_HTTP_PORT",
+      "CVE_API_INVENTORY__CLIENT_CA_FILE",
+      "CVE_API_INVENTORY__CLIENT_CRL_FILE",
+      "CVE_API_INVENTORY__DATABASE__CA_FILE",
+      "CVE_API_INVENTORY__DATABASE__HOST",
+      "CVE_API_INVENTORY__DATABASE__PASSWORD_FILE",
+      "CVE_API_INVENTORY__DATABASE__POOL_SIZE",
+      "CVE_API_INVENTORY__DATABASE__STATEMENT_TIMEOUT_MS",
+      "CVE_API_INVENTORY__DATABASE__USERNAME",
+      "CVE_API_INVENTORY__GATEWAY_FILE",
+      "CVE_API_INVENTORY__MAX_BYTES",
+      "CVE_API_INVENTORY__ORIGIN",
+      "CVE_API_INVENTORY__TOKEN_KEY_FILE",
+      "CVE_API_LOG_LEVEL",
+      "CVE_API_STATUS__APP_ENV",
+      "CVE_API_STATUS__DASHBOARD_CA",
+      "CVE_API_STATUS__DASHBOARD_HOST",
+      "CVE_API_STATUS__DATABASE__CA_FILE",
+      "CVE_API_STATUS__DATABASE__HOST",
+      "CVE_API_STATUS__DATABASE__PASSWORD_FILE",
+      "CVE_API_STATUS__DATABASE__USERNAME",
+      "CVE_API_STATUS__NOTIFICATION_CA",
+      "CVE_API_STATUS__PAUSED",
+      "CVE_API_STATUS__PROBE_KEY_FILE",
+      "CVE_API_STATUS__REPORTS_DIR",
+      "CVE_APPLICATION_PROFILE"
+    ],
+    "mounts": [
+      {
+        "source": "${SECRETS_BASE:-./.runtime}/services/${COMPOSE_PROJECT_NAME:-cve-monitoring}",
+        "target": "/run/cve-api",
+        "read_only": true
+      },
+      "./.runtime/status/${COMPOSE_PROJECT_NAME:-cve-monitoring}:/run/cve-status:ro",
+      {
+        "source": "${MOUNT_BASE:-./.runtime}/status/${COMPOSE_PROJECT_NAME:-cve-monitoring}/postfix",
+        "target": "/run/cve-status/postfix",
+        "read_only": true
+      }
+    ]
+  },
+  "cve-processing": {
+    "roles": [
+      "cve-event-dispatcher",
+      "cve-inventory",
+      "cve-matcher",
+      "cve-findings",
+      "cve-notification",
+      "cve-importer",
+      "cve-enricher"
+    ],
+    "environment_keys": [
+      "CVE_APPLICATION_PROFILE",
+      "CVE_DISPATCHER_APP_ENV",
+      "CVE_DISPATCHER_DATABASE__HOST",
+      "CVE_DISPATCHER_DATABASE__USERNAME",
+      "CVE_DISPATCHER_DATABASE__PASSWORD_FILE",
+      "CVE_DISPATCHER_DATABASE__CA_FILE",
+      "CVE_DISPATCHER_TARGETS_FILE",
+      "CVE_DISPATCHER_CONCURRENCY",
+      "CVE_DISPATCHER_LEASE_SECONDS",
+      "CVE_DISPATCHER_HEARTBEAT_SECONDS",
+      "CVE_DISPATCHER_POLL_SECONDS",
+      "CVE_DISPATCHER_SHUTDOWN_SECONDS",
+      "CVE_DISPATCHER_HTTP_PORT",
+      "CVE_INVENTORY_APP_ENV",
+      "CVE_INVENTORY_DATABASE__HOST",
+      "CVE_INVENTORY_DATABASE__USERNAME",
+      "CVE_INVENTORY_DATABASE__PASSWORD_FILE",
+      "CVE_INVENTORY_DATABASE__CA_FILE",
+      "CVE_INVENTORY_CONCURRENCY",
+      "CVE_INVENTORY_LEASE_SECONDS",
+      "CVE_INVENTORY_HEARTBEAT_SECONDS",
+      "CVE_INVENTORY_POLL_SECONDS",
+      "CVE_INVENTORY_SHUTDOWN_SECONDS",
+      "CVE_INVENTORY_HTTP_PORT",
+      "CVE_MATCHER_APP_ENV",
+      "CVE_MATCHER_DATABASE__HOST",
+      "CVE_MATCHER_DATABASE__USERNAME",
+      "CVE_MATCHER_DATABASE__PASSWORD_FILE",
+      "CVE_MATCHER_DATABASE__CA_FILE",
+      "CVE_MATCHER_GUARD_PROOF_FILE",
+      "CVE_MATCHER_DATABASE__POOL_SIZE",
+      "CVE_MATCHER_DATABASE__STATEMENT_TIMEOUT_MS",
+      "CVE_MATCHER_PROCESSES",
+      "CVE_MATCHER_CONCURRENCY",
+      "CVE_MATCHER_LEASE_SECONDS",
+      "CVE_MATCHER_HEARTBEAT_SECONDS",
+      "CVE_MATCHER_POLL_SECONDS",
+      "CVE_MATCHER_SHUTDOWN_SECONDS",
+      "CVE_MATCHER_HTTP_PORT",
+      "CVE_FINDINGS_MAINTENANCE_SECONDS",
+      "CVE_FINDINGS_APP_ENV",
+      "CVE_FINDINGS_DATABASE__HOST",
+      "CVE_FINDINGS_DATABASE__USERNAME",
+      "CVE_FINDINGS_DATABASE__PASSWORD_FILE",
+      "CVE_FINDINGS_DATABASE__CA_FILE",
+      "CVE_FINDINGS_GUARD_PROOF_FILE",
+      "CVE_FINDINGS_DATABASE__POOL_SIZE",
+      "CVE_FINDINGS_DATABASE__STATEMENT_TIMEOUT_MS",
+      "CVE_FINDINGS_CONCURRENCY",
+      "CVE_FINDINGS_LEASE_SECONDS",
+      "CVE_FINDINGS_HEARTBEAT_SECONDS",
+      "CVE_FINDINGS_POLL_SECONDS",
+      "CVE_FINDINGS_SHUTDOWN_SECONDS",
+      "CVE_FINDINGS_HTTP_PORT",
+      "CVE_NOTIFICATION_MAINTENANCE_SECONDS",
+      "CVE_NOTIFICATION_CONFIGURATION_DIR",
+      "CVE_NOTIFICATION_APP_ENV",
+      "CVE_NOTIFICATION_DATABASE__HOST",
+      "CVE_NOTIFICATION_DATABASE__USERNAME",
+      "CVE_NOTIFICATION_DATABASE__PASSWORD_FILE",
+      "CVE_NOTIFICATION_DATABASE__CA_FILE",
+      "CVE_NOTIFICATION_GUARD_PROOF_FILE",
+      "CVE_NOTIFICATION_DATABASE__POOL_SIZE",
+      "CVE_NOTIFICATION_DATABASE__STATEMENT_TIMEOUT_MS",
+      "CVE_NOTIFICATION_CONCURRENCY",
+      "CVE_NOTIFICATION_LEASE_SECONDS",
+      "CVE_NOTIFICATION_HEARTBEAT_SECONDS",
+      "CVE_NOTIFICATION_POLL_SECONDS",
+      "CVE_NOTIFICATION_SHUTDOWN_SECONDS",
+      "CVE_NOTIFICATION_HTTP_PORT",
+      "CVE_IMPORTER_APP_ENV",
+      "CVE_IMPORTER_DATABASE__HOST",
+      "CVE_IMPORTER_DATABASE__USERNAME",
+      "CVE_IMPORTER_DATABASE__PASSWORD_FILE",
+      "CVE_IMPORTER_DATABASE__CA_FILE",
+      "CVE_IMPORTER_DATABASE__POOL_SIZE",
+      "CVE_IMPORTER_DATABASE__STATEMENT_TIMEOUT_MS",
+      "CVE_IMPORTER_CONFIGURATION_FILE",
+      "CVE_IMPORTER_EGRESS_PROOF_FILE",
+      "CVE_IMPORTER_SCRATCH_DIRECTORY",
+      "CVE_IMPORTER_CONCURRENCY",
+      "CVE_IMPORTER_LEASE_SECONDS",
+      "CVE_IMPORTER_HEARTBEAT_SECONDS",
+      "CVE_IMPORTER_POLL_SECONDS",
+      "CVE_IMPORTER_SHUTDOWN_SECONDS",
+      "CVE_IMPORTER_HTTP_PORT",
+      "CVE_ENRICHER_APP_ENV",
+      "CVE_ENRICHER_DATABASE__HOST",
+      "CVE_ENRICHER_DATABASE__USERNAME",
+      "CVE_ENRICHER_DATABASE__PASSWORD_FILE",
+      "CVE_ENRICHER_DATABASE__CA_FILE",
+      "CVE_ENRICHER_DATABASE__POOL_SIZE",
+      "CVE_ENRICHER_DATABASE__STATEMENT_TIMEOUT_MS",
+      "CVE_ENRICHER_CONFIGURATION_FILE",
+      "CVE_ENRICHER_EGRESS_PROOF_FILE",
+      "CVE_ENRICHER_SCRATCH_DIRECTORY",
+      "CVE_ENRICHER_CONCURRENCY",
+      "CVE_ENRICHER_PROCESSES",
+      "CVE_ENRICHER_LEASE_SECONDS",
+      "CVE_ENRICHER_HEARTBEAT_SECONDS",
+      "CVE_ENRICHER_POLL_SECONDS",
+      "CVE_ENRICHER_SHUTDOWN_SECONDS",
+      "CVE_ENRICHER_HTTP_PORT"
+    ],
+    "mounts": [
+      {
+        "source": "${SECRETS_BASE:-./.runtime}/cve-importer/${COMPOSE_PROJECT_NAME:-cve-monitoring}",
+        "target": "/run/cve-importer",
+        "read_only": true
+      },
+      {
+        "source": "${MOUNT_BASE:-./.runtime}/cve-importer/${COMPOSE_PROJECT_NAME:-cve-monitoring}/scratch",
+        "target": "/work/importer",
+        "read_only": false
+      },
+      {
+        "source": "${SECRETS_BASE:-./.runtime}/cve-enricher/${COMPOSE_PROJECT_NAME:-cve-monitoring}",
+        "target": "/run/cve-enricher",
+        "read_only": true
+      },
+      {
+        "source": "${MOUNT_BASE:-./.runtime}/cve-enricher/${COMPOSE_PROJECT_NAME:-cve-monitoring}/scratch",
+        "target": "/work/enricher",
+        "read_only": false
+      },
+      {
+        "source": "${SECRETS_BASE:-./.runtime}/automation/${COMPOSE_PROJECT_NAME:-cve-monitoring}",
+        "target": "/run/cve-dispatcher",
+        "read_only": true
+      },
+      {
+        "source": "${SECRETS_BASE:-./.runtime}/inventory-processor/${COMPOSE_PROJECT_NAME:-cve-monitoring}",
+        "target": "/run/cve-inventory",
+        "read_only": true
+      },
+      {
+        "source": "${SECRETS_BASE:-./.runtime}/cve-matcher/${COMPOSE_PROJECT_NAME:-cve-monitoring}",
+        "target": "/run/cve-matcher",
+        "read_only": true
+      },
+      {
+        "source": "${SECRETS_BASE:-./.runtime}/cve-findings/${COMPOSE_PROJECT_NAME:-cve-monitoring}",
+        "target": "/run/cve-findings",
+        "read_only": true
+      },
+      {
+        "source": "${SECRETS_BASE:-./.runtime}/notifications/${COMPOSE_PROJECT_NAME:-cve-monitoring}",
+        "target": "/run/cve-notification",
+        "read_only": true
+      },
+      {
+        "source": "./.runtime/application/${COMPOSE_PROJECT_NAME:-cve-monitoring}",
+        "target": "/run/cve-application",
+        "read_only": true
+      }
+    ]
+  },
+  "cve-sources": {
+    "roles": [
+      "cve-automation"
+    ],
+    "environment_keys": [
+      "CVE_APPLICATION_PROFILE",
+      "CVE_ANSIBLE_APP_ENV",
+      "CVE_ANSIBLE_DATABASE__HOST",
+      "CVE_ANSIBLE_DATABASE__USERNAME",
+      "CVE_ANSIBLE_DATABASE__PASSWORD_FILE",
+      "CVE_ANSIBLE_DATABASE__CA_FILE",
+      "CVE_ANSIBLE_KEYRING_FILE",
+      "CVE_ANSIBLE_WORK_DIRECTORY",
+      "CVE_ANSIBLE_CONCURRENCY",
+      "CVE_ANSIBLE_HTTP_PORT"
+    ],
+    "mounts": [
+      {
+        "source": "${SECRETS_BASE:-./.runtime}/ansible/${COMPOSE_PROJECT_NAME:-cve-monitoring}",
+        "target": "/run/cve-ansible",
+        "read_only": true
+      },
+      {
+        "source": "./.runtime/application/${COMPOSE_PROJECT_NAME:-cve-monitoring}",
+        "target": "/run/cve-application",
+        "read_only": true
+      }
+    ]
+  }
+}

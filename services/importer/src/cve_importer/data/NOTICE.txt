@@ -1,0 +1,14 @@
+Public source-schema attribution
+
+CVEProject cve-schema (CVE Program), including imported FIRST CVSS schemas and CVE tag
+schemas; NIST NVD API schemas and their FIRST CVSS/SSVC dependencies; CISA KEV JSON
+schema; OpenSSF/Google OSV vulnerability schema.
+
+Original source URLs, immutable CVE commits, local registry identifiers and exact
+SHA-256 digests are recorded in schemas.json. Upstream files are retained verbatim,
+including their embedded attribution. Consult the linked upstream repositories for
+license and usage terms. The Ubuntu consumer schema is locally authored from the
+public Canonical API contract and is identified as such in docs/sources/ubuntu.md.
+
+No schema is fetched remotely during imports. Updating a schema requires a reviewed
+manifest/hash change and validation of supported source versions.

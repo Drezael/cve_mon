@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "name": "production-example",
+  "kind": "production",
+  "env_file": "platform.env",
+  "minimum_free_bytes": 10737418240,
+  "minimum_available_memory_bytes": 4294967296,
+  "minimum_cpus": 2,
+  "certificate_minimum_seconds": 86400,
+  "approval_public_key_file": "/etc/cve-monitoring/approval.pub"
+}

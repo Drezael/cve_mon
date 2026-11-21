@@ -1,0 +1,28 @@
+server {
+    listen 8080 default_server;
+    server_name _;
+    return 421;
+}
+server {
+    listen 8443 ssl default_server;
+    server_name _;
+    ssl_reject_handshake on;
+    return 421;
+}
+server {
+    listen 8080;
+    server_name ${DASHBOARD_DOMAIN};
+    if ($https_authority = "") { return 421; }
+    if ($request_method !~ ^(GET|HEAD)$) { return 426; }
+    return 308 https://$https_authority$request_uri;
+}
+server {
+    listen 8081;
+    server_name health.internal;
+    access_log off;
+    location = /healthz {
+        add_header Cache-Control no-store always;
+        return 200 '{"status":"healthy"}\n';
+    }
+    location / { return 404; }
+}

@@ -1,0 +1,1 @@
+"""Managed server collection configuration."""

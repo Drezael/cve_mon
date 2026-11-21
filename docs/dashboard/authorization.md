@@ -1,0 +1,3 @@
+# Autorisierung
+
+Die Navigation basiert auf /dashboard/me/permissions. Sie ersetzt keine Backendprüfung. Jede Fachabfrage lädt den serverseitigen Principal und prüft Funktion sowie Objekt-ACL erneut. Aggregationen filtern in SQL vor Zählung und Gruppierung. Server- und Finding-Rechte werden unabhängig geprüft. Mehrfachgruppenzugehörigkeit erweitert keine Rechte. Nicht sichtbare UUIDs liefern 404, fehlende Funktionsrechte 403. Archivierte Server sind in den neuen Projektionen ausschließlich Administratoren zugänglich. Fehlende Leserechte ergeben null bzw. nicht verfügbare Bereiche, keine erfundene Nullbewertung.

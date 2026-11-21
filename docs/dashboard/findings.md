@@ -1,0 +1,5 @@
+# Findings
+
+Listen verwenden bestehende /api/v1/findings-Verträge mit CVE-, Prioritäts-, Lifecycle-, technischen, KEV- und Fristfiltern sowie stabiler Sortierung/Pagination. Der ergänzte matching_status-Filter verändert keine Fachdaten. Detailansichten trennen technische Betroffenheit, Prüfstatus, Lifecycle und aktive Ausnahmen. CVSS-Felder enthalten ihre vorhandene Version und Validierungsinformationen; KEV-Quellenaktualität und EPSS mit Quellenstand werden separat dargestellt. EPSS 0..1 wird mit Intl als Prozent formatiert; null und ungültige Werte bleiben unbekannt.
+
+Matching-Kontext enthält Resultat-, Snapshot-, Enrichment- und Regelreferenz. Evidenz, Historie, Episoden und Ausnahmen sind getrennt paginiert. Komponentenentscheidungen enthalten die vom Matcher gelieferten installierten Versionen, Entscheidungsgründe und Provenienz; es werden keine Fixversionen ergänzt. Alle Werte werden als React-Text dargestellt. Quellen-URLs dürfen ausschließlich HTTPS ohne eingebettete Credentials verwenden. Es gibt keine Mutation, Triage, Notizerfassung oder Ausnahmengenehmigung.

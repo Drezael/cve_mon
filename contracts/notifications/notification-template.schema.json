@@ -1,0 +1,46 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "enum": [
+        "finding",
+        "digest"
+      ],
+      "title": "Name",
+      "type": "string"
+    },
+    "language": {
+      "const": "de",
+      "default": "de",
+      "title": "Language",
+      "type": "string"
+    },
+    "subject": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Subject",
+      "type": "string"
+    },
+    "text": {
+      "maxLength": 8192,
+      "minLength": 1,
+      "title": "Text",
+      "type": "string"
+    },
+    "html": {
+      "maxLength": 8192,
+      "minLength": 1,
+      "title": "Html",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "subject",
+    "text",
+    "html"
+  ],
+  "title": "Template",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
