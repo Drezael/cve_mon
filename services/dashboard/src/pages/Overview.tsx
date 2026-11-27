@@ -262,7 +262,12 @@ function OverviewContent({ administrative }: { administrative: boolean }) {
                             <summary>
                                 {t("Verlauf als Tabelle anzeigen")}
                             </summary>
-                            <div className="table-scroll">
+                            <div
+                                className="table-scroll"
+                                tabIndex={0}
+                                role="region"
+                                aria-label={t("Scrollbare Tabelle")}
+                            >
                                 <table>
                                     <thead>
                                         <tr>

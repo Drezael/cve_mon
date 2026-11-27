@@ -11,10 +11,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
 from cve_common.config.secrets import read_secret
-
-EMAIL = re.compile(
-    r"[A-Za-z0-9][A-Za-z0-9._+-]{0,63}@[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?\.[a-z]{2,63}"
-)
+from cve_common.email_address import normalize_address
 
 
 class SMTPConfig(BaseModel):
@@ -43,12 +40,7 @@ class SMTPConfig(BaseModel):
     @field_validator("sender")
     @classmethod
     def address(cls, value: str) -> str:
-        if value:
-            local, separator, domain = value.strip().rpartition("@")
-            value = local + separator + domain.lower()
-        if value and not EMAIL.fullmatch(value):
-            raise ValueError("A single sender address is required")
-        return value
+        return normalize_address(value) if value else value
 
     @field_validator("recipients")
     @classmethod

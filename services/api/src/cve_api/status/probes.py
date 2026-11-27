@@ -216,6 +216,11 @@ def backlog(service: str, metrics: dict[str, Any], limit: int = 900) -> Observat
 
 
 def control_health(data: dict[str, Any]) -> tuple[Observation, Observation]:
+    if data.get("sample_stale"):
+        return (
+            observation("n8n-workflow", "functional", "unknown", "CONTROL_SAMPLE_STALE"),
+            observation("n8n-queue", "backlog", "unknown", "CONTROL_SAMPLE_STALE"),
+        )
     heartbeat = data.get("heartbeat_at")
     age = (
         max(0, (datetime.now(UTC) - datetime.fromisoformat(heartbeat)).total_seconds())

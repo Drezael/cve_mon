@@ -5,16 +5,14 @@ import hashlib
 import json
 import re
 from typing import Any
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qsl, quote, unquote, urlsplit
 
 from cve_matcher.contracts import Decision, Evaluation, Status
 from cve_matcher.cpe import configuration, parts
+from cve_matcher.limits import EvaluationLimit as EvaluationLimit
+from cve_matcher.limits import cpe_leaves
 from cve_matcher.ranges import osv
 from cve_matcher.versions import VersionError, compare
-
-
-class EvaluationLimit(ValueError):
-    """Fixed resource code; the worker must fail instead of committing partial results."""
 
 
 def canonical(value: Any) -> str:
@@ -29,11 +27,41 @@ def purl_key(value: str) -> str | None:
     """Identity only: retain type/namespace and all qualifiers, omit version/subpath."""
     if not value.startswith("pkg:") or len(value) > 2048:
         return None
-    parsed = urlsplit(value[4:])
+    if re.search(r"%(?![0-9a-fA-F]{2})", value):
+        return None
+    try:
+        parsed = urlsplit(value[4:])
+    except ValueError:
+        return None
     path = parsed.path.rsplit("@", 1)[0]
+    if parsed.netloc or not re.fullmatch(r"[a-z][a-z0-9.+-]*/.+", path):
+        return None
+    try:
+        segments = [unquote(segment, errors="strict") for segment in path.split("/")]
+    except UnicodeError:
+        return None
+    if any(not segment or any(ord(c) < 32 for c in segment) for segment in segments):
+        return None
+    path = "/".join(quote(segment, safe="@:+.-_") for segment in segments)
     if "/" not in path or any(c.isspace() for c in value):
         return None
-    return unquote(path) + ("?" + parsed.query if parsed.query else "")
+    try:
+        qualifiers = parse_qsl(parsed.query, keep_blank_values=True, strict_parsing=True)
+    except ValueError:
+        return None
+    if len({key.lower() for key, _ in qualifiers}) != len(qualifiers):
+        return None
+    if any(not re.fullmatch(r"[A-Za-z][A-Za-z0-9._-]*", key) or not val for key, val in qualifiers):
+        return None
+    query = "&".join(
+        quote(key.lower(), safe="") + "=" + quote(val, safe="")
+        for key, val in sorted((k.lower(), v) for k, v in qualifiers)
+    )
+    return path + ("?" + query if query else "")
+
+
+def ecosystem_name(ecosystem: str, name: str) -> str:
+    return re.sub(r"[-_.]+", "-", name).lower() if ecosystem == "PyPI" else name
 
 
 def source_keys(affected: list[dict[str, Any]]) -> set[str]:
@@ -43,7 +71,12 @@ def source_keys(affected: list[dict[str, Any]]) -> set[str]:
         if kind == "osv_package" and isinstance(value, dict):
             package = value.get("package", {})
             if package.get("name") and package.get("ecosystem"):
-                keys.add("osv:" + package["ecosystem"] + ":" + package["name"])
+                keys.add(
+                    "osv:"
+                    + package["ecosystem"]
+                    + ":"
+                    + ecosystem_name(package["ecosystem"], package["name"])
+                )
                 if package["ecosystem"].split(":")[0] in {"Ubuntu", "Debian"}:
                     keys.add(
                         "osv-source:" + package["ecosystem"].split(":")[0] + ":" + package["name"]
@@ -63,29 +96,15 @@ def source_keys(affected: list[dict[str, Any]]) -> set[str]:
             if value.get("product"):
                 keys.add("name:" + value["product"])
         elif kind == "nvd_configuration_logic":
-
-            def walk(node: Any, depth: int = 0) -> None:
-                if depth > 32:
-                    return
-                if isinstance(node, list):
-                    for child in node[:4096]:
-                        walk(child, depth + 1)
-                elif isinstance(node, dict):
-                    if "criteria" in node:
-                        try:
-                            p = parts(node["criteria"])
-                            if all(
-                                v not in {"*", "-"} and "*" not in v and "?" not in v for v in p[:3]
-                            ):
-                                keys.add("cpe:" + ":".join(p[:3]).lower())
-                            else:
-                                keys.add("cpe-wildcard")
-                        except ValueError:
-                            pass
-                    for key in ["nodes", "children", "cpeMatch"]:
-                        walk(node.get(key, []), depth + 1)
-
-            walk(value)
+            for leaf in cpe_leaves(value):
+                try:
+                    p = parts(leaf.get("criteria", ""))
+                    if all(v not in {"*", "-"} and "*" not in v and "?" not in v for v in p[:3]):
+                        keys.add("cpe:" + ":".join(p[:3]).lower())
+                    else:
+                        keys.add("cpe-wildcard")
+                except ValueError:
+                    pass
     return keys
 
 
@@ -163,7 +182,12 @@ def component_keys(component: dict[str, Any]) -> set[str]:
         if component.get("ecosystem") in {"Ubuntu", "Debian"}:
             keys.add("osv-source:" + component["ecosystem"] + ":" + component["source_package"])
     if component.get("ecosystem") and component.get("name"):
-        keys.add("osv:" + component["ecosystem"] + ":" + component["name"])
+        keys.add(
+            "osv:"
+            + component["ecosystem"]
+            + ":"
+            + ecosystem_name(component["ecosystem"], component["name"])
+        )
     if component.get("vendor") and component.get("product"):
         keys.add("product:" + component["vendor"].lower() + ":" + component["product"].lower())
     if component.get("purl"):
@@ -269,7 +293,10 @@ def cna(component: dict[str, Any], value: dict[str, Any]) -> tuple[Status, str, 
     decisions: list[Status] = []
     unsupported = False
     adapter_used = None
-    for row in value.get("versions", [])[:1024]:
+    versions = value.get("versions", [])
+    if len(versions) > 4096:
+        raise EvaluationLimit("cna_versions_limit")
+    for row in versions:
         adapter = {"semver": "semver", "rpm": "rpm", "dpkg": "debian", "debian": "debian"}.get(
             row.get("versionType")
         )
@@ -414,6 +441,10 @@ def evaluate(
                 exact = component.get("ecosystem") == package.get("ecosystem") and component.get(
                     "name"
                 ) == package.get("name")
+                if component.get("ecosystem") == package.get("ecosystem") == "PyPI":
+                    exact = ecosystem_name("PyPI", component.get("name", "")) == ecosystem_name(
+                        "PyPI", package.get("name", "")
+                    )
                 ecosystem = package.get("ecosystem", "")
                 if ecosystem.split(":")[0] in {"Ubuntu", "Debian"}:
                     fields = ecosystem.split(":")

@@ -83,7 +83,7 @@ INTERNAL_DEFAULTS: Mapping[str, str] = MappingProxyType(
         "MAILHOG_HTTP_PORT": "8025",
         "MAX_BODY_SIZE": "10m",
         "PG_CONNECT_TIMEOUT": "5",
-        "RATE_BURST": "10",
+        "RATE_BURST": "100",
         "STATUS_COLLECTOR_PAUSED": "false",
         "UPLOAD_RATE": "10r/m",
         "WEB_RATE": "120r/m",

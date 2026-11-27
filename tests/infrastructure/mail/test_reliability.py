@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from scripts.infrastructure import envoy, mail
+from scripts.infrastructure import mail
 from scripts.infrastructure.manage import compose
 from tests.infrastructure.mail.conftest import Lab
 
@@ -14,12 +14,11 @@ pytestmark = [pytest.mark.mail, pytest.mark.security]
 
 
 def restore_route(lab: Lab) -> None:
-    info = envoy.inspect_container(lab.sink)
-    ip = info["NetworkSettings"]["Networks"][lab.config.project + "_cve_egress_external"][
-        "IPAddress"
-    ]
-    _, pid = envoy.netns(lab.config)
-    envoy.namespace_command(pid, ["ip", "route", "replace", "93.184.216.34/32", "via", ip])
+    # Postfix resolves the configured direct smarthost; only its input guard needs rebinding.
+    mail.release(lab.config)
+    from scripts.smtp.manage import reload_postfix
+
+    reload_postfix(lab.config)
 
 
 @pytest.mark.parametrize(
@@ -86,13 +85,12 @@ def test_queue_survives_restart_recreate_and_recovers(mail_lab: Lab) -> None:
             break
         except Exception:
             time.sleep(0.2)
-    current = json.loads((envoy.directory(lab.config) / "policy.json").read_text())
-    envoy.start(lab.config, current, {"mail-relay": original})
     mail.release(lab.config)
-    restore_route(lab)
     compose(lab.config, ["up", "-d", "--wait", "--wait-timeout", "40", "cve-mail-relay"])
+    restore_route(lab)
     assert mail.container(lab.config)["Id"] == original
     assert any(q["queue_id"] == queue_id for q in mail.queue(lab.config))
+    compose(lab.config, ["up", "-d", "--force-recreate", "cve-mail-relay"])
     mail.start(lab.config)
     restore_route(lab)
     assert mail.container(lab.config)["Id"] != original
@@ -164,18 +162,17 @@ def test_native_backoff_retries_without_operator_flush(mail_lab: Lab) -> None:
     lab.wait(lambda: not mail.queue(lab.config))
 
 
-def test_envoy_outage_preserves_locally_healthy_queue(mail_lab: Lab) -> None:
+def test_upstream_outage_preserves_locally_healthy_queue(mail_lab: Lab) -> None:
     lab = mail_lab
     lab.clean()
-    compose(lab.config, ["stop", "cve-egress-proxy"])
+    lab.control(mode="no_banner")
     try:
         assert lab.submit().get("accepted")
         lab.wait(lambda: any(q["queue_name"] == "deferred" for q in mail.queue(lab.config)))
         mail.exec_mail(lab.config, ["/opt/cve-mail/healthcheck.sh"])
         assert not lab.control()["messages"]
     finally:
-        current = json.loads((envoy.directory(lab.config) / "policy.json").read_text())
-        envoy.start(lab.config, current, {"mail-relay": mail.container(lab.config)["Id"]})
+        lab.control(mode="ok")
         restore_route(lab)
     mail.exec_mail(lab.config, ["postqueue", "-f"])
     lab.wait(lambda: len(lab.control()["messages"]) == 1)

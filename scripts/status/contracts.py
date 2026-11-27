@@ -5,6 +5,7 @@ from pathlib import Path
 
 from cve_api.status.models import EntityRead, IncidentRead, Maintenance, Observation
 from cve_api.status.router import router
+from cve_common.release import VERSION
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -24,7 +25,7 @@ def main() -> None:
         (folder / (name + ".schema.json")).write_text(
             json.dumps(model.model_json_schema(), indent=2) + "\n"
         )
-    app = FastAPI(title="CVE internal status API", version="0.22.0")
+    app = FastAPI(title="CVE internal status API", version=VERSION)
     app.include_router(router)
     (root / "contracts/api/status.openapi.json").write_text(
         json.dumps(app.openapi(), indent=2) + "\n"

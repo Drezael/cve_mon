@@ -30,13 +30,21 @@ async def enroll(browser: Browser) -> tuple[bytes, list[str]]:
 
 
 async def test_admin_full_mfa_enrollment_and_session_rotation(browser: Browser) -> None:
-    _, name, password = await browser.user(admin=True)
+    uid, name, password = await browser.user(admin=True)
     response = await browser.login(name, password)
     assert response.status_code == 200, response.text
     assert response.json()["state"] == "authenticated"
     pending = browser.client.cookies.get(SESSION_COOKIE)
     assert (await browser.client.get("/api/v1/auth/_protected")).status_code == 200
     secret, codes = await enroll(browser)
+    with browser.lab.owner() as connection:
+        method = connection.execute(
+            "SELECT last_used_step FROM security.mfa_methods WHERE user_id=%s "
+            "AND revoked_at IS NULL AND verified_at IS NOT NULL",
+            (uid,),
+        ).fetchone()
+        assert method is not None
+        consumed_step = method["last_used_step"]
     assert len(codes) == 10 and len(set(codes)) == 10
     assert browser.client.cookies.get(SESSION_COOKIE) != pending
     assert (await browser.client.get("/api/v1/auth/_protected")).status_code == 200
@@ -55,7 +63,7 @@ async def test_admin_full_mfa_enrollment_and_session_rotation(browser: Browser) 
     assert (await browser.login(name, password)).json()["state"] == "mfa_pending"
     # Enrollment consumed the current step. Replay is denied even in a new password challenge.
     assert (
-        await browser.post("mfa/verify", {"code": code(secret, browser.lab.clock_step())})
+        await browser.post("mfa/verify", {"code": code(secret, consumed_step)})
     ).status_code == 401
     good = await browser.post("mfa/verify", {"code": code(secret, browser.lab.clock_step() + 1)})
     assert good.status_code == 200, good.text

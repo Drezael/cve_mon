@@ -79,7 +79,7 @@ def main() -> None:
                 print(json.dumps({"exported_images": len(result["images"])}))
             else:
                 artifacts.import_images(args.bundle, args.directory)
-                print(json.dumps({"imported_images": 8}))
+                print(json.dumps({"imported_images": len(release.verify(args.bundle)["images"])}))
             return
         if args.environment is None:
             parser.error("--environment required")

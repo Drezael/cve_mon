@@ -38,8 +38,18 @@ async def test_scoped_dashboard_and_source_context(harness: Harness) -> None:
     assert own_notifications.status_code == 200, own_notifications.text
     assert own_notifications.json()["total"] > 0
     notification = own_notifications.json()["items"][0]
-    assert notification["cve_id"] == f["cve_id"]
-    assert notification["server_id"] == str(f["server_id"])
+    # Current notifications summarize a complete server scan, rather than one CVE.
+    assert notification["finding_id"] is None
+    assert notification["cve_id"] is None and notification["server_id"] is None
+    with browser.lab.owner() as c:
+        report = c.execute(
+            "SELECT r.origin,s.server_id,s.snapshot_id FROM automation.mail_reports r "
+            "JOIN automation.mail_report_servers s ON s.report_id=r.id "
+            "WHERE r.notification_id=%s AND s.server_id=%s",
+            (notification["id"], f["server_id"]),
+        ).fetchone()
+        assert report and report["origin"] == "scan" and report["snapshot_id"]
+        assert report["server_id"] == f["server_id"]
     for section in ["history", "attempts"]:
         history = await call(
             browser,

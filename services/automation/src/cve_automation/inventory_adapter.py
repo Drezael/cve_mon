@@ -112,6 +112,8 @@ def packages(result: dict[str, Any], fallback: dict[str, Any], manager: str) -> 
     kind = "dpkg" if manager in ("apt", "dpkg") else "rpm"
     entries = []
     invalid = False
+    if fallback.get("rc", 1) == 0:
+        result = {}
     if not result.get("failed") and isinstance(
         result.get("ansible_facts", {}).get("packages"), dict
     ):
@@ -123,13 +125,24 @@ def packages(result: dict[str, Any], fallback: dict[str, Any], manager: str) -> 
     elif fallback.get("rc", 1) == 0:
         for line in fallback.get("stdout", "").splitlines():
             parts = line.split("\t")
-            if kind == "dpkg" and len(parts) == 4:
-                name, version, arch, state = parts
+            if kind == "dpkg" and len(parts) in {4, 6}:
+                name, version, arch, state = parts[:4]
                 if state != "installed":
                     continue
-                entries.append({"name": name, "version": version, "arch": arch})
-            elif kind == "rpm" and len(parts) == 5:
-                name, epoch, version, release, arch = parts
+                entries.append(
+                    {
+                        "name": name,
+                        "version": version,
+                        "arch": arch,
+                        **(
+                            {"source_package": {"name": parts[4], "version": parts[5]}}
+                            if len(parts) == 6
+                            else {}
+                        ),
+                    }
+                )
+            elif kind == "rpm" and len(parts) in {5, 6}:
+                name, epoch, version, release, arch = parts[:5]
                 entries.append(
                     {
                         "name": name,
@@ -137,6 +150,7 @@ def packages(result: dict[str, Any], fallback: dict[str, Any], manager: str) -> 
                         "version": version,
                         "release": release,
                         "arch": arch,
+                        **({"source_rpm": parts[5]} if len(parts) == 6 else {}),
                     }
                 )
             else:
@@ -161,9 +175,21 @@ def packages(result: dict[str, Any], fallback: dict[str, Any], manager: str) -> 
                 if epoch not in (None, "", "(none)", "(null)"):
                     row["epoch"] = field(str(epoch), 32)
                     version = row["epoch"] + ":" + version
+            source = entry.get("source_package")
+            if source:
+                row["source_package"] = {
+                    "name": field(source["name"]),
+                    "version": field(source["version"], 512),
+                }
+            elif entry.get("source_rpm", "").endswith(".src.rpm"):
+                name, upstream, release = entry["source_rpm"][:-8].rsplit("-", 2)
+                row["source_package"] = {
+                    "name": field(name),
+                    "version": field(upstream + "-" + release, 512),
+                }
             row["version"] = field(version, 512)
             rows.append(row)
-        except (KeyError, TypeError, InventoryError):
+        except (KeyError, TypeError, ValueError):
             invalid = True
     return section(rows, invalid, "invalid_package_record")
 

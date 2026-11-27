@@ -3,9 +3,9 @@
 from typing import Any, Literal
 from uuid import UUID, uuid4
 
+from cve_common.database.queries import one, rows
 from cve_common.jobs.contracts import Payload
 from cve_notification.contracts import Preferences, RuleChange, TemplateChange
-from cve_notification.repository import one, rows
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import Field
 from sqlalchemy import text
@@ -44,15 +44,20 @@ def service(request: Request) -> Findings:
 
 
 def scope() -> str:
-    return (
-        "(n.recipient_user_id=:actor OR :admin) AND (:admin OR EXISTS(SELECT 1 FROM au"
-        "tomation.mail_reports mr WHERE mr.notification_id=n.id AND mr.user_id=:actor)"
-        " OR\n    (n.find"
-        "ing_id IS NOT NULL AND automation.notification_recipient(:actor,n"
-        ".finding_id)) OR\n    (n.kind='digest' AND EXISTS(SELECT 1 FROM au"
-        "tomation.notification_intents child WHERE child.digest_id=n.id AN"
-        "D automation.notification_recipient(:actor,child.finding_id))))"
-    )
+    return """
+(n.recipient_user_id=:actor OR :admin) AND (
+ :admin OR EXISTS(
+  SELECT 1 FROM automation.mail_reports mr
+  JOIN automation.mail_report_servers srv ON srv.report_id=mr.id
+  WHERE mr.notification_id=n.id AND mr.user_id=:actor
+   AND automation.report_server_access(:actor,srv.server_id)
+ ) OR (n.finding_id IS NOT NULL AND automation.notification_recipient(:actor,n.finding_id))
+ OR (n.kind='digest' AND EXISTS(
+  SELECT 1 FROM automation.notification_intents child WHERE child.digest_id=n.id
+   AND automation.notification_recipient(:actor,child.finding_id)
+ ))
+)
+"""
 
 
 @router.get("/preferences")

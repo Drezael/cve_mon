@@ -53,7 +53,7 @@ def test_single_linear_migration_chain(repository_root: Path) -> None:
         AlembicConfig(str(repository_root / "database/alembic.ini"))
     )
     revisions = list(script.walk_revisions())
-    assert len(script.get_heads()) == 1 and len(revisions) == 74
+    assert len(script.get_heads()) == 1 and len(revisions) == 77
     assert revisions[-1].revision == "0001_foundation"
 
 
@@ -79,3 +79,31 @@ def test_existing_development_credentials_survive_workflow_identity_upgrade(tmp_
     prepare(config)
     assert read_secret(secret_file(config, "workflow_control")) == control
     assert all(secret_file(config, role).read_bytes() == value for role, value in before.items())
+
+
+@pytest.mark.parametrize("stop_fails", [False, True])
+def test_test_cleanup_stops_owned_control_before_removing_resources(
+    monkeypatch: pytest.MonkeyPatch, stop_fails: bool
+) -> None:
+    from scripts.automation_executor import agent
+    from scripts.database import manage
+    from scripts.infrastructure import storage
+
+    config = load_config(overrides={"COMPOSE_PROJECT_NAME": "cve-db-test-cleanup-order"})
+    calls: list[str] = []
+
+    def stop(_config: object) -> None:
+        calls.append("control")
+        if stop_fails:
+            raise ValueError("Controller ownership could not be verified")
+
+    monkeypatch.setattr(agent, "stop", stop)
+    monkeypatch.setattr(manage, "compose", lambda _c, args: calls.append(args[0]))
+    monkeypatch.setattr(storage, "remove", lambda _c: calls.append("storage"))
+    if stop_fails:
+        with pytest.raises(ValueError, match="ownership"):
+            manage.cleanup_test(config)
+        assert calls == ["control"]
+    else:
+        manage.cleanup_test(config)
+        assert calls == ["control", "down", "storage"]

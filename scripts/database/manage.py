@@ -557,6 +557,9 @@ def cleanup_test(config: Config) -> None:
     "Löschen ausschließlich bei explizit generiertem DB-Testpräfix."
     if not config.project.startswith(("cve-db-test-", "cve-db-restore-")):
         raise ValueError("Keine Datenlöschung außerhalb eigener Testprojekte")
+    from scripts.automation_executor.agent import stop as stop_agent
+
+    stop_agent(config)
     compose(config, ["down"])
     from scripts.infrastructure.storage import remove
 

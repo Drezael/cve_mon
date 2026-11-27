@@ -10,10 +10,8 @@ import hashlib
 import json
 import os
 import shutil
-import signal
 import subprocess
 import sys
-import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import replace
@@ -476,45 +474,13 @@ def own_project(config: Config) -> None:
 
 
 def stop_controller(config: Config) -> None:
-    """Stop only this project's host controller, never an unrelated PID or user unit."""
-    from scripts.automation_executor.agent import directory
+    """Stop the project's verified host controller through the shared lifecycle helper."""
+    from scripts.automation_executor.agent import stop as stop_agent
 
-    unit = "cve-automation-control-" + config.project
-    if shutil.which("systemctl"):
-        active = subprocess.run(
-            ["systemctl", "--user", "is-active", "--quiet", unit], capture_output=True, check=False
-        )
-        if active.returncode == 0:
-            working = run(
-                ["systemctl", "--user", "show", "--property=WorkingDirectory", "--value", unit]
-            ).stdout.strip()
-            if working != str(config.root):
-                raise LaunchError("Hostcontroller gehört zu einem anderen Arbeitsverzeichnis.")
-            run(["systemctl", "--user", "stop", unit])
-    pidfile = directory(config) / "agent.pid"
-    if not pidfile.exists():
-        return
-    pid = int(pidfile.read_text())
-    commandline = Path("/proc") / str(pid) / "cmdline"
-    if commandline.exists():
-        args = commandline.read_bytes().decode().split("\0")
-        expected = str(directory(config) / "agent-config.json")
-        if pid <= 1 or args[1:5] != [
-            "-m",
-            "scripts.automation_executor.agent",
-            "--config",
-            expected,
-        ]:
-            raise LaunchError(
-                "Controller-PID konnte diesem Projekt nicht sicher zugeordnet werden."
-            )
-        os.kill(pid, signal.SIGTERM)
-        deadline = time.monotonic() + 15
-        while commandline.exists() and commandline.read_bytes():
-            if time.monotonic() >= deadline:
-                raise LaunchError("Hostcontroller wurde nicht rechtzeitig beendet.")
-            time.sleep(0.1)
-    pidfile.unlink(missing_ok=True)
+    try:
+        stop_agent(config)
+    except ValueError as error:
+        raise LaunchError(str(error)) from error
 
 
 def stop(config: Config, *, remove: bool) -> None:

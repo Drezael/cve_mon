@@ -1,4 +1,4 @@
-# Ausschließlich Entwicklungswerkzeuge; noch kein Anwendungspaket.
+# Repositoryweite Prüfwerkzeuge; Anwendungspakete unter packages/ und services/.
 [tool.ruff]
 cache-dir = ".runtime/cache/ruff"
 target-version = "py312"
@@ -20,10 +20,12 @@ cache_dir = ".runtime/cache/pytest"
 minversion = "9.0"
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "--import-mode=importlib -ra --strict-config --strict-markers -m 'not orchestration and not deployment and not hardening and not status_integration and not dashboard_administration and not dashboard and not infrastructure and not database and not egress and not mail and not services_integration and not automation and not authentication and not authorization and not server_administration and not inventory_upload and not inventory_processor and not cve_importer and not cve_enricher and not matching and not findings and not notifications'"
+addopts = "--import-mode=importlib -ra --strict-config --strict-markers -m '(domain or (not orchestration and not deployment and not hardening and not status_integration and not dashboard_administration and not dashboard and not infrastructure and not database and not egress and not mail and not services_integration and not automation and not authentication and not authorization and not server_administration and not inventory_upload and not inventory_processor and not cve_importer and not cve_enricher and not matching and not findings and not notifications)) and not performance'"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 markers = [
+    "performance: Measured workload budgets, executed without coverage instrumentation",
+    "domain: Pure application decisions with no external services",
     "orchestration: Isolated central n8n stage control, recovery, roles and live workflow tests",
     "deployment: Phase-24 isolated pinned-release installation and recovery",
     "hardening: Isolated Phase-23 security, workload and recovery tests",
@@ -33,7 +35,7 @@ markers = [
     "notifications: Isolated n8n, notification, SMTP and native safety tests",
     "findings: Isolated finding lifecycle, PostgreSQL, API, RBAC and worker tests",
     "matching: Isolierte Matching-/Versions-/PostgreSQL-/Worker-Tests",
-    "cve_enricher: Isolierte Enrichment-/CVSS-/EPSS-/PostgreSQL-/Envoy-Tests",
+    "cve_enricher: Isolierte Enrichment-/CVSS-/EPSS-/PostgreSQL-/HTTPS-Tests",
     "cve_importer: Isolierte Quellen-/PostgreSQL-/Envoy-/Importer-Tests",
     "inventory_processor: Isolierte PostgreSQL-/Worker-/Snapshot-Tests",
     "inventory_upload: Isolierte reale mTLS-/Token-/Dashboard-/Inventarannahme-Tests",
@@ -46,12 +48,12 @@ markers = [
     "egress: Echte isolierte Envoy-/DNS-/SMTP-/Namespace-Sicherheitstests",
     "database: Echte isolierte PostgreSQL-Tests via make db-test",
     "infrastructure: Echte Docker-/TLS-Netzwerktests, explizit via make infra-test",
-    "integration: Tests mit externen Komponenten (spätere Phasen)",
+    "integration: Tests mit externen Komponenten",
     "security: Sicherheitsprüfungen mit synthetischen Testdaten",
 ]
 
 [tool.coverage.run]
-source = ["scripts"]
+source = ["scripts", "packages/cve_common/src/cve_common", "services/api/src/cve_api", "services/inventory/src/cve_inventory", "services/importer/src/cve_importer", "services/enricher/src/cve_enricher", "services/matcher/src/cve_matcher", "services/findings/src/cve_findings", "services/notification/src/cve_notification", "services/automation/src/cve_automation", "services/event-dispatcher/src/cve_event_dispatcher"]
 branch = true
 
 [tool.coverage.report]

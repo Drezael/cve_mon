@@ -16,10 +16,11 @@ export function useData<T>(
         changeEvent?: string;
         initialDelay?: number;
     } = {},
-) {
+): { data: T | null; error: Error | null; updatedAt?: string | null; reload: () => void } {
     const [data, setData] = useState<T | null>(null);
     const [error, setError] = useState<Error | null>(null);
     const [version, reload] = useState(0);
+    const [updatedAt, setUpdatedAt] = useState<string | null>(null);
     const {
         refreshInterval = 0,
         refreshEvent,
@@ -38,6 +39,7 @@ export function useData<T>(
         let loading = false;
         let pending = false;
         setData(null);
+        setUpdatedAt(null);
         setError(null);
         async function load() {
             if (c.signal.aborted) return;
@@ -51,6 +53,7 @@ export function useData<T>(
                 const value = await api(path, schema, { signal: c.signal });
                 if (!c.signal.aborted) {
                     setData(value);
+                    setUpdatedAt(new Date().toISOString());
                     setError(null);
                 }
             } catch (problem) {
@@ -85,6 +88,7 @@ export function useData<T>(
     return {
         data,
         error,
+        updatedAt,
         reload: () => {
             setData(null);
             setError(null);
@@ -381,7 +385,12 @@ export function FindingRows({
 }) {
     useLocale();
     return (
-        <div className="table-scroll">
+        <div
+            className="table-scroll"
+            tabIndex={0}
+            role="region"
+            aria-label={t("Scrollbare Tabelle")}
+        >
             <table>
                 <caption className="sr-only">
                     {t("Findings im berechtigten Bereich")}

@@ -1,7 +1,7 @@
 import { translateMessage, t, useLocale } from "./i18n";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { z } from "zod";
-import { api } from "./api";
+import { api, ApiError } from "./api";
 import { Modal } from "./admin/Form";
 
 export default function DeleteServer({
@@ -20,6 +20,8 @@ export default function DeleteServer({
     const [confirm, setConfirm] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
+    const operationId = useRef(crypto.randomUUID());
+    const [uncertain, setUncertain] = useState(false);
     if (!server.can_delete) return null;
     async function remove() {
         if (busy) return;
@@ -30,10 +32,12 @@ export default function DeleteServer({
                 method: "DELETE",
                 timeoutMs: 60000,
                 version: server.version,
+                idempotencyKey: operationId.current,
             });
             setConfirm(false);
             onDeleted();
         } catch (e) {
+            if (e instanceof ApiError && [0, 503, 504].includes(e.status)) setUncertain(true);
             setError(
                 e instanceof Error
                     ? e.message
@@ -42,6 +46,15 @@ export default function DeleteServer({
         } finally {
             setBusy(false);
         }
+    }
+    async function checkStatus() {
+        setBusy(true);
+        try {
+            const result = await api(`/api/v1/dashboard/servers/erase-operations/${operationId.current}`, z.object({ state: z.string() }));
+            if (result.state === "completed") { setConfirm(false); onDeleted(); }
+            else setError(result.state === "failed" ? t("Löschung fehlgeschlagen.") : t("Löschung läuft noch."));
+        } catch { setError(t("Status derzeit nicht verfügbar. Bitte erneut prüfen.")); }
+        finally { setBusy(false); }
     }
     return (
         <>
@@ -74,6 +87,7 @@ export default function DeleteServer({
                         </p>
                     )}
                     <div className="actions">
+                        {uncertain && <button disabled={busy} onClick={() => void checkStatus()}>{t("Status prüfen")}</button>}
                         <button
                             disabled={busy}
                             onClick={() => setConfirm(false)}
@@ -82,7 +96,7 @@ export default function DeleteServer({
                         </button>
                         <button
                             className="danger"
-                            disabled={busy}
+                            disabled={busy || uncertain}
                             onClick={() => void remove()}
                         >
                             {busy ? t("Wird gelöscht …") : t("Server löschen")}

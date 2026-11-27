@@ -6,7 +6,8 @@ import subprocess
 import time
 import uuid
 from collections.abc import Iterator
-from dataclasses import dataclass
+from contextlib import ExitStack
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -63,8 +64,15 @@ class Lab:
 
 @pytest.fixture(scope="session")
 def envoy_lab() -> Iterator[Lab]:
+    yield from isolated_envoy_lab()
+
+
+def isolated_envoy_lab() -> Iterator[Lab]:
     config = load_config(
         overrides={"COMPOSE_PROJECT_NAME": "cve-egress-test-" + uuid.uuid4().hex[:10]}
+    )
+    config = replace(
+        config, compose_overrides=(config.root / "tests/infrastructure/envoy/compose.yml",)
     )
     files = directory(config) / "fixtures"
     files.mkdir(parents=True, mode=0o755)
@@ -99,7 +107,9 @@ def envoy_lab() -> Iterator[Lab]:
     containers = []
     networks = []
     label = "org.cve-monitoring.egress-test=" + config.project
-    try:
+    from tests.resources import remove
+
+    with ExitStack() as cleanup:
         for zone, internal in [("cve_egress_internal", True), ("cve_egress_external", False)]:
             name = config.project + "_" + zone
             args = [
@@ -117,6 +127,9 @@ def envoy_lab() -> Iterator[Lab]:
                 args += ["--internal"]
             run(args + [name])
             networks.append(name)
+            cleanup.callback(
+                remove, "network", name, "org.cve-monitoring.egress-test", config.project
+            )
         sink = config.project + "-sink"
         run(
             [
@@ -146,6 +159,9 @@ def envoy_lab() -> Iterator[Lab]:
             ]
         )
         containers.append(sink)
+        cleanup.callback(
+            remove, "container", sink, "org.cve-monitoring.egress-test", config.project
+        )
         sinkinfo = inspect_container(sink)
         sinkip = sinkinfo["NetworkSettings"]["Networks"][networks[1]]["IPAddress"]
         # Public-IP alias and route only inside OWN test namespaces: never a host/public route.
@@ -194,6 +210,9 @@ def envoy_lab() -> Iterator[Lab]:
                 ]
             )
             containers.append(name)
+            cleanup.callback(
+                remove, "container", name, "org.cve-monitoring.egress-test", config.project
+            )
             clients[role] = name
         value = policy()
         value["clients"].append("sources")
@@ -231,6 +250,7 @@ def envoy_lab() -> Iterator[Lab]:
             "port": 587,
             "purpose": "Isolierter SMTP-Testserver",
         }
+        cleanup.callback(compose, config, ["rm", "-s", "-f", "cve-egress-proxy"])
         # The standard start validates/installs the exact same production namespace rules.
         start(config, value, {role: clients[role] for role in CLIENT_SERVICES})
         _, pid = netns(config)
@@ -247,32 +267,3 @@ def envoy_lab() -> Iterator[Lab]:
             time.sleep(0.1)
         lab = Lab(config, clients, sink, value, files)
         yield lab
-    finally:
-        try:
-            name = compose(config, ["ps", "-a", "-q", "cve-egress-proxy"]).stdout.strip()
-            logs = run([*docker_command(), "logs", name])
-            (directory(config) / "envoy-test.log").write_text(logs.stdout + logs.stderr)
-            logs = run([*docker_command(), "logs", sink])
-            (directory(config) / "sink-test.log").write_text(logs.stdout + logs.stderr)
-        finally:
-            compose(config, ["down"])
-        for name in reversed(containers):
-            assert (
-                inspect_container(name)["Config"]["Labels"].get("org.cve-monitoring.egress-test")
-                == config.project
-            )
-            run([*docker_command(), "rm", "-f", name])
-        for name in reversed(networks):
-            # Compose may already remove its own labelled networks after clients are removed.
-            result = subprocess.run(
-                [*docker_command(), "network", "inspect", name],
-                check=False,
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode == 0:
-                assert (
-                    json.loads(result.stdout)[0]["Labels"].get("org.cve-monitoring.egress-test")
-                    == config.project
-                )
-                run([*docker_command(), "network", "rm", name])

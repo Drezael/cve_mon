@@ -1,9 +1,11 @@
+import type { components } from "../generated/api";
 import { translateMessage, t, useLocale } from "../i18n";
 import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { api } from "../api";
 import { Card, State, useData } from "../ui";
 import { date } from "../format";
+import { Link } from "react-router-dom";
 
 const profileSchema = z.object({
     version: z.number(),
@@ -19,9 +21,11 @@ const profileSchema = z.object({
     host_key_confirmed: z.boolean(),
     mount_paths: z.array(z.string()),
 });
-const schema = z.object({
+const schema: z.ZodType<components["schemas"]["SettingsRead"]> = z.object({
     profile: profileSchema.nullable(),
     credentials_configured: z.boolean(),
+    vault_configured: z.boolean(),
+    editable: z.boolean(),
     runs: z.array(
         z.object({
             id: z.string(),
@@ -30,6 +34,10 @@ const schema = z.object({
             action: z.string(),
             state: z.string(),
             requested_at: z.string(),
+            started_at: z.string().nullable(),
+            workflow_id: z.string().nullable(),
+            submission_id: z.string().nullable(),
+            trigger_type: z.string(),
             finished_at: z.string().nullable(),
             error_code: z.string().nullable(),
             host_key: z.string().nullable(),
@@ -90,11 +98,12 @@ function ConnectionForm({
             );
             await api(
                 `/api/v1/dashboard/servers/${server}/ansible`,
-                z.unknown(),
+                z.object({ saved: z.literal(true) }),
                 {
                     method: "PUT",
                     body: {
                         ...connection,
+                        version: profile?.version ?? 0,
                         ...Object.fromEntries(
                             Object.entries(secrets).filter(([, v]) => v !== ""),
                         ),
@@ -291,7 +300,22 @@ export default function AnsibleSettings({ server }: { server: string }) {
         setBusy(true);
         setNotice("");
         try {
-            await api(`${path}/${name}`, z.unknown(), { method: "POST", body });
+            if (name === "confirm-key") {
+                await api(
+                    `${path}/${name}`,
+                    z.object({ confirmed: z.literal(true) }),
+                    { method: "POST", body },
+                );
+            } else {
+                await api(
+                    `${path}/${name}`,
+                    z.object({
+                        run_id: z.string(),
+                        status: z.literal("pending"),
+                    }),
+                    { method: "POST", body },
+                );
+            }
             setNotice(
                 name === "confirm-key"
                     ? t("Hostkey bestätigt.")
@@ -331,12 +355,38 @@ export default function AnsibleSettings({ server }: { server: string }) {
                 <State error={result.error} reload={result.reload} />
             ) : (
                 <>
-                    <ConnectionForm
-                        server={server}
-                        profile={data.profile}
-                        reload={result.reload}
-                    />
-                    {data.profile && (
+                    {!data.editable ? (
+                        <p>
+                            {t(
+                                "Nur der Eigentümer dieses Ansible-Profils kann die Zugangsdaten in seinem persönlichen Vault ändern.",
+                            )}
+                        </p>
+                    ) : !data.vault_configured ? (
+                        <p>
+                            {t(
+                                "Richte vor der Ansible-Konfiguration deinen persönlichen Vault ein.",
+                            )}{" "}
+                            <Link to="/settings/ansible-vault">
+                                {t("Mein Ansible-Vault")}
+                            </Link>
+                        </p>
+                    ) : (
+                        <>
+                            {data.profile && !data.credentials_configured && (
+                                <p role="alert">
+                                    {t(
+                                        "Bitte hinterlege die Zugangsdaten erneut in deinem persönlichen Vault. Das bisherige Ansible-Profil ist deaktiviert.",
+                                    )}
+                                </p>
+                            )}
+                            <ConnectionForm
+                                server={server}
+                                profile={data.profile}
+                                reload={result.reload}
+                            />
+                        </>
+                    )}
+                    {data.profile && data.credentials_configured && (
                         <>
                             <p>
                                 {t("Hostkey:")}{" "}
@@ -413,7 +463,12 @@ export default function AnsibleSettings({ server }: { server: string }) {
                     {data.runs.length === 0 ? (
                         <p>{t("Noch keine Läufe.")}</p>
                     ) : (
-                        <div className="table-scroll">
+                        <div
+                            className="table-scroll"
+                            tabIndex={0}
+                            role="region"
+                            aria-label={t("Scrollbare Tabelle")}
+                        >
                             <table>
                                 <thead>
                                     <tr>

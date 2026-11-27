@@ -35,7 +35,7 @@ def test_template_preserves_nginx_variables() -> None:
 @pytest.mark.infrastructure
 def test_image_version_and_modules(infra_config: Config) -> None:
     result = compose(infra_config, ["exec", "-T", "cve-nginx", "nginx", "-V"])
-    assert "nginx/1.30.6" in result.stderr
+    assert "nginx/1.30.7" in result.stderr
     assert "--with-http_ssl_module" in result.stderr
     assert "TLS SNI support enabled" in result.stderr
 
@@ -169,7 +169,15 @@ def test_restart_and_idempotent_start(infra_config: Config) -> None:
 
 @pytest.mark.infrastructure
 def test_production_rejects_development_ca(infra_config: Config) -> None:
-    config = Config(infra_config.root, {**infra_config.values, "APP_ENV": "production"})
+    import shutil
+
+    folder = Path(infra_config.values["TLS_CERT_FILE"]).parent
+    shutil.copyfile(infra_config.values["TLS_CERT_FILE"], folder / "fullchain.pem")
+    shutil.copyfile(infra_config.values["TLS_KEY_FILE"], folder / "privkey.pem")
+    (folder / "privkey.pem").chmod(0o600)
+    config = Config(
+        infra_config.root, {**infra_config.values, "APP_ENV": "production", "TLS_DIR": str(folder)}
+    )
     with pytest.raises(ValueError, match="Entwicklungszertifikate"):
         certificate_preflight(config)
 

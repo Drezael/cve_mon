@@ -1,6 +1,6 @@
 # Eingeschränkte n8n-Laufzeit
 
-Das unveränderte Herstellerimage `n8nio/n8n:2.46.7` wird per Digest aus
+Das unveränderte Herstellerimage `n8nio/n8n:2.48.8` wird per Digest aus
 `../images.lock.json` bezogen. Es gibt keinen eigenen n8n-/Node-Build und keine
 npm-Overrides. PostgreSQL, HTTPS, freigegebene Knotentypen und deaktivierte UI,
 öffentliche API sowie Communitypakete sind fest in Compose konfiguriert.
@@ -15,7 +15,9 @@ Originalimage getestet werden; eine andere Version wird abgewiesen.
 Alle Definitionen aus `workflows/n8n/*.json` sind unter `/opt/cve-workflows`
 read-only eingebunden. Der Bootstrap validiert die Definitionen und die private
 Credential-Datei `/run/cve-n8n/credentials.json`, importiert sie und veröffentlicht
-jede verwaltete Workflow-ID. Erst bei vollständigem Erfolg startet der Server.
+jede verwaltete Workflow-ID. Literal referenzierte Unterworkflows werden vor
+aufrufenden Workflows veröffentlicht; zyklische verwaltete Abhängigkeiten brechen
+vor dem Import ab. Erst bei vollständigem Erfolg startet der Server.
 Fehler beenden den Container mit Fehlerstatus; eine fehlerhafte Definition wird
 nicht als gesunder Serverstart ausgegeben. Beim nächsten Versuch wird der gesamte
 Abgleich wiederholt. Es erfolgt keine Löschung fremder Workflow-/Credential-IDs.

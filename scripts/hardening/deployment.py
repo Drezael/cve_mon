@@ -1,4 +1,4 @@
-"""Compare the eight running development services to the scanned immutable artifacts."""
+"""Compare the seven running development services to the scanned immutable artifacts."""
 
 import hashlib
 import json

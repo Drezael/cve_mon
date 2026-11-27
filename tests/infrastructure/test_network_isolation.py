@@ -60,7 +60,7 @@ def test_live_network_isolation(infra_config: Config) -> None:
         client_a = container("client-a", "cve_internal")
         server_b = container("server-b", "cve_data", True)
         client_b = container("client-b", "cve_data")
-        external = container("external", "cve_egress_external")
+        external = container("external", "cve_outbound")
 
         def ip(name: str) -> str:
             item = json.loads(run([*docker, "inspect", name]).stdout)[0]

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { t, useLocale } from "../i18n";
 import { useData, State, Card } from "../ui";
 import { trendsSchema } from "../contracts";
+import { ApiError } from "../api";
+import { date } from "../format";
 export default function FindingTrend({
     initialDays = 30,
     interval = 0,
@@ -36,10 +38,13 @@ export default function FindingTrend({
                     "Ereignisse je UTC-Kalendertag. Wiedereröffnung und erstmalige Erkennung werden getrennt gezählt.",
                 )}
             </p>
-            {!trend.data ? (
+            {!trend.data || (trend.error instanceof ApiError && [401,403,404].includes(trend.error.status)) ? (
                 <State error={trend.error} reload={trend.reload} />
             ) : (
                 <>
+                    <p className="muted">{t("Stand")}: {date(trend.updatedAt)}</p>
+                    {trend.error && <p role="status">{t("Aktualisierung fehlgeschlagen. Der letzte Stand bleibt sichtbar.")}</p>}
+                    <button onClick={trend.reload}>{t("Aktualisieren")}</button>
                     <svg
                         className="trend"
                         viewBox="0 0 800 160"
@@ -114,7 +119,12 @@ export default function FindingTrend({
                     </p>
                     <details>
                         <summary>{t("Verlauf als Tabelle anzeigen")}</summary>
-                        <div className="table-scroll">
+                        <div
+                            className="table-scroll"
+                            tabIndex={0}
+                            role="region"
+                            aria-label={t("Scrollbare Tabelle")}
+                        >
                             <table>
                                 <thead>
                                     <tr>

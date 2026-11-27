@@ -15,7 +15,7 @@ from cve_notification.rules import address, applies, next_allowed, preference_re
 from cve_notification.smtp import Adapter
 from pydantic import ValidationError
 
-pytestmark = pytest.mark.notifications
+pytestmark = [pytest.mark.notifications, pytest.mark.domain]
 
 
 def finding(**values: Any) -> dict[str, Any]:

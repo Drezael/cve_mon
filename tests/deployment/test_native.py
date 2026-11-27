@@ -1,4 +1,4 @@
-"""Real fresh isolated installation of all eight pinned services using the release controller."""
+"""Real fresh isolated installation of all seven pinned services using the release controller."""
 
 from pathlib import Path
 from typing import Any
@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 from scripts.deployment import orchestration, preflight, release, state
-from scripts.deployment.contracts import Environment, atomic
+from scripts.deployment.contracts import Environment, atomic, read
 
 pytestmark = pytest.mark.deployment
 
@@ -16,7 +16,7 @@ def test_fresh_stage_installs_every_pinned_service(
 ) -> None:
     target, bundle, manifest = stage
     value = orchestration.smoke(target, bundle)
-    assert value["healthy_services"] == 8 and value["all_release_images_running"]
+    assert value["healthy_services"] == 7 and value["all_release_images_running"]
     assert not value["functional_acceptance"]
     assert manifest["production_eligible"] == bool(
         manifest["source"]["git_commit"] and manifest["source"]["clean"]
@@ -43,14 +43,14 @@ def test_release_is_bound_to_current_sources(
 ) -> None:
     target, bundle, manifest = stage
     assert release.verify(bundle, current_source=True)["release_id"] == manifest["release_id"]
-    assert len(manifest["images"]) == 8
+    assert len(manifest["images"]) == 7
     report = target.config.root / ".runtime/test-reports/phase-24-native-stage.json"
     atomic(
         report,
         {
             "project": target.config.project,
             "release_id": manifest["release_id"],
-            "eight_pinned_services": True,
+            "core_pinned_services": True,
             "read_only_preflight": True,
             "idempotent_rollout": True,
             "production_eligible": manifest["production_eligible"],
@@ -75,6 +75,17 @@ def test_full_encrypted_backup_and_isolated_service_recovery(
     key = keys / (target.config.project + ".key")
     key.write_bytes(base64.b64encode(os.urandom(32)))
     key.chmod(0o600)
+    from scripts.database import manage as db
+
+    with db.connect(target.config, database="n8n") as connection:
+        connection.execute(
+            "UPDATE workflow_entity SET active=false,name='Preserved recovered workflow' "
+            "WHERE id='cve-control-index'"
+        )
+    state = (
+        target.config.mount_base / "n8n" / target.config.project / "data/cve-bootstrap-state.json"
+    )
+    state_before = read(state, private=True)
     archive = target.control / "encrypted-backup"
     result = recovery.snapshot(target, bundle, archive, key)
     assert result["source_plaintext_removed"] and result["complete"]
@@ -83,10 +94,23 @@ def test_full_encrypted_backup_and_isolated_service_recovery(
     second = orchestration.stage(tmp_path / "recovery")
     try:
         restored = recovery.recover_stage(target, second, bundle, archive, key)
-        assert restored["full_service_restore"] and restored["healthy_services"] == 8
+        assert restored["full_service_restore"] and restored["healthy_services"] == 7
         assert restored["database_fingerprints_equal_before_start"]
         second = orchestration.pinned(second, bundle)
         assert recovery.verify_recovered_credentials(second) == 2
+        recovered_state = (
+            second.config.mount_base
+            / "n8n"
+            / second.config.project
+            / "data/cve-bootstrap-state.json"
+        )
+        assert read(recovered_state, private=True) == state_before
+        with db.connect(second.config, database="n8n") as connection:
+            workflow = connection.execute(
+                "SELECT active,name FROM workflow_entity WHERE id='cve-control-index'"
+            ).fetchone()
+            assert workflow and not workflow["active"]
+            assert workflow["name"] == "Preserved recovered workflow"
         report = target.config.root / ".runtime/test-reports/phase-24-full-recovery.json"
         atomic(
             report,
@@ -116,7 +140,7 @@ def test_controlled_restart_preserves_data_after_api_and_database_outage(
     with db.connect(target.config) as connection:
         after = connection.execute("SELECT count(*) n FROM inventory.servers").fetchone()
     assert before == after
-    assert result["healthy_services"] == 8
+    assert result["healthy_services"] == 7
     atomic(target.control / "outage-exercise.json", {**result, "inventory_preserved": True})
     atomic(
         target.config.root / ".runtime/test-reports/phase-24-outage-exercise.json",
@@ -133,13 +157,13 @@ def test_offline_image_export_import_preserves_release_identities(
     directory = target.control / "offline-images"
     exported = artifacts.export(bundle, directory)
     artifacts.import_images(bundle, directory)
-    assert len(exported["images"]) == 8
+    assert len(exported["images"]) == 7
     assert orchestration.smoke(target, bundle)["all_release_images_running"]
     atomic(
         target.config.root / ".runtime/test-reports/phase-24-offline-images.json",
         {
             "release_id": manifest["release_id"],
-            "exported_and_imported": 8,
+            "exported_and_imported": 7,
             "checksums_verified": True,
             "registry_publication": False,
         },

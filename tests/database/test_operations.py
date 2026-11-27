@@ -299,9 +299,15 @@ def test_parallel_outbox_delivery_claim(db_config: Config) -> None:
 
 
 def test_concurrent_administration_and_duplicate_snapshot(db_config: Config) -> None:
+    with connect(db_config, "api_security") as connection:
+        grouping = group(connection)
     with connect(db_config, "dashboard_admin") as connection:
         target = server(connection)
-        grouping = group(connection)
+    with connect(db_config, "api_security") as connection:
+        connection.execute(
+            "INSERT INTO inventory.server_group_memberships(server_id,group_id) VALUES (%s,%s)",
+            (target, grouping),
+        )
     with (
         connect(db_config, "dashboard_admin") as first,
         connect(db_config, "dashboard_admin") as second,
@@ -310,17 +316,13 @@ def test_concurrent_administration_and_duplicate_snapshot(db_config: Config) -> 
         second.execute("SET lock_timeout='150ms'")
         with pytest.raises(psycopg.errors.LockNotAvailable):
             second.execute(
-                ("UPDATE inventory.servers SET primary_group_id=%s,version=version+1 WHERE id=%s"),
-                (grouping, target),
+                ("UPDATE inventory.servers SET description=%s,version=version+1 WHERE id=%s"),
+                (str(grouping), target),
             )
         second.rollback()
         first.execute(
-            ("INSERT INTO inventory.server_group_memberships(server_id,group_id) VALUES (%s,%s)"),
-            (target, grouping),
-        )
-        first.execute(
-            ("UPDATE inventory.servers SET primary_group_id=%s,version=version+1 WHERE id=%s"),
-            (grouping, target),
+            ("UPDATE inventory.servers SET description=%s,version=version+1 WHERE id=%s"),
+            (str(grouping), target),
         )
     identity = uuid.uuid4()
     with (
@@ -340,11 +342,11 @@ def test_concurrent_administration_and_duplicate_snapshot(db_config: Config) -> 
 
 
 def test_parallel_manual_sort_serialized_by_version(db_config: Config) -> None:
-    with connect(db_config, "dashboard_admin") as connection:
+    with connect(db_config, "api_security") as connection:
         grouping = group(connection)
     with (
-        connect(db_config, "dashboard_admin") as first,
-        connect(db_config, "dashboard_admin") as second,
+        connect(db_config, "api_security") as first,
+        connect(db_config, "api_security") as second,
     ):
         assert (
             first.execute(
@@ -374,7 +376,7 @@ def test_security_seed_roles_and_system_guard(db_config: Config) -> None:
     with connect(db_config, "api_security") as connection:
         assert {
             r["code"] for r in connection.execute("SELECT code FROM security.roles WHERE is_system")
-        } == {"admin", "user_admin", "security_analyst", "viewer"}
+        } == {"admin", "user_admin", "security_analyst", "viewer", "user"}
         assert (
             connection.execute(
                 "UPDATE security.roles SET name='forged' WHERE code='admin'"
@@ -482,9 +484,10 @@ def test_snapshot_and_package_index_plans(owner: Connection) -> None:
 
 
 def test_persistence_restart_recreate(db_config: Config) -> None:
+    with connect(db_config, "api_security") as connection:
+        grouping = group(connection)
     with connect(db_config, "dashboard_admin") as connection:
         target = server(connection)
-        grouping = group(connection)
     before = fingerprint(db_config, "cve_monitoring")
     original = container_id(db_config)
     compose(db_config, ["restart", "cve-postgres"])
@@ -635,23 +638,20 @@ def test_interrupted_migration_preserves_previous_head(db_config: Config, tmp_pa
 
 
 def test_concurrent_membership_is_unique(db_config: Config) -> None:
+    with connect(db_config, "api_security") as connection:
+        grouping = group(connection)
     with connect(db_config, "dashboard_admin") as connection:
         target = server(connection)
-        grouping = group(connection)
     query = "INSERT INTO inventory.server_group_memberships(server_id,group_id) VALUES (%s,%s)"
     with (
-        connect(db_config, "dashboard_admin") as first,
-        connect(db_config, "dashboard_admin") as second,
+        connect(db_config, "api_security") as first,
+        connect(db_config, "api_security") as second,
     ):
         first.execute(query, (target, grouping))
         second.execute("SET lock_timeout='150ms'")
         with pytest.raises(psycopg.errors.LockNotAvailable):
             second.execute(query, (target, grouping))
         second.rollback()
-        first.execute(
-            "UPDATE inventory.servers SET primary_group_id=%s,version=version+1 WHERE id=%s",
-            (grouping, target),
-        )
         first.commit()
         with pytest.raises(psycopg.errors.UniqueViolation):
             second.execute(query, (target, grouping))

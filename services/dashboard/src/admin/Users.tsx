@@ -166,7 +166,12 @@ export function Users() {
                 <State error={result.error} reload={result.reload} />
             ) : (
                 <Card title={t("Konten")}>
-                    <div className="table-scroll">
+                    <div
+                        className="table-scroll"
+                        tabIndex={0}
+                        role="region"
+                        aria-label={t("Scrollbare Tabelle")}
+                    >
                         <table>
                             <thead>
                                 <tr>

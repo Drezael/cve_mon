@@ -22,6 +22,8 @@ from scripts.cve_enricher import manage as enrichment_ops
 from scripts.cve_importer import manage
 from scripts.infrastructure import envoy
 from scripts.infrastructure.manage import compose, docker_command, run
+from scripts.infrastructure.topology import PORTS
+from tests.cve_importer import direct
 from tests.cve_importer.conftest import Lab
 from tests.cve_importer.test_pipeline import Wire
 from tests.database.helpers import required_row
@@ -37,6 +39,7 @@ class Container:
     configuration: Configuration
 
     def execute(self, code: str) -> str:
+        code = code.replace("127.0.0.1:8000", f"127.0.0.1:{PORTS['cve-enricher']}")
         return run([*docker_command(), "exec", self.name, "python", "-c", code]).stdout.strip()
 
     def import_source(self, source: str) -> Any:
@@ -86,6 +89,7 @@ def runtime(enrich_lab: Lab) -> Iterator["Runtime"]:
     support = config.root / "tests/infrastructure/envoy/fixtures/servers.py"
     shutil.copyfile(support, files / "support.py")
     hosts = sorted(set().union(*HOSTS.values()) | {"epss.empiricalsecurity.com"})
+    config = direct.configuration(config, hosts)
     run(
         [
             "openssl",
@@ -224,30 +228,9 @@ threading.Event().wait()
             ]
         )
         info = envoy.inspect_container(sink)
-        sinkip = info["NetworkSettings"]["Networks"][external]["IPAddress"]
         envoy.namespace_command(
             int(info["State"]["Pid"]), ["ip", "address", "add", "93.184.216.34/32", "dev", "lo"]
         )
-        compose(config, ["up", "-d", "cve-importer"])
-        container_id = compose(config, ["ps", "-q", "cve-importer"]).stdout.strip()
-        policy = envoy.policy()
-        policy["rules"] = [r for r in policy["rules"] if r["client"] == "importer"]
-        policy["dns"] = {"address": sinkip, "port": 53, "refresh_seconds": 1, "timeout_seconds": 1}
-        envoy.start(config, policy, {"importer": container_id})
-        _, proxy_pid = envoy.netns(config)
-        envoy.namespace_command(
-            proxy_pid, ["ip", "route", "add", "93.184.216.34/32", "via", sinkip]
-        )
-        info = envoy.inspect_container(container_id)
-        namespace = envoy.namespace_command(
-            int(info["State"]["Pid"]), ["readlink", "/proc/self/ns/net"]
-        ).stdout.strip()
-        (base / "egress.ready").write_text(namespace + "\n")
-        (base / "egress.ready").chmod(0o600)
-        compose(config, ["up", "-d", "--wait", "--wait-timeout", "60", "cve-importer"])
-        source = Container(import_lab, container_id, sink, configuration)
-        for source_name in ["cve_list", "nvd", "cisa_kev", "ubuntu", "osv"]:
-            assert source.import_source(source_name)["effective_status"] == "completed"
         enrichment_ops.prepare(config)
         enrichment_base = enrichment_ops.directory(config)
         (enrichment_base / "sources.json").write_text(
@@ -255,39 +238,38 @@ threading.Event().wait()
         )
         shutil.copyfile(files / "server.crt", enrichment_base / "external-ca.crt")
         (enrichment_base / "external-ca.crt").chmod(0o600)
+        compose(config, ["up", "-d", "cve-importer"])
+        container_id = compose(config, ["ps", "-q", "cve-importer"]).stdout.strip()
+        direct.route(config, sink)
+        compose(config, ["up", "-d", "--wait", "--wait-timeout", "60", "cve-importer"])
+        source = Container(Lab(config), container_id, sink, configuration)
+        for source_name in ["cve_list", "nvd", "cisa_kev", "ubuntu", "osv"]:
+            assert source.import_source(source_name)["effective_status"] == "completed"
         compose(config, ["up", "-d", "cve-enricher"])
         enricher_id = compose(config, ["ps", "-q", "cve-enricher"]).stdout.strip()
-        policy["rules"] += [r for r in envoy.policy()["rules"] if r["client"] == "enricher"]
-        envoy.start(config, policy, {"importer": container_id, "enricher": enricher_id})
-        _, proxy_pid = envoy.netns(config)
-        envoy.namespace_command(
-            proxy_pid, ["ip", "route", "add", "93.184.216.34/32", "via", sinkip]
-        )
-        info = envoy.inspect_container(enricher_id)
-        namespace = envoy.namespace_command(
-            int(info["State"]["Pid"]), ["readlink", "/proc/self/ns/net"]
-        ).stdout.strip()
-        (enrichment_base / "egress.ready").write_text(namespace + "\n")
-        (enrichment_base / "egress.ready").chmod(0o600)
+        direct.route(config, sink)
         compose(config, ["up", "-d", "--wait", "--wait-timeout", "60", "cve-enricher"])
-        yield Runtime(import_lab, source, enricher_id)
+        yield Runtime(Lab(config), source, enricher_id)
 
     finally:
-        if enricher_id:
-            logs = run([*docker_command(), "logs", enricher_id])
-            (base / "enricher-container.log").write_text(logs.stdout + logs.stderr)
-            (base / "enricher-container.log").chmod(0o600)
-            compose(config, ["stop", "cve-enricher"])
-            compose(config, ["rm", "-f", "cve-enricher"])
-        if container_id:
-            logs = run([*docker_command(), "logs", container_id])
-            (base / "container-test.log").write_text(logs.stdout + logs.stderr)
-            (base / "container-test.log").chmod(0o600)
-            compose(config, ["stop", "cve-importer"])
-            compose(config, ["rm", "-f", "cve-importer"])
-        compose(config, ["stop", "cve-egress-proxy"])
-        compose(config, ["rm", "-f", "cve-egress-proxy"])
-        subprocess.run([*docker_command(), "rm", "-f", sink], capture_output=True, check=False)
+        try:
+            for identity in {enricher_id, container_id} - {""}:
+                logs = subprocess.run(
+                    [*docker_command(), "logs", identity],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                (base / "container-test.log").write_text(logs.stdout + logs.stderr)
+                (base / "container-test.log").chmod(0o600)
+            compose(config, ["rm", "-s", "-f", "cve-processing"])
+        finally:
+            from tests.resources import remove
+
+            try:
+                remove("container", sink, "org.cve-monitoring.importer-test", config.project)
+            finally:
+                remove("network", external, "com.docker.compose.project", config.project)
 
 
 @dataclass
@@ -297,6 +279,7 @@ class Runtime:
     enricher: str
 
     def execute(self, code: str) -> str:
+        code = code.replace("127.0.0.1:8000", f"127.0.0.1:{PORTS['cve-enricher']}")
         return run([*docker_command(), "exec", self.enricher, "python", "-c", code]).stdout.strip()
 
     def wait(self, job: Any) -> None:
@@ -313,7 +296,7 @@ class Runtime:
         raise AssertionError("Enricher fixture job exceeded deadline")
 
 
-def test_e2e_importer_envoy_enricher_and_first_dataset(runtime: Runtime) -> None:
+def test_e2e_importer_direct_enricher_and_first_dataset(runtime: Runtime) -> None:
     job = enrichment_ops.enqueue(runtime.lab.config, "cve.enrich.record", "CVE-2026-12345")
     runtime.wait(job)
     with runtime.lab.owner() as c:
@@ -343,16 +326,17 @@ def test_e2e_importer_envoy_enricher_and_first_dataset(runtime: Runtime) -> None
         )
 
 
-def test_container_security_only_epss_proxy_and_verified_tls(runtime: Runtime) -> None:
+def test_container_security_epss_allowlist_and_verified_tls(runtime: Runtime) -> None:
     data = runtime.execute("""import httpx,json
+from cve_enricher.epss import allowed
 results={}
+try: allowed('https://ubuntu.com/security/cves.json');results['non_epss']=False
+except Exception: results['non_epss']=True
 for kind,url,proxy,verify in [
- ('direct','https://93.184.216.34/',None,False),
+ ('plaintext','http://93.184.216.34/',None,False),
  ('metadata','http://169.254.169.254/latest/meta-data',None,False),
- ('non_epss','https://ubuntu.com/security/cves.json','http://cve-egress-proxy:3128',
-  '/run/cve-enricher/external-ca.crt'),
  ('wrong_ca','https://epss.empiricalsecurity.com/epss_scores-current.csv.gz',
-  'http://cve-egress-proxy:3128',True)]:
+  None,True)]:
  try:
   with httpx.Client(proxy=proxy,verify=verify,trust_env=False,timeout=2) as client: client.get(url)
   results[kind]=False
@@ -381,25 +365,7 @@ print(json.dumps({p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in roo
 
 
 def rebind(runtime: Runtime) -> None:
-    config = runtime.lab.config
-    base = enrichment_ops.directory(config)
-    (base / "egress.ready").unlink(missing_ok=True)
-    compose(config, ["up", "-d", "cve-enricher"])
-    policy = json.loads((envoy.directory(config) / "policy.json").read_text())
-    envoy.start(config, policy, {"importer": runtime.importer.name, "enricher": runtime.enricher})
-    sinkinfo = envoy.inspect_container(runtime.importer.sink)
-    sinkip = sinkinfo["NetworkSettings"]["Networks"][config.project + "_cve_egress_external"][
-        "IPAddress"
-    ]
-    _, pid = envoy.netns(config)
-    envoy.namespace_command(pid, ["ip", "route", "add", "93.184.216.34/32", "via", sinkip])
-    client = envoy.inspect_container(runtime.enricher)
-    namespace = envoy.namespace_command(
-        int(client["State"]["Pid"]), ["readlink", "/proc/self/ns/net"]
-    ).stdout.strip()
-    (base / "egress.ready").write_text(namespace + "\n")
-    (base / "egress.ready").chmod(0o600)
-    compose(config, ["up", "-d", "--wait", "--wait-timeout", "60", "cve-enricher"])
+    direct.rebind(runtime.lab.config, runtime.importer.sink)
 
 
 def test_container_postgres_outage_recovery(runtime: Runtime) -> None:
@@ -417,13 +383,13 @@ except urllib.error.HTTPError as e: print(e.code)
     runtime.wait(enrichment_ops.enqueue(runtime.lab.config, "cve.enrich.record", "CVE-2026-12345"))
 
 
-def test_container_proxy_outage_no_direct_fallback(runtime: Runtime) -> None:
+def test_container_upstream_outage_preserves_dataset(runtime: Runtime) -> None:
     config = runtime.lab.config
     with runtime.lab.owner() as c:
         old = required_row(c.execute("SELECT dataset_id FROM cve.epss_current_dataset"))[
             "dataset_id"
         ]
-    compose(config, ["stop", "cve-egress-proxy"])
+    direct.outage(config)
     try:
         job = enrichment_ops.enqueue(config, "cve.epss.sync_daily")
         deadline = time.monotonic() + 30
@@ -444,7 +410,8 @@ def test_container_proxy_outage_no_direct_fallback(runtime: Runtime) -> None:
                 == old
             )
     finally:
-        rebind(runtime)
+        # Only the fixture route was interrupted; restore it before retries expire.
+        direct.route(config, runtime.importer.sink)
     runtime.wait(job)
 
 

@@ -1,8 +1,10 @@
 """Prepare dedicated SSH execution credentials for read-only inventory."""
 
 import json
+import os
 import secrets
 import shutil
+import tempfile
 from pathlib import Path
 
 from cve_common.ssh_credentials import SSHKeyring
@@ -33,5 +35,12 @@ def prepare(config: Config) -> None:
         target = base / name
         if target.is_symlink():
             raise ValueError("Symlink credential path denied")
-        shutil.copyfile(source, target)
-        target.chmod(0o600)
+        fd, temporary = tempfile.mkstemp(prefix=".credential-", dir=base)
+        try:
+            with os.fdopen(fd, "wb") as stream, source.open("rb") as original:
+                shutil.copyfileobj(original, stream)
+                stream.flush()
+                os.fsync(stream.fileno())
+            Path(temporary).replace(target)
+        finally:
+            Path(temporary).unlink(missing_ok=True)

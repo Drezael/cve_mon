@@ -113,7 +113,11 @@ def peer(config: Config, service: str, zone: str) -> str | None:
     ]["Labels"].get("com.docker.compose.service") != physical(service):
         raise ValueError("Foreign peer endpoint")
     endpoint = item["NetworkSettings"]["Networks"].get(config.project + "_" + zone)
-    return str(ipaddress.IPv4Address(endpoint["IPAddress"])) if endpoint else None
+    return (
+        str(ipaddress.IPv4Address(endpoint["IPAddress"]))
+        if item["State"].get("Running") and endpoint and endpoint.get("IPAddress")
+        else None
+    )
 
 
 def target_peer(config: Config, host: str, zone: str) -> str | None:

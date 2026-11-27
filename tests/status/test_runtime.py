@@ -1,5 +1,6 @@
 """Own complete stack: real protocols, native adapters, scheduler, browser and outages."""
 
+import asyncio
 import base64
 import json
 import os
@@ -53,7 +54,7 @@ async def test_complete_stack_protocols_browser_and_outages(
     from scripts.cve_importer import manage as importer
     from scripts.cve_matcher import manage as matcher
     from scripts.dashboard.manage import activate, node
-    from scripts.infrastructure import envoy, mail
+    from scripts.infrastructure import mail
     from scripts.inventory_processor import manage as inventory
     from scripts.notifications import manage as notification
     from scripts.security.manage import origin
@@ -71,6 +72,8 @@ async def test_complete_stack_protocols_browser_and_outages(
     with browser.lab.owner() as c:
         counts_before = c.execute(counts_sql).fetchone()
         assert counts_before is not None
+        # The browser assertions deliberately use German accessible labels.
+        c.execute("UPDATE security.instance_preferences SET default_locale='de',version=version+1")
     mail.prepare(config)
     mail.start(config)
     inventory.prepare(config)
@@ -86,7 +89,7 @@ async def test_complete_stack_protocols_browser_and_outages(
     api.prepare(config)
     extra = config.directory / "status-test-override.json"
     extra.write_text(
-        json.dumps({"services": {"cve-api": {"environment": {"CVE_API_STATUS__PAUSED": "true"}}}})
+        json.dumps({"services": {"cve-api": {"environment": {"CVE_API_STATUS__PAUSED": "false"}}}})
     )
     compose(
         config,
@@ -121,7 +124,8 @@ async def test_complete_stack_protocols_browser_and_outages(
             for r in c.execute("SELECT entity_id,state FROM status.current_states").fetchall()
         }
         assert report["postgres"] == "healthy"
-        assert report["envoy"] == "unknown"  # Private readiness is not proof of external traffic.
+        assert "envoy" not in report
+        assert report["postfix"] in {"healthy", "unknown"}
     people = [
         await actor(browser),
         await actor(browser),
@@ -158,6 +162,27 @@ async def test_complete_stack_protocols_browser_and_outages(
                 "step": m["last_used_step"] if m else 0,
             }
         )
+    # Live history belongs to the API's in-process collector. An independent
+    # diagnostic collect() persists DB observations but cannot warm that cache.
+    from tests.infrastructure.client import request
+
+    for _ in range(120):
+        history = await asyncio.to_thread(
+            request,
+            config,
+            config.values["DASHBOARD_DOMAIN"],
+            path="/api/v1/status/services/api/history?check_id=readiness",
+            method="GET",
+            headers={"Cookie": "__Host-cve-session=" + people[0].cookie},
+        )
+        if history.status == 200 and json.loads(history.body)["samples"]:
+            break
+        await asyncio.sleep(1)
+    else:
+        raise AssertionError(
+            "The real API status collector did not publish live history; HTTP "
+            + str(history.status)
+        )
     binary = node(config.root)
     env = dict(
         os.environ,
@@ -190,12 +215,11 @@ async def test_complete_stack_protocols_browser_and_outages(
     faults = []
     for service, key in [
         ("cve-n8n", "n8n"),
-        ("cve-egress-proxy", "envoy"),
         ("cve-mail-relay", "postfix"),
     ]:
         compose(config, ["stop", service])
         try:
-            if key in {"envoy", "postfix"}:
+            if key == "postfix":
                 path = config.root / ".runtime/status" / config.project / key / "observation.json"
                 # Model the reporting deadline without sleeping three minutes per outage.
                 code = (
@@ -213,15 +237,7 @@ async def test_complete_stack_protocols_browser_and_outages(
                 assert state in {"unknown", "degraded", "unavailable"}, (key, state)
                 faults.append({"service": key, "state": state})
         finally:
-            if key == "envoy":
-                base = envoy.directory(config)
-                policy = json.loads((base / "policy.json").read_text())
-                clients = {
-                    role: b["container_id"]
-                    for role, b in json.loads((base / "bindings.json").read_text()).items()
-                }
-                envoy.start(config, policy, clients)
-            elif key == "postfix":
+            if key == "postfix":
                 mail.start(config)
                 notification.guard(config)
             else:

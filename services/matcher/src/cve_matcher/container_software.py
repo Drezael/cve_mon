@@ -33,15 +33,13 @@ def software_components(
     containers: list[dict[str, Any]], bills: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
     result = []
+    grouped: dict[tuple[str, Any], list[dict[str, Any]]] = {}
+    for entry in bills:
+        grouped.setdefault((entry["container_id"], entry["image_id"]), []).append(entry)
     for container in containers:
         if container["state"] != "running":
             continue
-        entries = [
-            e
-            for e in bills
-            if e["container_id"] == container["container_id"]
-            and e["image_id"] == container.get("image_id")
-        ]
+        entries = grouped.get((container["container_id"], container.get("image_id")), [])
         # A complete runtime filesystem replaces the image, including removed packages.
         runtime = [e for e in entries if e["scope"] == "runtime" and e["status"] == "complete"]
         base = runtime[-1:] or [e for e in entries if e["scope"] == "image"]
@@ -75,6 +73,10 @@ def software_components(
                             package["name"],
                             package["version"],
                             package.get("purl"),
+                            package["type"],
+                            package.get("architecture"),
+                            package.get("source_package"),
+                            package.get("source_version"),
                             entry["scope"],
                             entry.get("target"),
                         ],
@@ -94,6 +96,7 @@ def software_components(
                         "version": package["version"],
                         "comparison_version": package["version"],
                         "package_manager": manager,
+                        "architecture": package.get("architecture"),
                         "source_package": package.get("source_package"),
                         "source_version": package.get("source_version"),
                         "purl": package.get("purl"),
@@ -114,4 +117,11 @@ def software_components(
                         "locations": locations,
                     }
                 )
-    return result
+    unique: dict[str, dict[str, Any]] = {}
+    for component in result:
+        previous = unique.get(component["id"])
+        if previous is None:
+            unique[component["id"]] = component
+        else:
+            previous["locations"] = sorted(set(previous["locations"]) | set(component["locations"]))
+    return list(unique.values())

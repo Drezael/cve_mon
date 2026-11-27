@@ -35,7 +35,7 @@ def service(request: Request) -> Findings:
 
 @router.get("/active-count")
 async def active_count(request: Request) -> dict[str, int]:
-    from cve_findings.repository import one
+    from cve_common.database.queries import one
 
     from cve_api.authorization.object_access import predicate
 
@@ -134,6 +134,10 @@ async def approve_policy(request: Request, payload: PolicyRequest) -> dict[str, 
     async with api.operation(
         request.cookies.get(SESSION_COOKIE), csrf_for(request), "finding:policy:manage"
     ) as (s, actor):
+        if payload.configuration.automatic_resolution:
+            from cve_api.authorization.errors import Denied
+
+            raise Denied(422, "automatic_resolution_not_supported")
         value = (
             await s.execute(
                 text(

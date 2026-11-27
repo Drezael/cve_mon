@@ -1,10 +1,10 @@
 """Parallel preparation and set-oriented publication of immutable enrichment revisions."""
 
-import asyncio
 from dataclasses import dataclass
 from typing import Any
 from uuid import UUID, uuid4
 
+from cve_common.concurrency import BoundedThreads, WorkBusy
 from cve_common.database.engine import Database
 from cve_common.database.transactions import transaction
 from cve_common.jobs.errors import ErrorCode, JobError
@@ -14,6 +14,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cve_enricher.contracts import RULE, Configuration, EnrichmentError, Event, Result
 from cve_enricher.normalize import CVE, canonical, digest, normalize
 from cve_enricher.repository import kev_context, sources
+
+_cpu = BoundedThreads(2)
+
+
+async def compute(operation: Any, *args: Any) -> Any:
+    try:
+        return await _cpu.run(operation, *args)
+    except WorkBusy:
+        raise JobError(ErrorCode.TEMPORARY) from None
 
 
 @dataclass(frozen=True)
@@ -56,7 +65,7 @@ async def prepare(
                 )
             )
         ).scalar_one_or_none()
-    document = await asyncio.to_thread(normalize, identity, rows, kev)
+    document = await compute(normalize, identity, rows, kev)
     return Prepared(
         identity,
         document,
@@ -489,4 +498,5 @@ WHERE o.run_id=:run AND r.source_id='cisa_kev' AND r.external_id=ANY(:ids)
         prepared_size(results)
         return results
 
-    return await asyncio.to_thread(build)
+    result: list[Prepared] = await compute(build)
+    return result

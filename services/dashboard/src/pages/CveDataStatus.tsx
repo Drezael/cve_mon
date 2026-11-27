@@ -7,6 +7,7 @@ import { date, number } from "../format";
 import { Card, State } from "../ui";
 
 export const dataStatusSchema = z.object({
+    version_support: z.record(z.string(), z.string().nullable()).default({}),
     cve_count: z.number().int().nonnegative(),
     record_count: z.number().int().nonnegative(),
     last_success_at: z.string().nullable(),
@@ -268,7 +269,12 @@ function DataPanel() {
                             "Der neueste erfolgreiche Import gilt jeweils für eine Quelle. Den Stand aller Quellen sehen Sie unten. Die Verarbeitung neuer Daten kann einige Zeit dauern.",
                         )}
                     </p>
-                    <div className="table-scroll">
+                    <div
+                        className="table-scroll"
+                        tabIndex={0}
+                        role="region"
+                        aria-label={t("Scrollbare Tabelle")}
+                    >
                         <table>
                             <thead>
                                 <tr>
@@ -343,6 +349,37 @@ function DataPanel() {
                                     t(" n8n übernimmt den Auftrag.")}
                             </p>
                         )}
+                    <details>
+                        <summary>
+                            {t("Unterstützte Versionsvergleiche")}
+                        </summary>
+                        <p>
+                            {t(
+                                "Fehlende Bereichsunterstützung bleibt unbestimmt und bestätigt keine Behebung.",
+                            )}
+                        </p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>{t("Ökosystem")}</th>
+                                    <th>{t("Versionsbereiche")}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Object.entries(data.version_support).map(
+                                    ([ecosystem, adapter]) => (
+                                        <tr key={ecosystem}>
+                                            <td>{ecosystem}</td>
+                                            <td>
+                                                {adapter ??
+                                                    t("Nicht unterstützt")}
+                                            </td>
+                                        </tr>
+                                    ),
+                                )}
+                            </tbody>
+                        </table>
+                    </details>
                     {data.can_update && (
                         <button
                             disabled={

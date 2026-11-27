@@ -57,7 +57,12 @@ export default function Notifications() {
                 <State error={r.error} reload={r.reload} />
             ) : (
                 <Card title={t("Versandverlauf")}>
-                    <div className="table-scroll">
+                    <div
+                        className="table-scroll"
+                        tabIndex={0}
+                        role="region"
+                        aria-label={t("Scrollbare Tabelle")}
+                    >
                         <table>
                             <thead>
                                 <tr>

@@ -124,12 +124,14 @@ def check(
         db.read_secret(db.secret_file(environment.config, role))
     if prepared:
         # Validate every bind source without printing paths/contents from operator credentials.
-        for service in model["services"].values():
+        for name, service in model["services"].items():
             for mount in service.get("volumes", []):
                 if mount["type"] == "bind":
                     path = Path(mount["source"])
                     if path.is_symlink() or not path.exists():
-                        raise ValueError("Required bind source missing")
+                        raise ValueError(
+                            "Required bind source missing: " + name + ":" + mount["target"]
+                        )
                     if (
                         path.is_file()
                         and (path.suffix == ".key" or path.name.endswith(".password"))

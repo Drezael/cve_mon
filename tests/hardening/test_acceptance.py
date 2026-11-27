@@ -53,7 +53,7 @@ def test_acceptance_requires_deployment_and_recovery_evidence(
     write(
         "phase-23-live-verification.json",
         {
-            "healthy_services": 8,
+            "healthy_services": 7,
             "encrypted_credentials_and_workflows_unchanged": True,
             "foreign_container_ids_names_created_unchanged": True,
             "policies_unchanged": True,
@@ -78,7 +78,7 @@ def test_acceptance_requires_deployment_and_recovery_evidence(
         "inventory_sha256": hashlib.sha256(
             (tmp_path / "image-inventory.json").read_bytes()
         ).hexdigest(),
-        "artifacts": [{} for _ in range(8)],
+        "artifacts": [{} for _ in range(7)],
         "checked_at": datetime.now(UTC).isoformat(),
     }
     write("phase-23-components.json", component_report)
@@ -90,7 +90,7 @@ def test_acceptance_requires_deployment_and_recovery_evidence(
             "inventory_sha256": hashlib.sha256(
                 (tmp_path / "image-inventory.json").read_bytes()
             ).hexdigest(),
-            "verified_services": [{} for _ in range(8)],
+            "verified_services": [{} for _ in range(7)],
             "checked_at": datetime.now(UTC).isoformat(),
         },
     )

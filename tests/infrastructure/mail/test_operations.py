@@ -112,22 +112,15 @@ def test_quiesced_backup_checksum_and_non_destructive_restore(
     lab.wait(lambda: not mail.queue(lab.config))
 
 
-def test_direct_egress_and_wrong_interface_are_denied(mail_lab: Lab) -> None:
+def test_submission_is_rejected_on_the_outbound_interface(mail_lab: Lab) -> None:
     lab = mail_lab
     info = mail.container(lab.config)
     assert set(info["NetworkSettings"]["Networks"]) == {
         lab.config.project + "_cve_internal",
-        lab.config.project + "_cve_egress_internal",
+        lab.config.project + "_cve_outbound",
     }
-    code = (
-        "import socket; s=socket.socket(); s.settimeout(1); "
-        'print(s.connect_ex(("93.184.216.34",587)))'
-    )
-    assert mail.exec_mail(lab.config, ["python3", "-c", code]).strip() != "0"
-    egress = info["NetworkSettings"]["Networks"][lab.config.project + "_cve_egress_internal"][
-        "IPAddress"
-    ]
-    _, pid = envoy.netns(lab.config)
+    egress = info["NetworkSettings"]["Networks"][lab.config.project + "_cve_outbound"]["IPAddress"]
+    pid = int(envoy.inspect_container(lab.sink)["State"]["Pid"])
     result = envoy.namespace_command(
         pid,
         [

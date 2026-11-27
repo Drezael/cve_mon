@@ -233,10 +233,48 @@ async def test_false_positive_close_and_reopen_same_identity(harness: Harness) -
     )
 
 
-async def test_approved_fix_policy_resolution_and_recurrence(harness: Harness) -> None:
+async def test_unsupported_automatic_resolution_cannot_be_enabled(harness: Harness) -> None:
+    admin = await actor(harness.browser)
+    with harness.browser.lab.owner() as c:
+        before = c.execute("SELECT policy_id FROM findings.active_policy").fetchone()
+    response = await call(
+        harness.browser,
+        admin,
+        "POST",
+        "/policies",
+        {
+            "label": "unsupported-" + uuid4().hex,
+            "reason": "Unsupported automatic resolution must remain disabled",
+            "configuration": Policy(
+                automatic_resolution=True, max_snapshot_age_hours=24
+            ).model_dump(mode="json"),
+        },
+    )
+    assert response.status_code == 422, response.text
+    with harness.browser.lab.owner() as c:
+        assert c.execute("SELECT policy_id FROM findings.active_policy").fetchone() == before
+
+
+async def test_legacy_approved_fix_policy_resolution_and_recurrence(harness: Harness) -> None:
+    from scripts.database import manage as db
+
     f = await harness.create()
     admin = await actor(harness.browser)
-    await approve(harness, admin, Policy(automatic_resolution=True, max_snapshot_age_hours=24))
+    # Model a policy approved before the API disabled this unsupported option.
+    # Historical policies and qualified evidence must retain their existing semantics.
+    fresh(harness.browser, admin)
+    with db.connect(harness.browser.lab.config, "api_security") as c:
+        c.execute(
+            "SELECT findings.approve_policy(%s,%s,%s::jsonb,%s,%s)",
+            (
+                UUID(admin.cookie.split(".")[0]),
+                "legacy-" + uuid4().hex,
+                Policy(automatic_resolution=True, max_snapshot_age_hours=24).model_dump_json(),
+                "Previously approved isolated test policy",
+                uuid4(),
+            ),
+        )
+    await harness.drain()
     proof = harness.publish(f, "not_affected", coverage=True)
     await harness.drain()
     resolved = harness.get(f["id"])
@@ -470,6 +508,98 @@ async def test_sla_deadline_history_and_once_only_escalation(harness: Harness) -
         )
     assert harness.get(f["id"])["is_overdue"] and harness.get(f["id"])["status"] == "open"
     await approve(harness, admin, Policy())
+
+
+@pytest.mark.parametrize("change", ["closed", "postponed"])
+async def test_deadline_selection_rechecks_a_concurrent_commit(
+    harness: Harness, monkeypatch: pytest.MonkeyPatch, change: str
+) -> None:
+    from types import SimpleNamespace
+
+    from cve_common.database.transactions import transaction
+    from cve_findings import service
+    from cve_findings.contracts import Request
+    from cve_findings.repository import rows as original
+
+    from scripts.database import manage as db
+
+    finding = await harness.create()
+    admin = await actor(harness.browser)
+    await approve(harness, admin, Policy(deadlines_hours={"unrated": 1}))
+    if change == "closed":
+        reviewed = await call(
+            harness.browser,
+            admin,
+            "POST",
+            f"/{finding['id']}/reviews",
+            {
+                "reason": "Verified before concurrent close",
+                "decision": "confirmed_false_positive",
+                "evidence": "Isolated concurrency fixture",
+                "result_id": str(finding["latest_matching_result_id"]),
+            },
+            harness.get(finding["id"])["version"],
+        )
+        assert reviewed.status_code == 200, reviewed.text
+
+    def deadline(hours: int) -> None:
+        with db.connect(harness.browser.lab.config, "findings_writer") as c:
+            identity = uuid4()
+            c.execute(
+                "INSERT INTO findings.deadlines"
+                "(id,finding_id,episode_id,policy_id,due_at,anchor_at,priority,reason) "
+                "SELECT %s,f.id,f.current_episode_id,a.policy_id,"
+                "clock_timestamp()+make_interval(hours=>%s),clock_timestamp(),"
+                "'unrated','fixture_concurrent_commit' FROM findings.findings f "
+                "CROSS JOIN findings.active_policy a WHERE f.id=%s",
+                (identity, hours, finding["id"]),
+            )
+            c.execute(
+                "UPDATE findings.findings SET current_deadline_id=%s,version=version+1 WHERE id=%s",
+                (identity, finding["id"]),
+            )
+            c.execute(
+                "SELECT findings.record_change(%s,'updated','{}',"
+                "'fixture_concurrent_commit',%s,NULL,NULL)",
+                (finding["id"], uuid4()),
+            )
+
+    deadline(-1)
+    interleaved = False
+
+    async def selected(*args: Any, **kwargs: Any) -> Any:
+        nonlocal interleaved
+        values = await original(*args, **kwargs)
+        assert any(row["id"] == finding["id"] for row in values)
+        if change == "closed":
+            result = await call(
+                harness.browser,
+                admin,
+                "POST",
+                f"/{finding['id']}/close",
+                {"reason": "Concurrent authorized close"},
+                harness.get(finding["id"])["version"],
+            )
+            assert result.status_code == 200, result.text
+        else:
+            deadline(48)
+        interleaved = True
+        return values
+
+    monkeypatch.setattr(service, "rows", selected)
+    context: Any = SimpleNamespace(job=SimpleNamespace(correlation_id=uuid4()))
+    async with transaction(harness.database) as session:
+        await harness.service.deadlines(session, context, Request())
+    assert interleaved
+    with harness.browser.lab.owner() as c:
+        assert (
+            c.execute(
+                "SELECT count(*) n FROM findings.escalations e JOIN findings.deadlines d "
+                "ON d.id=e.deadline_id WHERE d.finding_id=%s",
+                (finding["id"],),
+            ).fetchone()["n"]
+            == 0
+        )
 
 
 async def test_exception_revocation_and_new_basis_scope(harness: Harness) -> None:

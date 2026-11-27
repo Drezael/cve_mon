@@ -130,7 +130,7 @@ def acceptance() -> None:
             report.get("passed") is not True
             or report.get("policy_sha256") != policy_sha256()
             or report.get("inventory_sha256") != hashlib.sha256(inventory.read_bytes()).hexdigest()
-            or len(report.get("artifacts", [])) != 8
+            or len(report.get("artifacts", [])) != 7
         ):
             failures.append("embedded component verification differs from current artifacts/policy")
         try:
@@ -181,7 +181,7 @@ def acceptance() -> None:
             failures.append("incomplete measured workload levels")
     required: dict[str, dict[str, object]] = {
         "live-verification": {
-            "healthy_services": 8,
+            "healthy_services": 7,
             "encrypted_credentials_and_workflows_unchanged": True,
             "foreign_container_ids_names_created_unchanged": True,
             "policies_unchanged": True,
@@ -211,7 +211,7 @@ def acceptance() -> None:
                     value.get("input_hashes") != supply_chain.input_hashes()
                     or value.get("inventory_sha256")
                     != hashlib.sha256(inventory.read_bytes()).hexdigest()
-                    or len(value.get("verified_services", [])) != 8
+                    or len(value.get("verified_services", [])) != 7
                 ):
                     failures.append("artifact verification differs from scan")
                 age = (

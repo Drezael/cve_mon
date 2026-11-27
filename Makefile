@@ -17,7 +17,10 @@ format-check:
 typecheck:
 	$(VENV)/mypy
 test:
-	CVE_ENV_FILE="$${CVE_ENV_FILE:-configuration/examples/development.env}" $(PYTHON) -m pytest
+	CVE_ENV_FILE="$${CVE_ENV_FILE:-configuration/examples/development.env}" $(PYTHON) -m pytest --cov --cov-report=term-missing:skip-covered --cov-report=xml:.runtime/test-reports/coverage.xml
+	$(VENV)/coverage json -o .runtime/test-reports/coverage.json
+	$(PYTHON) -m scripts.testing.coverage_gate .runtime/test-reports/coverage.json
+	$(PYTHON) -m pytest -m 'domain and performance'
 validate:
 	$(PYTHON) scripts/validate_repository.py
 security:
@@ -505,3 +508,7 @@ application-check:
 .PHONY: github-check
 github-check:
 	$(PYTHON) -m scripts.github_ready
+
+.PHONY: qa-full
+qa-full:
+	$(PYTHON) -m scripts.testing.campaign

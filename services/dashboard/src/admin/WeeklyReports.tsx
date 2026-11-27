@@ -222,7 +222,12 @@ export default function WeeklyReports() {
                 </form>
             )}
             {reports.data && reports.data.items.length > 0 && (
-                <div className="table-scroll">
+                <div
+                    className="table-scroll"
+                    tabIndex={0}
+                    role="region"
+                    aria-label={t("Scrollbare Tabelle")}
+                >
                     <table>
                         <thead>
                             <tr>

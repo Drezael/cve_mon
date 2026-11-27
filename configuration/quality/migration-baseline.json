@@ -1,0 +1,309 @@
+{
+  "baseline": "review-2026-11-25",
+  "files": [
+    {
+      "file": "database/migrations/versions/00010_contract_guards.py",
+      "sha256": "02a945d6d9bc27bc0983308055e45ceda2d9618c19af98ae03d8fedd2408c037"
+    },
+    {
+      "file": "database/migrations/versions/00011_evidence_guards.py",
+      "sha256": "3d85f795316f9b1bafae5dbe740d1da714cafe355a10dbb3fc4cd0ffd07b9f5a"
+    },
+    {
+      "file": "database/migrations/versions/00012_original_identity.py",
+      "sha256": "6714ff79cde612d7618de7b53c41f9cc35e64d82e4ca4e595a6a3596b0e2e565"
+    },
+    {
+      "file": "database/migrations/versions/00013_automation_runtime.py",
+      "sha256": "9f4b9f56cd0ec9ed5f492101cfa28e72ac50b9f698f8986bb9f43e4b3488e0a7"
+    },
+    {
+      "file": "database/migrations/versions/00014_authentication.py",
+      "sha256": "4714b605e85f293aaac1576b6530580c2815d9ebaa148ebe18e2df91522058b4"
+    },
+    {
+      "file": "database/migrations/versions/00015_authorization.py",
+      "sha256": "6dee499d77e99cf50b110c63ac28e24411964aec4ba5841db57facf5a7e5a098"
+    },
+    {
+      "file": "database/migrations/versions/00016_server_administration.py",
+      "sha256": "278cf1fe7899ad80468a3ea120cf569281283195468d075541e604fc2a74d6ff"
+    },
+    {
+      "file": "database/migrations/versions/00017_inventory_acceptance.py",
+      "sha256": "47266b469031fbb67c4c4284446f28e971ec54ad11268bbf1c0f4b3e0d7e938f"
+    },
+    {
+      "file": "database/migrations/versions/00018_inventory_collect_contract.py",
+      "sha256": "465a0ff37a1ca0291bb40b34d3b340e7fa357b877fa1b7ffe37fdb7a6927da8a"
+    },
+    {
+      "file": "database/migrations/versions/00019_inventory_processing.py",
+      "sha256": "0cbf00384fcbe4e0931e87052f66bcea3bcc32b09d6482064981589efd5886ae"
+    },
+    {
+      "file": "database/migrations/versions/0001_foundation.py",
+      "sha256": "082ec5a354398a45b2b84407b70dad23eebef0142fa197ad18c8ebb3198f23b9"
+    },
+    {
+      "file": "database/migrations/versions/00020_cve_importer.py",
+      "sha256": "a2170539d3fd40dfc382b1793f26f819256fc782ef9d8fff075fba492b8cbbb4"
+    },
+    {
+      "file": "database/migrations/versions/00021_cve_enrichment.py",
+      "sha256": "98450742fb728e3bfdc08e155d7b49019c917b1d05892a80d7c9dd6c26fb0e86"
+    },
+    {
+      "file": "database/migrations/versions/00022_enrichment_observability.py",
+      "sha256": "a486f676ff34544dbe32d48e2fb6d268ab01b61f13e0e559f63299789efd774b"
+    },
+    {
+      "file": "database/migrations/versions/00023_matching_engine.py",
+      "sha256": "dd12b0f0bbe6b1597e8e5c7e40b9b7ccf2ae7a32cb4a7dc9dcc8cc6cd0e8b011"
+    },
+    {
+      "file": "database/migrations/versions/00024_finding_management.py",
+      "sha256": "6da9af9fe7844fe6506c89ed812dfd4a9ebaa008d459bb441a837c5225e7ce35"
+    },
+    {
+      "file": "database/migrations/versions/00025_finding_commands.py",
+      "sha256": "95f5ad3895a9c8f3399e4e3104e946b8d6d5ca0ad58a090e8191c04b13ad70db"
+    },
+    {
+      "file": "database/migrations/versions/00026_notifications.py",
+      "sha256": "03528b00c333b775041c7797657ca41ddc3aa63d46274f60df83542506a7017d"
+    },
+    {
+      "file": "database/migrations/versions/00027_notification_commands.py",
+      "sha256": "507c17277109c7bee2039a699c6d60432ca22d959f546523e6965855263db7c2"
+    },
+    {
+      "file": "database/migrations/versions/00028_dashboard_reads.py",
+      "sha256": "9320e93fe049bc888a273259d5677e299502c0309826091eaafa1b94fa71fb04"
+    },
+    {
+      "file": "database/migrations/versions/00029_dashboard_administration.py",
+      "sha256": "c5aebe183b20847ee8ceb8fe8a975c53b237676b8ca7813b7ed4d140671273dd"
+    },
+    {
+      "file": "database/migrations/versions/0002_administration.py",
+      "sha256": "2bf84cdb8db1607ba7d4db7415252fab250e1234b586758dd7383ea0b9cda594"
+    },
+    {
+      "file": "database/migrations/versions/00030_status_monitoring.py",
+      "sha256": "0c90489adcc5f5331308890d2a92cdc22f2da8db85f6cf9218ab95cd7cfc3784"
+    },
+    {
+      "file": "database/migrations/versions/00031_hardening_list_projection.py",
+      "sha256": "3612526bf123afa145d9ef483f7a2bcfe6c8531a79419b6856824b93914d0e76"
+    },
+    {
+      "file": "database/migrations/versions/00032_optional_mfa.py",
+      "sha256": "25db7bdc846e108ef13bbf2e7beafad75c12e3f055c0ccff1b07144bafce8958"
+    },
+    {
+      "file": "database/migrations/versions/00033_cve_data_status.py",
+      "sha256": "f09e3d88645db92ac5c12550b91f07c831e5708276720fa38faef5735d88d970"
+    },
+    {
+      "file": "database/migrations/versions/00034_import_performance.py",
+      "sha256": "35006bbd76d5e566f9eb7747038f1532e6cbad2825a7f4fc5ddf343400019b46"
+    },
+    {
+      "file": "database/migrations/versions/00035_pipeline_status.py",
+      "sha256": "14c606e75ad086eaf2357774d81ee2130fafc32dff46ceb8dadecf09c3455444"
+    },
+    {
+      "file": "database/migrations/versions/00036_read_path_reliability.py",
+      "sha256": "e34410473496d95a2d0f814636a9d2aea9a8e7521a7f049bc3003c54aedaf637"
+    },
+    {
+      "file": "database/migrations/versions/00037_git_collection.py",
+      "sha256": "46d8373e89ac08a06ad09e2517fc73ce05ea10d882164479f6210b08063a311f"
+    },
+    {
+      "file": "database/migrations/versions/00038_git_retry_and_matching.py",
+      "sha256": "8ed42a13794f62c95fa62c43659998efa4ddbb2038d2e8fe3bb1581b7cdac9bc"
+    },
+    {
+      "file": "database/migrations/versions/00039_native_v5_json.py",
+      "sha256": "0046aedbe1a536d661901979e48e98fd4c112c2d6652d1145617f451a18080e2"
+    },
+    {
+      "file": "database/migrations/versions/0003_inventories.py",
+      "sha256": "e85d115d056ec66e10b8b84fc293f16da625a1756981aabcefbff92178ffa089"
+    },
+    {
+      "file": "database/migrations/versions/00040_workflow_control.py",
+      "sha256": "b411f5e3da2f39bbfe550f8282fe1848fcf860a7493808931fbadbf2e0f199da"
+    },
+    {
+      "file": "database/migrations/versions/00041_server_discovery.py",
+      "sha256": "44077fa3a6257aa51bda1819bb685b10aba305efabc818be104e0ade357cdcaf"
+    },
+    {
+      "file": "database/migrations/versions/00042_server_scan_lifecycle.py",
+      "sha256": "a505796ddc504bbf2f10fbb9635cbe19b00ae6acf7368c4ea5e92da9af394d33"
+    },
+    {
+      "file": "database/migrations/versions/00043_container_software.py",
+      "sha256": "bfe0c9a9709046c8c2c4b94c167c754d62a7a547ae09f2646bcb3abb57fbc00b"
+    },
+    {
+      "file": "database/migrations/versions/00044_finding_software.py",
+      "sha256": "349658a47954d3857eeb0c11c3acc6e9fbb5a9cc701eb840a0c4ea86fdeb1b26"
+    },
+    {
+      "file": "database/migrations/versions/00045_managed_ansible.py",
+      "sha256": "be3bd17baa7c5d5b60acc13db1304c099ca75df75e03eddd11cfc8eef902dded"
+    },
+    {
+      "file": "database/migrations/versions/00046_permanent_server_delete.py",
+      "sha256": "4fc9807d3c6b8eb46bf2b331a1adfa3df63d131ad1d6dfc74095129ddae8bf2c"
+    },
+    {
+      "file": "database/migrations/versions/00047_erasure_presentation.py",
+      "sha256": "4a752f7ca87f0e97faa60304b5bcd877ec19639c15b062126e7c5b2ba77f58ba"
+    },
+    {
+      "file": "database/migrations/versions/00048_n8n_message_queue.py",
+      "sha256": "f9b766e92864b6b25ed13cbf881e45ed6fecadac14aec8e1b69fae70b82fe295"
+    },
+    {
+      "file": "database/migrations/versions/00049_control_status_restart.py",
+      "sha256": "7447f975126e823429d6a257df4c1959d7e34d016292d9d1781cecfecc788c71"
+    },
+    {
+      "file": "database/migrations/versions/0004_vulnerabilities.py",
+      "sha256": "54b4e41ab214ce0525ebb88ce8a6db98362a80ca7c9597061f49d3a8d8650668"
+    },
+    {
+      "file": "database/migrations/versions/00050_status_source_policy.py",
+      "sha256": "1286406fb0524fcf360e69ba2f49baba784a2729dae12354ac4eebc3e253cffc"
+    },
+    {
+      "file": "database/migrations/versions/00051_audit_service_actor.py",
+      "sha256": "8351771e52c4316698dbc3595fe99817499a3f475aac28790cd3532d29c21f29"
+    },
+    {
+      "file": "database/migrations/versions/00052_audit_usernames.py",
+      "sha256": "9e7216baa3dc02cce5ae3fe1f8d7c5fd33cccbcb99f5bb6c4b5b05e15b5afa69"
+    },
+    {
+      "file": "database/migrations/versions/00053_smtp_configuration.py",
+      "sha256": "0e836936be4e5154a25083f93144329932a63444be65afe2c0aa4d2fea6f6927"
+    },
+    {
+      "file": "database/migrations/versions/00054_personal_smtp.py",
+      "sha256": "67d85954050cc5660f6aa607720b6f4347a99cbbcfb50f224cfc1f775fc65248"
+    },
+    {
+      "file": "database/migrations/versions/00055_direct_outbound.py",
+      "sha256": "902c85f5e32610f70cc01ccba2d4e7b9ca033981d75c9e4bb8d0de61bb9142d0"
+    },
+    {
+      "file": "database/migrations/versions/00056_smtp_bootstrap_test.py",
+      "sha256": "f45d5b6329c3d67142c2df9828069859c6b764563e96d4d2bd9856b7d5f8c136"
+    },
+    {
+      "file": "database/migrations/versions/00057_worker_recovery.py",
+      "sha256": "559a65026fea3d24f51c056ded8a0326bf7ae7fe98a5453a1918bbf6dcc57820"
+    },
+    {
+      "file": "database/migrations/versions/00058_service_watchdog.py",
+      "sha256": "21f5cc7144f34d849882707dc2c419d2f9c350da050512c572300ef5a396f134"
+    },
+    {
+      "file": "database/migrations/versions/00059_live_status_cache.py",
+      "sha256": "9b398d10d2362ca6ccc6d6b35aae8193c747c9f469abb05b319bb0aa4d400458"
+    },
+    {
+      "file": "database/migrations/versions/0005_identities.py",
+      "sha256": "7fb7fe15d414492e0473cfa3ac8cdad9364b332321ab5a6f49b78e64a008bd33"
+    },
+    {
+      "file": "database/migrations/versions/00060_transient_import_recovery.py",
+      "sha256": "b0bbd1aa921022eecfe7e9b326a17360bd7bd453ba67346ac8ab99d8d5e97f0f"
+    },
+    {
+      "file": "database/migrations/versions/00061_scoped_server_erasure.py",
+      "sha256": "fb36ea4914d395814154bf42d653cc5e35b752bd1a170073ba543ed17b8952b4"
+    },
+    {
+      "file": "database/migrations/versions/00062_inventory_server_metadata.py",
+      "sha256": "d68e42f4a442528e945b08cc31b0224a0163dcb3df2ee80b8eb2bad200d14e1d"
+    },
+    {
+      "file": "database/migrations/versions/00063_bounded_server_erasure.py",
+      "sha256": "9ee27ab66e30b14ef65085a55e12f15b08b297050c181666d54324108ea2debb"
+    },
+    {
+      "file": "database/migrations/versions/00064_kev_risk_integration.py",
+      "sha256": "f19ffe542ae2516b03ee8a4cc23ac2d7fdb29a8e7782fb7a2384972b5064de1c"
+    },
+    {
+      "file": "database/migrations/versions/00065_epss_workflow_integration.py",
+      "sha256": "b297d9f3806c1e62c7b228a9ff51eb7db94ebc9a7f7d34b150a576a961c56032"
+    },
+    {
+      "file": "database/migrations/versions/00066_new_finding_notifications.py",
+      "sha256": "0293545045e925903da88c16633400706d65f13f6bb218875225e27033e21059"
+    },
+    {
+      "file": "database/migrations/versions/00067_server_mail_reports.py",
+      "sha256": "33827ee146fd99cfe99e29828a79dcba4a47400920840a3e3b1d040401b9d84b"
+    },
+    {
+      "file": "database/migrations/versions/00068_server_report_batches.py",
+      "sha256": "8bfe1e385d93a4eda0a7470dbce96634084361c714d326dfa109e06b84b7f008"
+    },
+    {
+      "file": "database/migrations/versions/00069_account_locales.py",
+      "sha256": "50cca63ae9c406492c881ea41cdd59c0ef1976d90db1e17a61f1539a72259c3d"
+    },
+    {
+      "file": "database/migrations/versions/0006_automation.py",
+      "sha256": "d3cd66a3da138a4bb44398ed2d7378b3cc056b6db633606b41c601bad75c1ea1"
+    },
+    {
+      "file": "database/migrations/versions/00070_default_user_role.py",
+      "sha256": "d90de4a16ef938dd50ea21a2ab5ccc28697be3fe6208d528e106916d615d6dce"
+    },
+    {
+      "file": "database/migrations/versions/00071_personal_server_groups.py",
+      "sha256": "3f5f07667e91550880e15593677a89971076482daaa7c84e8518dc02cc5c559f"
+    },
+    {
+      "file": "database/migrations/versions/00072_custom_dashboards.py",
+      "sha256": "a1518ec38ee669a88aecbd94a86aed8128b01e5a5998fbf5a4bb83d8c7860333"
+    },
+    {
+      "file": "database/migrations/versions/00073_dashboard_shares.py",
+      "sha256": "aedf9ca28f6cceeb90d431b1268195050f7434d28b8af463faf366e4adbbdc81"
+    },
+    {
+      "file": "database/migrations/versions/00074_manual_server_scan.py",
+      "sha256": "2287e4d1911aa796d2c7669d04d192160a854837b54c991cc88c97214aa21396"
+    },
+    {
+      "file": "database/migrations/versions/00075_personal_ansible_vault.py",
+      "sha256": "33e6a49aedddf81ea3ef4bf16f1e8ba0d89099d45135631d5f6f3003d9007332"
+    },
+    {
+      "file": "database/migrations/versions/00076_review_guards.py",
+      "sha256": "effb820519fd0800a7f48a3660e040f283e895497bdbd497f65ec9ccc1ba98fb"
+    },
+    {
+      "file": "database/migrations/versions/0007_presentation_system.py",
+      "sha256": "7b19a064c6aeb91626c79c5f8fa962bf7a6f5adcdadea3b30bde6d8ce437d335"
+    },
+    {
+      "file": "database/migrations/versions/0008_privileges_seeds.py",
+      "sha256": "460f3c09e3c0f79106f8c4418fa54e42948ca695e45bc35e6338efd1dab1723d"
+    },
+    {
+      "file": "database/migrations/versions/0009_permission_seed.py",
+      "sha256": "9f83888bc557a4c0ebbeda104c3e95320a17764147a35e871679b35f6d36aa77"
+    }
+  ]
+}

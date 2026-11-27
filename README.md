@@ -131,8 +131,14 @@ Details: [Umgebungen](docs/deployment/environments.md),
 
 ## Automatische Ansible-Inventarisierung
 
-Die optionale SSH-Verbindung wird je Server in der Serververwaltung eingerichtet:
-Zieladresse, SSH-Port, Benutzer und Schlüssel oder Passwort hinterlegen, den
+Die optionale SSH-Verbindung wird je Server in der Serververwaltung eingerichtet.
+Zuerst muss jeder Benutzer unter **Einstellungen → Mein Ansible-Vault** ein eigenes
+Vault-Passwort hinterlegen. SSH-Passwörter, private Schlüssel und Passphrases werden
+im persönlichen Vault verschlüsselt gespeichert; es gibt keine Anzeige oder
+Downloadfunktion für gespeicherte Geheimnisse. Bestehende Profile müssen nach der
+Vault-Umstellung mit ihren Zugangsdaten erneut gespeichert werden.
+
+Anschließend Zieladresse, SSH-Port, Benutzer und Schlüssel oder Passwort hinterlegen, den
 SSH-Hostkey mit dem Zielhost vergleichen und bestätigen, anschließend die
 Verbindung testen. Danach sind manuelle und regelmäßige Erfassungen möglich.
 **Alle Zielnetze und Zieladressen sind zulässig**; eine Netz-Allowlist in der `.env`

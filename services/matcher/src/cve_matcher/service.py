@@ -1,9 +1,9 @@
 """Indexed bidirectional candidate selection and fenced immutable persistence."""
 
-import asyncio
 from typing import Any
 from uuid import UUID, uuid4
 
+from cve_common.concurrency import BoundedThreads, WorkBusy
 from cve_common.database.engine import Database
 from cve_common.jobs.errors import ErrorCode, JobError
 from cve_common.jobs.execution import ExecutionContext
@@ -103,12 +103,38 @@ async def inventory(
     if len(containers) > 10000:
         raise JobError(ErrorCode.INVALID_PAYLOAD)
     values = components(packages, os[0] if os else {}, kernel[0] if kernel else {}, containers)
-    bills = await rows(
+    # Count the worst-case expanded bill set in PostgreSQL before transferring JSON.
+    budget = await rows(
         s,
-        "SELECT c.*, b.document FROM inventory.container_software c "
-        "LEFT JOIN inventory.software_bills b ON b.digest=c.bill_digest WHERE c.snapshot_id=:id",
+        """
+SELECT count(*) AS refs,
+ coalesce(sum(octet_length(b.document::text)),0) AS bytes,
+ coalesce(sum(jsonb_array_length(b.document->'packages')),0) AS packages
+FROM inventory.container_software c
+LEFT JOIN inventory.software_bills b ON b.digest=c.bill_digest WHERE c.snapshot_id=:id
+""",
         id=snapshot,
     )
+    if (
+        budget[0]["bytes"] + size > MAX_BYTES
+        or budget[0]["packages"] + len(values) > MAX_COMPONENTS
+        or budget[0]["refs"] > MAX_COMPONENTS
+    ):
+        raise JobError(ErrorCode.INVALID_PAYLOAD)
+    bills = await rows(
+        s, "SELECT * FROM inventory.container_software WHERE snapshot_id=:id", id=snapshot
+    )
+    documents = await rows(
+        s,
+        """
+SELECT b.digest,b.document FROM inventory.software_bills b
+WHERE b.digest IN (SELECT c.bill_digest FROM inventory.container_software c WHERE c.snapshot_id=:id)
+""",
+        id=snapshot,
+    )
+    by_digest = {row["digest"]: row["document"] for row in documents}
+    for bill in bills:
+        bill["document"] = by_digest.get(bill["bill_digest"])
     values.extend(software_components(containers, bills))
     sections = {
         r["section"]: r["status"]
@@ -160,6 +186,7 @@ async def index_revision(s: AsyncSession, revision: UUID) -> dict[str, Any]:
 class Service:
     def __init__(self, database: Database) -> None:
         self.database = database
+        self.cpu = BoundedThreads(2)
 
     def registry(self) -> Registry:
         registry = Registry()
@@ -208,7 +235,10 @@ class Service:
                 return await self.vulnerability(s, context, request)
             return await self.backfill(s, context, request)
 
-        result = await context.complete(commit)
+        try:
+            result = await context.complete(commit)
+        except EvaluationLimit:
+            raise JobError(ErrorCode.INVALID_PAYLOAD) from None
         assert isinstance(result, Result)
         return result
 
@@ -522,7 +552,9 @@ WHERE identity||':'||server_id::text>:after ORDER BY cursor LIMIT :limit
             ).scalar_one()
             return Result(revision_id=old[0]["id"], changed=changed)
         try:
-            evaluation = await asyncio.to_thread(evaluate, revision["result"], values, sections)
+            evaluation = await self.cpu.run(evaluate, revision["result"], values, sections)
+        except WorkBusy:
+            raise JobError(ErrorCode.TEMPORARY) from None
         except EvaluationLimit:
             raise JobError(ErrorCode.INVALID_PAYLOAD) from None
         encoded_result = evaluation.model_dump_json()

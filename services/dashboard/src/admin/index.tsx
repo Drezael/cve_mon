@@ -5,6 +5,7 @@ import { Users, UserDetail, Roles } from "./Users";
 import { Preferences, Rules, Templates } from "./Notifications";
 import { Account, Audit } from "./Account";
 import SMTPSettings from "./SMTP";
+import AnsibleVault from "./AnsibleVault";
 import {
     LanguageSettings,
     InstanceLanguageSettings,
@@ -14,6 +15,7 @@ const personalLinks = localized([
     ["mail", "Meine Mail-Einstellungen", "notification:read"],
     ["language", "Sprache", ""],
     ["account", "Kontosicherheit", ""],
+    ["ansible-vault", "Mein Ansible-Vault", ""],
 ]);
 const instanceLinks = localized([
     ["instance", "Instanzeinstellungen", "instance:settings:manage"],
@@ -90,6 +92,7 @@ export default function Administration() {
                     <Route path="mail" element={<SMTPSettings personal />} />
                     <Route path="language" element={<LanguageSettings />} />
                     <Route path="account" element={<Account />} />
+                    <Route path="ansible-vault" element={<AnsibleVault />} />
 
                     <Route
                         path="instance"

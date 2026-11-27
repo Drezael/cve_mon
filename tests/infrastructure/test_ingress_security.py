@@ -19,59 +19,36 @@ pytestmark = [pytest.mark.infrastructure, pytest.mark.security]
 def test_hosts_without_backends_and_without_client_certificate(
     infra_config: Config, domain: str
 ) -> None:
+    if domain != "dashboard.example.test":
+        with pytest.raises(ssl.SSLError):
+            request(infra_config, domain)
+        return
     response = request(infra_config, domain)
     assert response.status == 503
     assert json.loads(response.body)["error"] == "backend_unavailable"
 
 
-@pytest.mark.parametrize("client", [None, "untrusted-client", "expired-client"])
-def test_mtls_rejects_invalid_clients(infra_config: Config, client: str | None) -> None:
-    try:
-        response = request(
-            infra_config, "inventory.example.test", "/api/v1/inventories", "POST", client
-        )
-    except ssl.SSLError:
-        return  # TLS-Verweigerung ist ebenso eine echte Ablehnung wie HTTP 403.
-    assert response.status == 403
-
-
-def test_valid_mtls_reaches_only_unavailable_backend(infra_config: Config) -> None:
-    response = request(
-        infra_config, "inventory.example.test", "/api/v1/inventories", "POST", "client"
-    )
-    assert response.status == 503
-    assert "accepted" not in response.body
-
-
-def test_forged_headers_cannot_replace_mtls(infra_config: Config) -> None:
-    response = request(
-        infra_config,
-        "inventory.example.test",
-        "/api/v1/inventories",
-        "POST",
-        headers={
-            "X-SSL-Client-Verify": "SUCCESS",
-            "X-CVE-Client-Cert": "untrusted",
-            "X-Forwarded-For": "127.0.0.1",
-        },
-    )
-    assert response.status == 403
-    response = request(
-        infra_config,
-        "inventory.example.test",
-        "/api/v1/inventories",
-        "POST",
-        "client",
-        headers={"X-SSL-Client-Verify": "FAILED"},
-    )
-    assert response.status == 503  # Der verifizierte TLS-Zustand ist maßgeblich, kein Clientheader.
-
-
-@pytest.mark.parametrize("path", ["/api/v1/dashboard/admin/servers", "/unknown", "/healthz"])
-def test_technical_host_has_no_admin_unknown_or_health_route(
-    infra_config: Config, path: str
+@pytest.mark.parametrize("client", [None, "client", "untrusted-client", "expired-client"])
+def test_public_dashboard_never_exposes_technical_upload(
+    infra_config: Config, client: str | None
 ) -> None:
-    assert request(infra_config, "inventory.example.test", path, "GET", "client").status == 404
+    response = request(
+        infra_config,
+        path="/api/v1/inventories",
+        method="POST",
+        client=client,
+        headers={"X-SSL-Client-Verify": "SUCCESS", "X-CVE-Client-Cert": "forged"},
+    )
+    assert response.status == 404
+
+
+@pytest.mark.parametrize(
+    "domain", ["inventory.example.test", "api.example.test", "n8n.example.test"]
+)
+def test_retired_public_origins_reject_tls_and_plaintext(infra_config: Config, domain: str) -> None:
+    with pytest.raises(ssl.SSLError):
+        request(infra_config, domain, "/api/v1/inventories", "POST", "client")
+    assert request(infra_config, domain, "/api/v1/inventories", "POST", tls=False).status == 421
 
 
 def test_upload_routes_remain_separate(infra_config: Config) -> None:
@@ -80,12 +57,8 @@ def test_upload_routes_remain_separate(infra_config: Config) -> None:
         == 503
     )
     assert request(infra_config, path="/api/v1/inventories", method="POST").status == 404
-    assert (
-        request(
-            infra_config, "api.example.test", "/api/v1/dashboard/inventories/upload", "POST"
-        ).status
-        == 404
-    )
+    with pytest.raises(ssl.SSLError):
+        request(infra_config, "api.example.test", "/api/v1/dashboard/inventories/upload", "POST")
     assert (
         request(infra_config, path="/api/v1/dashboard/admin/servers", method="POST").status == 403
     )
@@ -126,7 +99,7 @@ def test_redirects_are_fixed_and_plaintext_uploads_not_accepted(infra_config: Co
         request(
             infra_config, "inventory.example.test", "/api/v1/inventories", "POST", tls=False
         ).status
-        == 426
+        == 421
     )
 
 

@@ -11,10 +11,10 @@ from scripts.database import manage as db
 from scripts.infrastructure.manage import (
     compose,
     generate_certificates,
-    load_config,
 )
 from scripts.security import manage as auth
 from scripts.services import manage as api
+from tests.configuration import load_test_config as load_config
 
 pytestmark = pytest.mark.infrastructure
 

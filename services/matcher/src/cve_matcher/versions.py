@@ -7,8 +7,16 @@ this immutable adapter implementation; all operands remain in decision evidence.
 import re
 from functools import lru_cache
 
-ADAPTERS = {"debian": "dpkg-1", "rpm": "rpm-1", "semver": "semver-2"}
-ECOSYSTEMS = {"Debian": "debian", "Ubuntu": "debian", "npm": "semver", "crates.io": "semver"}
+from packaging.version import InvalidVersion, Version
+
+ADAPTERS = {"debian": "dpkg-1", "rpm": "rpm-1", "semver": "semver-2", "pep440": "packaging-26.3"}
+ECOSYSTEMS = {
+    "Debian": "debian",
+    "Ubuntu": "debian",
+    "npm": "semver",
+    "crates.io": "semver",
+    "PyPI": "pep440",
+}
 
 
 def ecosystem_adapter(ecosystem: str) -> str | None:
@@ -147,6 +155,11 @@ def semver(value: str) -> tuple[tuple[int, int, int], tuple[str, ...]]:
 
 @lru_cache(maxsize=8192)
 def compare(adapter: str, a: str, b: str) -> int:
+    if adapter == "pep440":
+        try:
+            return sign(Version(checked(a)), Version(checked(b)))
+        except InvalidVersion:
+            raise VersionError("invalid_version") from None
     if adapter == "debian":
         ae, au, ar = deb_parts(a)
         be, bu, br = deb_parts(b)

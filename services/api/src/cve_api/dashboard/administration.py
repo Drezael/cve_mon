@@ -3,7 +3,7 @@
 from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
 
-from cve_findings.repository import one, rows
+from cve_common.database.queries import one, rows
 from cve_notification.contracts import Template
 from cve_notification.rendering import message
 from fastapi import APIRouter, Depends, Query, Request

@@ -208,7 +208,46 @@ def test_fresh_repeat_update_and_invalid_input(runtime: dict[str, Any]) -> None:
     bootstrap(runtime)
     third = snapshot(runtime["database"])
     assert len(third) == len(second)
+    assert third == second
     assert all(row["active"] and row["activeVersionId"] == row["versionId"] for row in third)
+
+    def query(statement: str) -> str:
+        result = subprocess.run(
+            [
+                *docker_command(),
+                "exec",
+                runtime["database"],
+                "psql",
+                "-U",
+                "n8n_app",
+                "-d",
+                "n8n",
+                "-Atqc",
+                statement,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout.strip()
+
+    encrypted = query(
+        "SELECT md5(json_agg(t ORDER BY id)::text) FROM (SELECT id,data FROM credentials_entity) t"
+    )
+    query(
+        "UPDATE workflow_entity SET active=false,name='Personal disabled workflow' "
+        "WHERE id='cve-control-status'"
+    )
+    customized = snapshot(runtime["database"])
+    bootstrap(runtime)
+    assert snapshot(runtime["database"]) == customized
+    assert (
+        query(
+            "SELECT md5(json_agg(t ORDER BY id)::text) FROM "
+            "(SELECT id,data FROM credentials_entity) t"
+        )
+        == encrypted
+    )
     target.write_text("{broken json")
     bootstrap(runtime, success=False)
-    assert snapshot(runtime["database"]) == third
+    assert snapshot(runtime["database"]) == customized

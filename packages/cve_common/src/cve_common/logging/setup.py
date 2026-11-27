@@ -22,7 +22,11 @@ EVENTS = frozenset(
         "job_finished",
         "job_failed",
         "delivery_finished",
+        "delivery_failed",
+        "maintenance_failed",
         "worker_unavailable",
+        "security_lock_acquired",
+        "security_transaction_finished",
     }
 )
 
@@ -48,11 +52,14 @@ class JSONFormatter(logging.Formatter):
         }
         if record.exc_info and record.exc_info[0]:
             data["error_class"] = record.exc_info[0].__name__
+        mutation = getattr(record, "mutation", None)
+        if isinstance(mutation, bool):
+            data["mutation"] = mutation
         for key in ("error_code", "diagnostic_code", "error_class"):
             value = getattr(record, key, None)
             if isinstance(value, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_]{0,63}", value):
                 data[key] = value
-        for key in ("status", "duration_ms"):
+        for key in ("status", "duration_ms", "wait_seconds"):
             value = getattr(record, key, None)
             if isinstance(value, (int, float)):
                 data[key] = value

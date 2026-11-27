@@ -1,4 +1,4 @@
-"""Own Postfix queue, genuine Envoy path and private CA/provider; never production messages."""
+"""Own Postfix queue, direct SMTP and private CA/provider; never production messages."""
 
 import json
 import os
@@ -151,8 +151,7 @@ def mail_lab() -> Iterator[Lab]:
     try:
         for zone, internal in [
             ("cve_internal", True),
-            ("cve_egress_internal", True),
-            ("cve_egress_external", True),
+            ("cve_outbound", True),
         ]:
             network = config.project + "_" + zone
             args = [
@@ -181,7 +180,9 @@ def mail_lab() -> Iterator[Lab]:
                 "--label",
                 label,
                 "--network",
-                networks[2],
+                networks[1],
+                "--network-alias",
+                "mail.allowed.test",
                 "--user",
                 str(os.getuid()) + ":" + str(os.getgid()),
                 "--cap-drop",
@@ -197,11 +198,6 @@ def mail_lab() -> Iterator[Lab]:
             ]
         )
         names.append(sink)
-        info = envoy.inspect_container(sink)
-        sinkip = info["NetworkSettings"]["Networks"][networks[2]]["IPAddress"]
-        envoy.namespace_command(
-            int(info["State"]["Pid"]), ["ip", "address", "add", "93.184.216.34/32", "dev", "lo"]
-        )
         client = config.project + "-client"
         run(
             [
@@ -227,17 +223,11 @@ def mail_lab() -> Iterator[Lab]:
             ]
         )
         names.append(client)
-        evalue = envoy.policy()
-        evalue["rules"] = []
-        evalue["dns"] = {"address": sinkip, "port": 53, "refresh_seconds": 1, "timeout_seconds": 1}
-        envoy.render(config, evalue, {})
         mail.start(config)
-        _, pid = envoy.netns(config)
-        envoy.namespace_command(pid, ["ip", "route", "add", "93.184.216.34/32", "via", sinkip])
         lab = Lab(config, sink, client, files)
         yield lab
     finally:
-        for service in ("cve-mail-relay", "cve-egress-proxy"):
+        for service in ("cve-mail-relay",):
             result = compose(config, ["logs", "--no-color", service])
             (base / (service + ".log")).write_text(result.stdout)
         compose(config, ["down"])

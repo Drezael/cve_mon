@@ -159,3 +159,35 @@ async def test_shared_dashboards_are_read_only_and_copied_into_the_recipient_acc
     assert (
         await call(browser, recipient, "GET", BASE + "/" + copied.json()["id"])
     ).status_code == 200
+
+
+@pytest.mark.parametrize("unicode", [False, True])
+async def test_large_dashboard_yaml_crosses_real_auth_boundary(
+    browser: Browser, unicode: bool
+) -> None:
+    import yaml
+
+    user = await actor(browser, ("user",))
+    config = yaml.safe_load(EXAMPLE)
+    config["widgets"] = [
+        {
+            "id": "text" + str(i),
+            "type": "text",
+            "title": "Text",
+            "text": ("Ä" * 2800 + "\n" * 100) if unicode else "a" * 3000,
+        }
+        for i in range(3)
+    ]
+    source = yaml.safe_dump(config, allow_unicode=True)
+    assert 8192 < len(source.encode()) <= 32768
+    result = await call(browser, user, "POST", BASE + "/validate", {"yaml": source}, reauth=False)
+    assert result.status_code == 200 and result.json()["valid"], result.text
+    result = await call(browser, user, "POST", BASE, {"yaml": source}, reauth=False)
+    assert result.status_code == 201, result.text
+    path = BASE + "/" + result.json()["id"]
+    updated = await call(browser, user, "PUT", path, {"yaml": source, "version": 1}, reauth=False)
+    assert updated.status_code == 200, updated.text
+    too_large = await call(
+        browser, user, "PUT", path, {"yaml": source + "#" * 32769, "version": 2}, reauth=False
+    )
+    assert too_large.status_code == 422, too_large.text

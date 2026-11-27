@@ -6,22 +6,36 @@ from typing import Any
 
 import pytest
 
-from tests.authorization.integration.conftest import actor
-from tests.findings.test_native import Harness, harness
+from tests.authorization.integration.conftest import actor, call
+from tests.inventory_upload.integration.conftest import Browser
 from tests.managed_ansible.test_ssh_execution import ssh_target
+from tests.server_administration.integration.conftest import create_server
 
-__all__ = ["harness", "ssh_target"]
+__all__ = ["ssh_target"]
 pytestmark = pytest.mark.findings
 
 
-async def test_profile_and_n8n_request(harness: Harness) -> None:
-    finding = await harness.create()
-    await actor(harness.browser)
-    client = harness.browser.client
-    path = "/api/v1/dashboard/servers/" + str(finding["server_id"]) + "/ansible"
-    headers = {"x-csrf-token": harness.browser.csrf}
+async def test_profile_and_n8n_request(browser: Browser) -> None:
+    person = await actor(browser)
+    server = await create_server(browser, person)
+    vault_password = secrets.token_urlsafe(24)
+    vault = await call(
+        browser,
+        person,
+        "PUT",
+        "me/ansible-vault",
+        {
+            "password": vault_password,
+            "password_confirmation": vault_password,
+        },
+    )
+    assert vault.status_code == 200, vault.text
+    client = browser.client
+    path = "/api/v1/dashboard/servers/" + str(server["id"]) + "/ansible"
+    headers = {"x-csrf-token": browser.csrf}
     fixture_password = secrets.token_urlsafe(24)
     body = {
+        "version": 0,
         "host": "192.168.88.99",
         "port": 22,
         "username": "collector",
@@ -40,7 +54,7 @@ async def test_profile_and_n8n_request(harness: Harness) -> None:
     assert response.status_code == 409, response.text
     response = await client.post(path + "/probe", headers=headers)
     assert response.status_code == 202, response.text
-    with harness.browser.lab.owner() as session:
+    with browser.lab.owner() as session:
         run = session.execute(
             (
                 "SELECT r.*,j.payload,j.status AS job_status FROM inventory.ansibl"
@@ -55,9 +69,9 @@ async def test_profile_and_n8n_request(harness: Harness) -> None:
             "SELECT 1 FROM automation.workflow_requests WHERE job_id=%s", (run["job_id"],)
         ).fetchone()
 
-    with harness.browser.lab.owner() as session:
+    with browser.lab.owner() as session:
         version = session.execute(
-            "SELECT version FROM inventory.servers WHERE id=%s", (finding["server_id"],)
+            "SELECT version FROM inventory.servers WHERE id=%s", (server["id"],)
         ).fetchone()["version"]
     removed = await client.delete(
         path.removesuffix("/ansible"), headers={**headers, "if-match": f'"{version}"'}
@@ -65,8 +79,9 @@ async def test_profile_and_n8n_request(harness: Harness) -> None:
     assert removed.status_code == 204, removed.text
 
 
+@pytest.mark.parametrize("method", ["password", "key", "encrypted-key"])
 async def test_real_managed_run_publishes_inventory_only_after_n8n(
-    harness: Harness, ssh_target: dict[str, Any], tmp_path: Path
+    browser: Browser, ssh_target: dict[str, Any], tmp_path: Path, method: str
 ) -> None:
     import asyncio
     import base64
@@ -81,28 +96,49 @@ async def test_real_managed_run_publishes_inventory_only_after_n8n(
     from scripts.database import manage as db
     from tests.inventory_processor.test_processing import drain
 
-    finding = await harness.create()
-    await actor(harness.browser)
-    client = harness.browser.client
-    config = harness.browser.lab.config
-    path = "/api/v1/dashboard/servers/" + str(finding["server_id"]) + "/ansible"
-    headers = {"x-csrf-token": harness.browser.csrf}
+    person = await actor(browser)
+    server = await create_server(browser, person)
+    vault_password = secrets.token_urlsafe(24)
+    vault = await call(
+        browser,
+        person,
+        "PUT",
+        "me/ansible-vault",
+        {
+            "password": vault_password,
+            "password_confirmation": vault_password,
+        },
+    )
+    assert vault.status_code == 200, vault.text
+    client = browser.client
+    config = browser.lab.config
+    path = "/api/v1/dashboard/servers/" + str(server["id"]) + "/ansible"
+    headers = {"x-csrf-token": browser.csrf}
+    if method == "password":
+        credentials = {"password": ssh_target["password"]}
+        wrong_credentials = {"password": secrets.token_urlsafe(24)}
+    else:
+        private, phrase = ssh_target["keys"][method == "encrypted-key"]
+        credentials = {"private_key": private, "passphrase": phrase}
+        wrong_credentials = {"private_key": ssh_target["keys"][1][0], "passphrase": "invalid"}
+    auth_method = "password" if method == "password" else "key"
     response = await client.put(
         path,
         headers=headers,
         json={
+            "version": 0,
             "host": ssh_target["address"],
             "port": 22,
             "username": "collector",
-            "auth_method": "password",
-            "password": ssh_target["password"],
+            "auth_method": auth_method,
+            **credentials,
             "use_sudo": False,
         },
     )
     assert response.status_code == 200, response.text
     settings = Settings(
         app_env="test",
-        database=harness.browser.lab.database("ansible_worker"),
+        database=browser.lab.database("ansible_worker"),
         keyring_file=config.root / ".runtime/services" / config.project / "ssh-keys.json",
         work_directory=tmp_path / "private-work",
     )
@@ -110,7 +146,7 @@ async def test_real_managed_run_publishes_inventory_only_after_n8n(
     database.open()
     service = Service(database, settings)
     repository = JobRepository(database, service.registry())
-    with harness.browser.lab.owner() as session:
+    with browser.lab.owner() as session:
         session.execute("UPDATE automation.workflow_settings SET enabled=true,auto_updates=false")
 
     async def execute(action: str, success: bool = True) -> str:
@@ -128,7 +164,7 @@ async def test_real_managed_run_publishes_inventory_only_after_n8n(
             repository, job, repository.registry.get(job.job_type, 1), asyncio.Event()
         )
         result = await service.handle(context, Request.model_validate(job.payload))
-        with harness.browser.lab.owner() as inspect:
+        with browser.lab.owner() as inspect:
             outcome = inspect.execute(
                 "SELECT state,error_code FROM inventory.ansible_runs WHERE job_id=%s", (job.id,)
             ).fetchone()
@@ -146,21 +182,30 @@ async def test_real_managed_run_publishes_inventory_only_after_n8n(
             path + "/confirm-key", json={"fingerprint": fingerprint}, headers=headers
         )
         assert response.status_code == 200, response.text
+        with browser.lab.owner() as inspect:
+            event = inspect.execute(
+                "SELECT metadata FROM security.audit_log WHERE object_id=%s "
+                "AND action='ansible.host_key_confirmed'",
+                (str(server["id"]),),
+            ).fetchall()
+            assert len(event) == 1
+            assert event[0]["metadata"] == {"profile_version": 1, "fingerprint": fingerprint}
         wrong = await client.put(
             path,
             headers=headers,
             json={
+                "version": 1,
                 "host": ssh_target["address"],
                 "username": "collector",
                 "port": 22,
-                "auth_method": "password",
-                "password": "invalid-" + ssh_target["password"],  # pragma: allowlist secret
+                "auth_method": auth_method,
+                **wrong_credentials,
                 "use_sudo": False,
             },
         )
         assert wrong.status_code == 200
         failed = await execute("test", success=False)
-        with harness.browser.lab.owner() as session:
+        with browser.lab.owner() as session:
             assert (
                 session.execute(
                     "SELECT j.status FROM inventory.ansible_runs r "
@@ -173,18 +218,19 @@ async def test_real_managed_run_publishes_inventory_only_after_n8n(
             path,
             headers=headers,
             json={
+                "version": 2,
                 "host": ssh_target["address"],
                 "username": "collector",
                 "port": 22,
-                "auth_method": "password",
-                "password": ssh_target["password"],
+                "auth_method": auth_method,
+                **credentials,
                 "use_sudo": False,
             },
         )
         assert fixed.status_code == 200
         await execute("test")
         run = await execute("collect")
-        with harness.browser.lab.owner() as session:
+        with browser.lab.owner() as session:
             row = session.execute(
                 "SELECT submission_id,execution_id,state FROM inventory.ansible_runs WHERE id=%s",
                 (run,),
@@ -196,10 +242,10 @@ async def test_real_managed_run_publishes_inventory_only_after_n8n(
                 "SELECT automation.workflow_dispatch('inventory','fixture-inventor"
                 "y','cve-control-inventory')"
             )
-        with harness.browser.lab.owner() as session:
+        with browser.lab.owner() as session:
             session.execute("UPDATE automation.workflow_settings SET enabled=false")
-        await drain(harness.browser)
-        with harness.browser.lab.owner() as session:
+        await drain(browser)
+        with browser.lab.owner() as session:
             assert session.execute(
                 "SELECT 1 FROM inventory.snapshots WHERE submission_id=%s", (row["submission_id"],)
             ).fetchone()
@@ -207,10 +253,10 @@ async def test_real_managed_run_publishes_inventory_only_after_n8n(
         # Delete during a real collection: no late publication may recreate the server.
         from cve_common.jobs.errors import LeaseLost
 
-        with harness.browser.lab.owner() as session:
+        with browser.lab.owner() as session:
             session.execute("UPDATE automation.workflow_settings SET enabled=true")
             version = session.execute(
-                "SELECT version FROM inventory.servers WHERE id=%s", (finding["server_id"],)
+                "SELECT version FROM inventory.servers WHERE id=%s", (server["id"],)
             ).fetchone()["version"]
         pending_run = await client.post(path + "/collect", headers=headers)
         assert pending_run.status_code == 202
@@ -229,6 +275,7 @@ async def test_real_managed_run_publishes_inventory_only_after_n8n(
             if list(settings.work_directory.glob("ansible-*")):
                 break
             await asyncio.sleep(0.05)
+        assert not list(settings.work_directory.glob("*/plan.json"))
         deleted = await client.delete(
             path.removesuffix("/ansible"), headers={**headers, "if-match": f'"{version}"'}
         )
@@ -236,12 +283,12 @@ async def test_real_managed_run_publishes_inventory_only_after_n8n(
         with pytest.raises(LeaseLost):
             await asyncio.wait_for(running, 10)
         assert list(settings.work_directory.iterdir()) == []
-        with harness.browser.lab.owner() as session:
+        with browser.lab.owner() as session:
             assert not session.execute(
-                "SELECT 1 FROM inventory.servers WHERE id=%s", (finding["server_id"],)
+                "SELECT 1 FROM inventory.servers WHERE id=%s", (server["id"],)
             ).fetchone()
 
     finally:
-        with harness.browser.lab.owner() as session:
+        with browser.lab.owner() as session:
             session.execute("UPDATE automation.workflow_settings SET enabled=false")
         await database.close()

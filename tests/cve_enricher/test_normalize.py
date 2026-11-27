@@ -8,7 +8,7 @@ from cve_enricher.normalize import metric, normalize
 
 from tests.cve_importer import fixtures as f
 
-pytestmark = pytest.mark.cve_enricher
+pytestmark = [pytest.mark.cve_enricher, pytest.mark.domain]
 
 
 def row(source: str, raw: dict[str, Any], identity: str = "CVE-2026-12345") -> dict[str, Any]:

@@ -78,7 +78,7 @@ async def states(s: Any, request: Request) -> list[dict[str, Any]]:
                     state=observation.result,
                     raw_state=observation.result,
                     reason_code=observation.reason_code,
-                    observed_at=now,
+                    observed_at=control.get("sample_checked_at", now),
                 )
     maintenance = await rows(
         s,

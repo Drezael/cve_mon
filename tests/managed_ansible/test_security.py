@@ -5,8 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from cryptography.exceptions import InvalidTag
-from cve_common.ssh_credentials import SSHKeyring
+from cve_common.ssh_credentials import KeyringError, SSHKeyring
 
 
 def test_envelopes_reject_another_server_or_profile_version(tmp_path: Path) -> None:
@@ -20,5 +19,5 @@ def test_envelopes_reject_another_server_or_profile_version(tmp_path: Path) -> N
     assert b"fixture-only" not in ciphertext
     assert ring.decrypt(server, 1, key, ciphertext) == value
     for candidate, version in ((uuid4(), 1), (server, 2)):
-        with pytest.raises(InvalidTag):
+        with pytest.raises(KeyringError):
             ring.decrypt(candidate, version, key, ciphertext)

@@ -47,7 +47,7 @@ it("requires confirmation and sends the server revision on deletion", async () =
     expect(calls).toHaveBeenCalledWith(
         "/api/v1/dashboard/servers/server-id",
         expect.anything(),
-        { method: "DELETE", version: 7, timeoutMs: 60000 },
+        { method: "DELETE", version: 7, timeoutMs: 60000, idempotencyKey: expect.any(String) },
     );
 });
 it("hides deletion for servers the user cannot delete", () => {
@@ -63,4 +63,22 @@ it("hides deletion for servers the user cannot delete", () => {
         />,
     );
     expect(view.container).toBeEmptyDOMElement();
+});
+
+it("checks a lost deletion response without issuing another DELETE", async () => {
+    const calls = vi.spyOn(client, "api")
+        .mockRejectedValueOnce(new client.ApiError(504))
+        .mockResolvedValueOnce({ state: "completed" });
+    const done = vi.fn();
+    render(<DeleteServer server={{id:"demo",display_name:"Demo",version:1,can_delete:true}} onDeleted={done} />);
+    fireEvent.click(screen.getByRole("button",{name:"Server Demo löschen"}));
+    const dialog=screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button",{name:"Server löschen"}));
+    await waitFor(()=>expect(within(dialog).getByRole("button",{name:"Status prüfen"})).toBeEnabled());
+    expect(within(dialog).getByRole("button",{name:"Server löschen"})).toBeDisabled();
+    const requestId=calls.mock.calls[0][2]?.idempotencyKey;
+    fireEvent.click(within(dialog).getByRole("button",{name:"Status prüfen"}));
+    await waitFor(()=>expect(done).toHaveBeenCalledOnce());
+    expect(calls.mock.calls[1][0]).toBe(`/api/v1/dashboard/servers/erase-operations/${requestId}`);
+    expect(calls).toHaveBeenCalledTimes(2);
 });

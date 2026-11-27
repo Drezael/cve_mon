@@ -1,15 +1,24 @@
 """Native permission, FIFO authorization, durable restart and consumer health receipts."""
 
+from collections.abc import Iterator
 from uuid import uuid4
 
 import psycopg
 import pytest
 
 from scripts.database import manage as db
+from tests.authentication.integration.conftest import Lab
 from tests.authorization.integration.conftest import actor
 from tests.inventory_upload.integration.conftest import Browser
 
 pytestmark = pytest.mark.status_integration
+
+
+@pytest.fixture(scope="module")
+def upload_lab() -> Iterator[Lab]:
+    from tests.inventory_upload.integration.conftest import isolated_upload_lab
+
+    yield from isolated_upload_lab()
 
 
 async def test_restart_is_authorized_only_through_n8n_and_records_its_result(

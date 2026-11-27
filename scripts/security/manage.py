@@ -114,13 +114,19 @@ def render_auth_route(config: Config) -> None:
             + "location = /api/v1/dashboard/me/locale {\n"
             + proxy
             + "}\n"
+            + "location = /api/v1/dashboard/me/ansible-vault {\n"
+            + proxy
+            + "}\n"
             + "location = /api/v1/dashboard/me/permissions {\n"
             + proxy
             + "}\n"
         )
     if gateway.exists():
         administration = (
-            'location ~ "^/api/v1/dashboard/admin/servers(?:/(?:order|[A-Za-z'
+            'location ~ "^/api/v1/dashboard/servers/[0-9a-f-]{36}/ansible$" {\n'
+            + proxy.replace("client_max_body_size 8k", "client_max_body_size 128k")
+            + "}\n"
+            + 'location ~ "^/api/v1/dashboard/admin/servers(?:/(?:order|[A-Za-z'
             '0-9_-]+(?:/(?:archive|restore))?))?$" {\n'
             + proxy
             + "}\n"

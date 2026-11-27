@@ -7,13 +7,14 @@ from pathlib import Path
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
+from cve_common.http.errors import validation_response
 from cve_common.smtp_settings import PersonalSMTPUpdate, SMTPConfig, SMTPKeyring, SMTPUpdate
 from fastapi import APIRouter, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRoute
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import text
-from starlette.responses import JSONResponse, Response
+from starlette.responses import Response
 
 from cve_api.auth.dependencies import transport
 from cve_api.auth.repository import one
@@ -28,9 +29,9 @@ class SecretValidationRoute(APIRoute):
         async def safe(request: Request) -> Response:
             try:
                 return await handler(request)
-            except RequestValidationError:
+            except RequestValidationError as error:
                 # Validation input may contain raw credentials; never echo it to the client.
-                return JSONResponse({"detail": "Invalid SMTP configuration"}, status_code=422)
+                return validation_response(request, error)
 
         return safe
 

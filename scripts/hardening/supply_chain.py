@@ -31,6 +31,10 @@ def input_hashes() -> dict[str, str]:
             "services/dashboard/package-lock.json",
             "compose.yml",
             "infrastructure/images.lock.json",
+            "infrastructure/application/native-packages.lock.json",
+            "infrastructure/image-reviews.json",
+            "infrastructure/n8n/bootstrap.cjs",
+            "scripts/hardening/image_reviews.py",
         ]
     ]
     paths.extend(sorted((ROOT / "services").glob("*/Dockerfile")))
@@ -40,7 +44,11 @@ def input_hashes() -> dict[str, str]:
     paths.extend(
         ROOT / p for p in ["scripts/hardening/runtime_images.py", "scripts/services/wheels.py"]
     )
-    return {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+    from scripts.application.build import fingerprint
+
+    values = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}
+    values["application-source-inputs"] = fingerprint(ROOT)
+    return values
 
 
 def scanner() -> Path:
@@ -210,12 +218,18 @@ def images() -> None:
     inputs = input_hashes()
     inventory = []
     findings = []
+    accepted = []
     for service in services:
         name = service["Service"]
         # Inspect only image identity/configuration; never container environment/credentials.
         # Resolve the candidate artifact once; subsequent scan/export uses only its immutable ID.
         reference = service["Image"]
         metadata = json.loads(run([*docker_command(), "image", "inspect", reference]).stdout)[0]
+        from scripts.application.build import LABEL, fingerprint
+        from scripts.infrastructure.topology import GROUPS
+
+        if name in GROUPS and metadata["Config"].get("Labels", {}).get(LABEL) != fingerprint(ROOT):
+            raise ValueError("Build the current application source before scanning: " + name)
         identity = metadata["Id"]
         archive = WORK / (name + ".tar")
         try:
@@ -250,7 +264,11 @@ def images() -> None:
             ]
             target = REPORTS / (name + "-vulnerabilities.json")
             execute(arguments, target)
-            findings.extend(gate(json.loads(target.read_text())))
+            from scripts.hardening.image_reviews import apply
+
+            blocked, reviewed = apply(json.loads(target.read_text()), reference, ROOT)
+            findings.extend(blocked)
+            accepted.extend(reviewed)
             execute(
                 ["image", "--input", str(archive), "--format", "cyclonedx"],
                 REPORTS / (name + "-sbom.cdx.json"),
@@ -277,7 +295,7 @@ def images() -> None:
                 "input_hashes": inputs,
                 "checked_at": datetime.now(UTC).isoformat(),
                 "blocking_findings": findings,
-                "exceptions": [],
+                "exceptions": accepted,
                 "scanned_services": len(inventory),
             },
             indent=2,

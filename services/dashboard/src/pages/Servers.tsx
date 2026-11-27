@@ -178,7 +178,12 @@ export default function Servers() {
                             )}
                         </p>
                     )}
-                    <div className="table-scroll">
+                    <div
+                        className="table-scroll"
+                        tabIndex={0}
+                        role="region"
+                        aria-label={t("Scrollbare Tabelle")}
+                    >
                         <table>
                             <thead>
                                 <tr>

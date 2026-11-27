@@ -66,6 +66,9 @@ def create(version: str, output: Path, root: Path = ROOT) -> dict[str, Any]:
         raise ValueError("Semantic candidate version required")
     if output.exists():
         raise ValueError("Release destination must be new")
+    from scripts.dashboard.provenance import verify as verify_dashboard
+
+    verify_dashboard(root)
     from scripts.scan_secrets import scan
 
     if scan(root):

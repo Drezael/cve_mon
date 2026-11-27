@@ -1,3 +1,5 @@
+import SafePreview from "./NotificationPreview";
+import VersionHistory from "./NotificationHistory";
 import { translateMessage, t, localized, useLocale } from "../i18n";
 import WeeklyReports from "./WeeklyReports";
 import { useState } from "react";
@@ -491,43 +493,6 @@ const previewSchema = z.object({
     text: z.string(),
     html: z.string(),
 });
-function SafePreview({ html }: { html: string }) {
-    useLocale();
-    const document = new DOMParser().parseFromString(html, "text/html");
-    const nodes = (items: NodeListOf<ChildNode>): import("react").ReactNode =>
-        Array.from(items).map((node, index) => {
-            if (node.nodeType === 3) return node.textContent;
-            if (!(node instanceof Element)) return null;
-            const children = nodes(node.childNodes);
-            switch (node.tagName.toLowerCase()) {
-                case "p":
-                    return <p key={index}>{children}</p>;
-                case "h2":
-                    return <h3 key={index}>{children}</h3>;
-                case "ul":
-                    return <ul key={index}>{children}</ul>;
-                case "li":
-                    return <li key={index}>{children}</li>;
-                case "strong":
-                    return <strong key={index}>{children}</strong>;
-                case "br":
-                    return <br key={index} />;
-                case "a":
-                    return (
-                        <span key={index}>
-                            {children} {t("(Vorschaulink)")}
-                        </span>
-                    );
-                default:
-                    return null;
-            }
-        });
-    return (
-        <div className="template-preview">
-            {nodes(document.body.childNodes)}
-        </div>
-    );
-}
 export function Templates() {
     useLocale();
     const [nextTemplate, setNextTemplate] = useState<Row | null | undefined>(
@@ -763,72 +728,5 @@ export function Templates() {
                 />
             )}
         </>
-    );
-}
-
-function VersionHistory({
-    kind,
-    identity,
-}: {
-    kind: "rules" | "templates";
-    identity: string;
-}) {
-    useLocale();
-    const [offset, setOffset] = useState(0);
-    const history = useData(
-        `/api/v1/dashboard/administration/notification-history/${kind}/${identity}?limit=25&offset=${offset}`,
-        listing,
-    );
-    const [chosen, setChosen] = useState("");
-    return (
-        <section>
-            <h3>{t("Unveränderte Versionshistorie")}</h3>
-            {!history.data ? (
-                <State error={history.error} reload={history.reload} />
-            ) : (
-                <>
-                    <label>
-                        {t("Version zum Vergleich")}
-                        <select
-                            value={chosen}
-                            onChange={(e) => setChosen(e.target.value)}
-                        >
-                            <option value="">{t("Version wählen")}</option>
-                            {history.data.items.map((r) => (
-                                <option key={String(r.id)} value={String(r.id)}>
-                                    {t("Version")} {String(r.version)}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    {chosen && (
-                        <div className="grid-two">
-                            <Facts values={history.data.items[0] ?? {}} />
-                            <Facts
-                                values={
-                                    history.data.items.find(
-                                        (r) => r.id === chosen,
-                                    ) ?? {}
-                                }
-                            />
-                        </div>
-                    )}
-                    {history.data.items.map((r) => (
-                        <details key={String(r.id)}>
-                            <summary>
-                                {t("Version")} {String(r.version)} ·{" "}
-                                {String(r.created_at ?? "")}
-                            </summary>
-                            <Facts values={r} />
-                        </details>
-                    ))}
-                    <Pagination
-                        offset={offset}
-                        total={history.data.total}
-                        onChange={setOffset}
-                    />
-                </>
-            )}
-        </section>
     );
 }

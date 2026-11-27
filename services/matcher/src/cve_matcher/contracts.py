@@ -9,7 +9,7 @@ from cve_common.jobs.worker import WorkerSettings
 from pydantic import Field, model_validator
 from pydantic_settings import SettingsConfigDict
 
-RULE: Literal["matching-1"] = "matching-1"
+RULE: Literal["matching-3"] = "matching-3"
 Status = Literal["affected", "not_affected", "potentially_affected", "unknown", "not_applicable"]
 
 
@@ -36,7 +36,7 @@ class Request(Payload):
     stage: Literal["revisions", "snapshots"] = "revisions"
     after: str = Field(default="", max_length=256)
     event_id: UUID | None = None
-    rule_version: Literal["matching-1"] = RULE
+    rule_version: Literal["matching-1", "matching-2", "matching-3"] = RULE
 
 
 class Result(Payload):
@@ -63,6 +63,6 @@ class Evaluation(Payload):
     data_quality: Literal["complete", "partial", "conflicted"] = "partial"
     status: Status
     reason: str
-    rule_version: Literal["matching-1"] = RULE
+    rule_version: Literal["matching-3"] = RULE
     components: list[Decision]
     coverage: dict[str, Any]

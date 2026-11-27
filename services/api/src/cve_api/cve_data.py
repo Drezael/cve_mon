@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID
 
-from cve_findings.repository import one
+from cve_common.database.queries import one
+from cve_common.matching_support import VERSION_SUPPORT
 from cve_importer.contracts import Configuration
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from fastapi import Path as ApiPath
@@ -59,6 +60,7 @@ class QueueStatus(BaseModel):
 
 
 class DataStatus(BaseModel):
+    version_support: dict[str, str | None] = Field(default_factory=lambda: dict(VERSION_SUPPORT))
     queue: QueueStatus | None = None
     pipeline: PipelineStatus
     cve_count: int

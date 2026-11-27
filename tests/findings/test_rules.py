@@ -9,7 +9,7 @@ from cve_findings.contracts import ExceptionRequest, Policy, Signals
 from cve_findings.rules import deadline, lifecycle, priority, resolution
 from pydantic import ValidationError
 
-pytestmark = pytest.mark.findings
+pytestmark = [pytest.mark.findings, pytest.mark.domain]
 
 
 @pytest.mark.parametrize("state", ["open", "in_progress", "resolved", "closed"])

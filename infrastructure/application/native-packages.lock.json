@@ -23,6 +23,10 @@
       "sha256": "d64eeddb867cdb678944535e1e56d0438a9ca5114344cbf624abae31519f2afd"
     },
     {
+      "filename": "krb5-libs-1.22.3-r0.apk",
+      "sha256": "fad5b46a953e6a37a1bb61a84538fa08ecb6a07816f439eb06f2735aebfcbfbf"
+    },
+    {
       "filename": "libcrypto3-3.5.9-r0.apk",
       "sha256": "6632d758d8f5e9ea3b650fe966f23bbf9a202f8b8dceecac93da135dec5e3689"
     },

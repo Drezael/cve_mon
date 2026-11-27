@@ -19,18 +19,20 @@ async def test_read_selectors_and_real_upload_status(harness: Harness) -> None:
     admin = await actor(browser)
     response = await call(browser, admin, "GET", "administration/upload-options")
     assert response.status_code == 200, response.text
-    assert response.json()["total"] == 0
+    assert str(finding["server_id"]) in [r["id"] for r in response.json()["items"]]
+    # Administrators can upload globally; a normal user needs the object grant.
+    uploader = await actor(browser, ("user",))
+    hidden = await call(browser, uploader, "GET", "administration/upload-options")
+    assert hidden.status_code == 200 and hidden.json()["total"] == 0
     with browser.lab.owner() as c:
         c.execute(
-            (
-                "INSERT INTO security.user_server_access(user_id,se"
-                "rver_id,can_read,can_upload,findings_read,findings"
-                "_manage) VALUES(%s,%s,true,true,true,true)"
-            ),
-            (admin.id, finding[("server_id")]),
+            "INSERT INTO security.user_server_access(user_id,server_id,can_read,can_upload,"
+            "findings_read,findings_manage) VALUES(%s,%s,true,true,true,true)",
+            (uploader.id, finding["server_id"]),
         )
-    options = await call(browser, admin, "GET", "administration/upload-options")
-    assert options.status_code == 200 and options.json()["total"] >= 1, options.text
+    options = await call(browser, uploader, "GET", "administration/upload-options")
+    assert options.status_code == 200, options.text
+    assert str(finding["server_id"]) in [r["id"] for r in options.json()["items"]]
     eligible = await call(
         browser, admin, "GET", f"administration/findings/{finding['id']}/assignees"
     )
@@ -162,7 +164,13 @@ async def test_real_browser_administration(harness: Harness) -> None:
             }
         )
     payload = sample()
-    payload.update(server_id=str(finding["server_id"]), inventory_id=str(uuid4()))
+    payload["schema_version"] = "1.2"
+    payload["host"] = {
+        "hostname": str(finding["server_name"]),
+        "monitoring_id": str(finding["server_id"]),
+    }
+    payload.pop("server_id")
+    payload["inventory_id"] = str(uuid4())
     activate(browser.lab.config)
     binary = node(browser.lab.config.root)
     env = dict(os.environ)

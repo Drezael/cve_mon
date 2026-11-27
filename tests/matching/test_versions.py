@@ -6,9 +6,10 @@ import itertools
 import subprocess
 
 import pytest
+from cve_matcher.ranges import osv
 from cve_matcher.versions import VersionError, compare, rpm_parts
 
-pytestmark = pytest.mark.matching
+pytestmark = [pytest.mark.matching, pytest.mark.domain]
 DEBIAN = [
     "0",
     "1.0",
@@ -43,6 +44,34 @@ RPM = [
     "1.0+git",
     "1.0.git",
 ]
+
+
+@pytest.mark.parametrize(
+    "a,b",
+    [
+        ("1.0.dev1", "1.0a1"),
+        ("1.0a1", "1.0rc1"),
+        ("1.0rc1", "1.0"),
+        ("1.0", "1.0.post1"),
+        ("1!9.0", "2!0.1"),
+        ("1.0+local.1", "1.0+local.2"),
+    ],
+)
+def test_pep440_epoch_prerelease_postrelease_and_local_order(a: str, b: str) -> None:
+    assert compare("pep440", a, b) == -1
+    assert compare("pep440", b, a) == 1
+
+
+def test_pep440_equivalent_and_invalid_versions_and_osv_range() -> None:
+    assert compare("pep440", "1.0", "1.0.0") == 0
+    with pytest.raises(VersionError):
+        compare("pep440", "unknown-version", "1.0")
+    affected = {
+        "package": {"ecosystem": "PyPI", "name": "demo"},
+        "ranges": [{"type": "ECOSYSTEM", "events": [{"introduced": "0"}, {"fixed": "2.0"}]}],
+    }
+    assert osv("1.9", affected) == (True, "osv_interval", "pep440")
+    assert osv("2.0", affected) == (False, "outside_osv_intervals", "pep440")
 
 
 @pytest.mark.parametrize(("a", "b"), list(itertools.combinations(DEBIAN, 2)))

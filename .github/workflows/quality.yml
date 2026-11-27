@@ -35,6 +35,13 @@ jobs:
         run: make setup
       - name: Quality, contracts and secret checks
         run: make check
+      - name: Coverage evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: coverage-${{ github.sha }}
+          path: .runtime/test-reports/coverage.xml
+          if-no-files-found: error
       - name: Repository publication inputs
         run: make github-check
       - name: Repository-owned Ansible syntax
@@ -60,3 +67,7 @@ jobs:
         run: make setup
       - name: Dashboard types, lint, components and build
         run: make dashboard-check
+      - name: Reproducible dashboard contracts
+        run: |
+          make dashboard-contracts administration-contracts status-contracts
+          git diff --exit-code -- contracts/api services/dashboard/src/generated

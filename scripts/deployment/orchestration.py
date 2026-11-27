@@ -47,12 +47,8 @@ def stage(path: Path) -> Environment:
         "INGRESS_BIND_IP": "127.0.0.1",
         "INGRESS_HTTP_PORT": port(),
         "INGRESS_HTTPS_PORT": port(),
-        "MAILHOG_HTTP_PORT": port(),
-        "TLS_CERT_FILE": str(pki / "server.crt"),
-        "TLS_KEY_FILE": str(pki / "server.key"),
-        "TLS_TRUST_FILE": str(pki / "server-ca.crt"),
-        "CLIENT_CA_FILE": str(pki / "client-ca.crt"),
-        "CLIENT_CRL_FILE": str(pki / "client-ca.crl"),
+        "TLS_DIR": str(pki),
+        "LETSENCRYPT_ENABLED": "false",
     }
     env = path / "platform.env"
     env.write_text("".join(k + "=" + v + "\n" for k, v in sorted(values.items())))
@@ -113,6 +109,18 @@ def prepare_runtime(target: Environment, bundle: Path) -> None:
     from scripts.infrastructure.storage import prepare as prepare_storage
 
     prepare_storage(c, list({item[1] for item in STORES.values()}))
+    if target.kind != "production":
+        # Staging is deliberately quiet even when a new migration enables a
+        # default report rule. Append a version, preserving immutable audit data.
+        with db.connect(c) as connection:
+            connection.execute("""
+INSERT INTO automation.notification_rules(rule_key,version,config,reason)
+SELECT rule_key,version+1,config||'{"enabled":false}'::jsonb,
+ 'Isolated staging: notification rules disabled'
+FROM (SELECT DISTINCT ON(rule_key) * FROM automation.notification_rules
+ ORDER BY rule_key,version DESC) current
+WHERE coalesce((config->>'enabled')::boolean,false)
+""")
     for module in [
         api,
         automation,
@@ -126,6 +134,10 @@ def prepare_runtime(target: Environment, bundle: Path) -> None:
     ]:
         module.prepare(c)
     api.prepare(c)
+    from scripts.application.manage import prepare as prepare_group
+
+    for group in ("cve-processing", "cve-sources"):
+        prepare_group(c, group)
     destination = c.directory / "dashboard"
     shutil.copytree(bundle / "frontend", destination, dirs_exist_ok=True)
     render(c)
@@ -366,7 +378,10 @@ def cleanup_stage(target: Environment) -> None:
         "cve-db-test-phase24-"
     ):
         raise ValueError("Only own disposable Phase-24 stages can be removed")
+    from scripts.automation_executor.agent import stop as stop_agent
+
     c = target.config
+    stop_agent(c)
     volumes = run(
         [
             *docker_command(),

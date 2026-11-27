@@ -132,8 +132,8 @@
       "type": "string"
     },
     "rule_version": {
-      "const": "matching-1",
-      "default": "matching-1",
+      "const": "matching-3",
+      "default": "matching-3",
       "title": "Rule Version",
       "type": "string"
     },
@@ -157,7 +157,5 @@
     "coverage"
   ],
   "title": "Evaluation",
-  "type": "object",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://cve-monitoring.invalid/contracts/matching/result.schema.json"
+  "type": "object"
 }

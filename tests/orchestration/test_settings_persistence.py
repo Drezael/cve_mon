@@ -16,7 +16,7 @@ from uuid import uuid4
 import httpx
 import pytest
 from cve_common.smtp_settings import SMTPKeyring
-from cve_common.ssh_credentials import SSHKeyring
+from cve_common.user_vault import UserVaultKeyring, decrypt_credentials
 from cve_notification.contracts import Preferences, Rule, Template
 from psycopg import sql
 
@@ -49,6 +49,7 @@ TABLES = (
     "security.user_roles",
     "security.user_server_access",
     "security.user_group_access",
+    "security.ansible_vaults",
     "inventory.servers",
     "inventory.server_groups",
     "inventory.server_group_memberships",
@@ -152,18 +153,33 @@ async def test_saved_settings_survive_restart_and_recreation(
     group = await create_group(browser, person, description="Preserved group")
     membership = await assign_groups(browser, person, server["id"], [group["id"]])
     assert membership.status_code == 200, membership.text
+    from tests.authorization.integration.conftest import call
+
+    vault_password = secrets.token_urlsafe(32)
+    vault = await call(
+        browser,
+        person,
+        "PUT",
+        "me/ansible-vault",
+        {
+            "password": vault_password,
+            "password_confirmation": vault_password,
+        },
+    )
+    assert vault.status_code == 200, vault.text
     ssh_password = secrets.token_urlsafe(32)
     ansible = await browser.client.put(
         "/api/v1/dashboard/servers/" + server["id"] + "/ansible",
         headers=headers,
         json={
+            "version": 0,
             "host": "192.0.2.123",
             "port": 2222,
             "username": "collector",
             "auth_method": "password",
             "password": ssh_password,
             "enabled": False,
-            "use_sudo": True,
+            "use_sudo": False,
             "interval_seconds": 43200,
             "mount_paths": ["/srv/apps"],
         },
@@ -349,13 +365,20 @@ async def test_saved_settings_survive_restart_and_recreation(
         ssh = s.execute(
             "SELECT * FROM inventory.ansible_profiles WHERE server_id=%s", (server["id"],)
         ).fetchone()
+        vault = s.execute(
+            "SELECT * FROM security.ansible_vaults WHERE user_id=%s", (person.id,)
+        ).fetchone()
+        assert ssh and vault
+        keyring = UserVaultKeyring(
+            platform.secrets_base / "services" / platform.project / "ssh-keys.json"
+        )
         assert (
-            ssh
-            and SSHKeyring(
-                platform.root / ".runtime/services" / platform.project / "ssh-keys.json"
-            ).decrypt(ssh["server_id"], ssh["version"], ssh["key_id"], bytes(ssh["ciphertext"]))[
-                "password"
-            ]
+            decrypt_credentials(
+                keyring.runtime_key(person.id, vault),
+                person.id,
+                ssh["server_id"],
+                bytes(ssh["ciphertext"]),
+            )["password"]
             == ssh_password
         )
     report = {

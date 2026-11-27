@@ -22,6 +22,13 @@ router = APIRouter(prefix="/api/v1/dashboard/servers", tags=["server-administrat
 async def delete_server(server_id: UUID, request: Request) -> Response:
     auth, _ = transport(request)
     csrf = csrf_for(request)
+    keys = request.headers.getlist("idempotency-key")
+    try:
+        if len(keys) > 1:
+            raise ValueError
+        operation_id = UUID(keys[0]) if keys else uuid4()
+    except ValueError:
+        raise Denied(400, "invalid_operation_id") from None
     if auth.administration_database is None:
         raise Denied(503)
     async with security_transaction(auth.administration_database, mutation=False) as session:
@@ -69,7 +76,7 @@ async def delete_server(server_id: UUID, request: Request) -> Response:
                 "server_id": str(server_id),
                 "actor_id": str(actor_id),
                 "version": version,
-                "request_id": str(uuid4()),
+                "request_id": str(operation_id),
             },
         )
     except (OSError, ValueError, TimeoutError):
@@ -77,3 +84,26 @@ async def delete_server(server_id: UUID, request: Request) -> Response:
     if result.get("status") != 204:
         raise Denied(result.get("status", 503), "erasure_incomplete")
     return Response(status_code=204)
+
+
+@router.get("/erase-operations/{identity}")
+async def deletion_status(identity: UUID, request: Request) -> dict[str, str]:
+    auth, _ = transport(request)
+    async with security_transaction(auth.database, mutation=False) as session:
+        actor, _ = await load_principal(auth, session, request.cookies.get(SESSION_COOKIE))
+        if "server:inventory:manage" not in actor.permissions:
+            raise Denied()
+        try:
+            result = await command(
+                Path(auth.settings.keyring_file).parent,
+                {
+                    "operation": "erase-status",
+                    "request_id": str(identity),
+                    "actor_id": str(actor.user_id),
+                },
+            )
+        except (OSError, ValueError, TimeoutError):
+            raise Denied(503, "erasure_status_unavailable") from None
+    if result.get("status") != 200:
+        raise Denied(result.get("status", 503))
+    return {"state": str(result["state"])}

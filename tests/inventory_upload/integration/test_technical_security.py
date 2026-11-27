@@ -53,16 +53,14 @@ async def test_real_mtls_acceptance_status_and_header_overwrite(browser: Browser
         ).status
         == 404
     )
-    assert (
+    with pytest.raises(ssl.SSLError, match="UNRECOGNIZED_NAME"):
         request(
             cfg,
             domain=cfg.values["API_DOMAIN"],
             path="/api/v1/inventories",
             method="POST",
             body=raw,
-        ).status
-        == 404
-    )
+        )
 
 
 @pytest.mark.parametrize(
@@ -73,6 +71,8 @@ async def test_real_mtls_rejects_missing_invalid_expired_and_revoked(
     browser: Browser, certificate: str | None
 ) -> None:
     cfg = browser.lab.config
+    with browser.lab.owner() as c:
+        before = c.execute("SELECT count(*) AS n FROM inventory.submissions").fetchone()["n"]
     try:
         result = request(
             cfg,
@@ -87,8 +87,15 @@ async def test_real_mtls_rejects_missing_invalid_expired_and_revoked(
             },
         )
     except ssl.SSLError:
-        return
-    assert result.status == 403, result.body
+        pass
+    else:
+        # Native Nginx rejects missing/invalid client certificates before proxying.
+        assert result.status == 400, result.body
+        assert "certificate" in result.body.lower()
+    with browser.lab.owner() as c:
+        assert (
+            c.execute("SELECT count(*) AS n FROM inventory.submissions").fetchone()["n"] == before
+        )
 
 
 async def test_stolen_bearer_cannot_use_another_valid_certificate(browser: Browser) -> None:

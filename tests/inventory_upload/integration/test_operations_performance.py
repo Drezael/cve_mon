@@ -148,13 +148,17 @@ async def test_read_only_diagnostics_are_bounded_and_never_print_secrets(
     browser: Browser, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     import sys
+    from dataclasses import replace
 
     from scripts.inventory import manage
 
     upload = await provision(browser)
     submitted = await technical(browser, upload, payload(upload.server["id"]))
     assert submitted.status_code == 202
-    monkeypatch.setattr(manage, "load_config", lambda: browser.lab.config)
+    # Validate the supported base model. The lab's deliberate status-pause
+    # overlay is rejected by production's fixed-architecture policy as intended.
+    diagnostic_config = replace(browser.lab.config, compose_overrides=())
+    monkeypatch.setattr(manage, "load_config", lambda: diagnostic_config)
     capsys.readouterr()
     for action in ["contract", "mtls", "credentials", "permissions", "metrics", "submission"]:
         argv = ["inventory", action]

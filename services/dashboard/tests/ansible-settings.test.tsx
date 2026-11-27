@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import * as client from "../src/api";
 import AnsibleSettings from "../src/admin/AnsibleSettings";
+import { MemoryRouter } from "react-router-dom";
 
 const profile = {
     version: 1,
@@ -31,7 +32,13 @@ afterEach(() => {
 it("requires a confirmed hostkey before login and retains write-only credentials", async () => {
     const calls = vi
         .spyOn(client, "api")
-        .mockResolvedValue({ profile, credentials_configured: true, runs: [] });
+        .mockResolvedValue({
+            profile,
+            credentials_configured: true,
+            vault_configured: true,
+            editable: true,
+            runs: [],
+        });
     render(<AnsibleSettings server="server-id" />);
     await screen.findByDisplayValue("192.168.1.20");
     expect(
@@ -54,6 +61,7 @@ it("requires a confirmed hostkey before login and retains write-only credentials
             {
                 method: "PUT",
                 body: {
+                    version: 1,
                     host: profile.host,
                     port: 22,
                     username: "collector",
@@ -69,4 +77,41 @@ it("requires a confirmed hostkey before login and retains write-only credentials
     expect(
         calls.mock.calls.some(([, , options]) => options?.method === "POST"),
     ).toBe(false);
+});
+
+it("requires a personal vault before showing credential inputs", async () => {
+    vi.spyOn(client, "api").mockResolvedValue({
+        profile: null,
+        credentials_configured: false,
+        vault_configured: false,
+        editable: true,
+        runs: [],
+    });
+    render(
+        <MemoryRouter>
+            <AnsibleSettings server="server-id" />
+        </MemoryRouter>,
+    );
+    expect(
+        await screen.findByRole("link", { name: "Mein Ansible-Vault" }),
+    ).toHaveAttribute("href", "/settings/ansible-vault");
+    expect(
+        screen.queryByLabelText("Privater SSH-Schlüssel"),
+    ).not.toBeInTheDocument();
+    expect(
+        screen.queryByRole("button", { name: "Verbindung speichern" }),
+    ).not.toBeInTheDocument();
+});
+
+it("does not offer editing another user's vault credentials", async () => {
+    vi.spyOn(client, "api").mockResolvedValue({
+        profile,
+        credentials_configured: true,
+        vault_configured: true,
+        editable: false,
+        runs: [],
+    });
+    render(<AnsibleSettings server="server-id" />);
+    expect(await screen.findByText(/Nur der Eigentümer/)).toBeVisible();
+    expect(screen.queryByLabelText("SSH-Passwort")).not.toBeInTheDocument();
 });

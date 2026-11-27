@@ -249,6 +249,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dashboard/me/ansible-vault": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Status */
+        get: operations["status_api_v1_dashboard_me_ansible_vault_get"];
+        /** Save */
+        put: operations["save_api_v1_dashboard_me_ansible_vault_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dashboard/me/locale": {
         parameters: {
             query?: never;
@@ -747,6 +765,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dashboard/servers/{server}/ansible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Settings */
+        get: operations["settings_api_v1_dashboard_servers__server__ansible_get"];
+        /** Configure */
+        put: operations["configure_api_v1_dashboard_servers__server__ansible_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboard/servers/{server}/ansible/confirm-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm */
+        post: operations["confirm_api_v1_dashboard_servers__server__ansible_confirm_key_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/dashboard/servers/{server}/ansible/{action}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run */
+        post: operations["run_api_v1_dashboard_servers__server__ansible__action__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dashboard/servers/{sid}/groups": {
         parameters: {
             query?: never;
@@ -1014,6 +1084,65 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** ConfirmKey */
+        ConfirmKey: {
+            /** Fingerprint */
+            fingerprint: string;
+        };
+        /** Confirmed */
+        Confirmed: {
+            /**
+             * Confirmed
+             * @constant
+             */
+            confirmed: true;
+        };
+        /** Connection */
+        Connection: {
+            /**
+             * Auth Method
+             * @default key
+             * @enum {string}
+             */
+            auth_method: "key" | "password";
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /** Host */
+            host: string;
+            /**
+             * Interval Seconds
+             * @default 21600
+             */
+            interval_seconds: number;
+            /** Mount Paths */
+            mount_paths?: string[];
+            /** Passphrase */
+            passphrase?: string | null;
+            /** Password */
+            password?: string | null;
+            /**
+             * Port
+             * @default 22
+             */
+            port: number;
+            /** Private Key */
+            private_key?: string | null;
+            /** Sudo Password */
+            sudo_password?: string | null;
+            /**
+             * Use Sudo
+             * @default false
+             * @constant
+             */
+            use_sudo: false;
+            /** Username */
+            username: string;
+            /** Version */
+            version: number;
+        };
         /** Context */
         Context: {
             /**
@@ -1174,6 +1303,10 @@ export interface components {
             sources: components["schemas"]["SourceStatus"][];
             /** Updating */
             updating: boolean;
+            /** Version Support */
+            version_support?: {
+                [key: string]: string | null;
+            };
         };
         /** DefaultRead */
         DefaultRead: {
@@ -1647,6 +1780,36 @@ export interface components {
              */
             timezone: string;
         };
+        /** Profile */
+        Profile: {
+            /**
+             * Auth Method
+             * @enum {string}
+             */
+            auth_method: "key" | "password";
+            /** Enabled */
+            enabled: boolean;
+            /** Host */
+            host: string;
+            /** Host Key */
+            host_key: string | null;
+            /** Host Key Confirmed */
+            host_key_confirmed: boolean;
+            /** Interval Seconds */
+            interval_seconds: number;
+            /** Mount Paths */
+            mount_paths: string[];
+            /** Next Due */
+            next_due: string | null;
+            /** Port */
+            port: number;
+            /** Use Sudo */
+            use_sudo: boolean;
+            /** Username */
+            username: string;
+            /** Version */
+            version: number;
+        };
         /** QueueStatus */
         QueueStatus: {
             /** Failed */
@@ -1802,6 +1965,64 @@ export interface components {
             /** Reason */
             reason: string;
             rule: components["schemas"]["Rule"];
+        };
+        /** RunAccepted */
+        RunAccepted: {
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "pending";
+        };
+        /** RunRead */
+        RunRead: {
+            /** Action */
+            action: string;
+            /** Error Code */
+            error_code: string | null;
+            /** Execution Id */
+            execution_id: string | null;
+            /** Fingerprint */
+            fingerprint: string | null;
+            /** Finished At */
+            finished_at: string | null;
+            /** Host Key */
+            host_key: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Profile Version */
+            profile_version: number;
+            /**
+             * Requested At
+             * Format: date-time
+             */
+            requested_at: string;
+            /** Started At */
+            started_at: string | null;
+            /** State */
+            state: string;
+            /** Submission Id */
+            submission_id: string | null;
+            /** Trigger Type */
+            trigger_type: string;
+            /** Workflow Id */
+            workflow_id: string | null;
+        };
+        /** Saved */
+        Saved: {
+            /**
+             * Saved
+             * @constant
+             */
+            saved: true;
         };
         /** Schedule */
         Schedule: {
@@ -1988,6 +2209,18 @@ export interface components {
              * @enum {string}
              */
             type: "servers";
+        };
+        /** SettingsRead */
+        SettingsRead: {
+            /** Credentials Configured */
+            credentials_configured: boolean;
+            /** Editable */
+            editable: boolean;
+            profile: components["schemas"]["Profile"] | null;
+            /** Runs */
+            runs: components["schemas"]["RunRead"][];
+            /** Vault Configured */
+            vault_configured: boolean;
         };
         /** Shares */
         Shares: {
@@ -2183,6 +2416,26 @@ export interface components {
             errors: string[];
             /** Valid */
             valid: boolean;
+        };
+        /** VaultPassword */
+        VaultPassword: {
+            /** Current Password */
+            current_password?: string | null;
+            /**
+             * Password
+             * Format: password
+             */
+            password: string;
+            /**
+             * Password Confirmation
+             * Format: password
+             */
+            password_confirmation: string;
+        };
+        /** VaultState */
+        VaultState: {
+            /** Configured */
+            configured: boolean;
         };
     };
     responses: never;
@@ -2826,6 +3079,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DefaultRead"];
+                };
+            };
+        };
+    };
+    status_api_v1_dashboard_me_ansible_vault_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultState"];
+                };
+            };
+        };
+    };
+    save_api_v1_dashboard_me_ansible_vault_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultPassword"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -3836,6 +4142,139 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServerRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    settings_api_v1_dashboard_servers__server__ansible_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    configure_api_v1_dashboard_servers__server__ansible_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Connection"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Saved"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_api_v1_dashboard_servers__server__ansible_confirm_key_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmKey"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Confirmed"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_api_v1_dashboard_servers__server__ansible__action__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server: string;
+                action: "collect" | "test" | "probe";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunAccepted"];
                 };
             };
             /** @description Validation Error */

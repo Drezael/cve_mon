@@ -348,3 +348,26 @@ def test_production_configuration_cannot_bypass_authorization_by_relabeling(
     monkeypatch.setattr(contracts, "load_config", lambda *a: cfg)
     with pytest.raises(ValueError, match="Non-production"):
         contracts.environment(file)
+
+
+def test_staging_environment_uses_external_configuration_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from scripts.deployment.contracts import environment
+    from scripts.infrastructure.manage import ROOT, load_config
+    from scripts.infrastructure.policy import EXTERNAL_KEYS
+
+    config = load_config(ROOT / "configuration/examples/development.env")
+    monkeypatch.setattr(orchestration, "load_config", lambda: config)
+    stage = orchestration.stage(tmp_path / "new-stage")
+    fields = {
+        line.partition("=")[0]
+        for line in (stage.path.parent / "platform.env").read_text().splitlines()
+    }
+    assert fields <= EXTERNAL_KEYS
+    assert stage.config.project.startswith("cve-db-test-phase24-")
+    assert environment(stage.path).identity == stage.identity
+    folder = Path(stage.config.values["TLS_DIR"])
+    assert Path(stage.config.values["TLS_CERT_FILE"]) == folder / "fullchain.pem"
+    assert Path(stage.config.values["CLIENT_CA_FILE"]) == folder / "client-ca.crt"
+    assert not folder.exists()

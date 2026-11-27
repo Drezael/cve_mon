@@ -154,6 +154,7 @@ async def harness(browser: Browser, tmp_path: Path) -> Any:
         finally:
             await env.importer.transport.close()
             await env.importer.database.close()
+            await env.pipeline.close()
             await env.client.close()
             await env.database.close()
     value = Harness(browser)
@@ -232,6 +233,7 @@ async def test_e2e_acceptance_snapshot_enrichment_match_outbox(
     finally:
         await env.importer.transport.close()
         await env.importer.database.close()
+        await env.pipeline.close()
         await env.client.close()
         await env.database.close()
 
@@ -674,8 +676,16 @@ async def test_oversized_assertions_rollback_without_result(harness: Harness) ->
             (other, hashlib.sha256(str(other).encode()).digest(), json.dumps(value), revision),
         )
     harness.enqueue("evaluate_vulnerability", enrichment_revision_id=other)
-    with pytest.raises(JobError):
-        await harness.execute()
+    job = await harness.repository.claim(uuid4(), 30)
+    assert job is not None
+    context = ExecutionContext(
+        harness.repository, job, harness.repository.registry.get(job.job_type, 1), asyncio.Event()
+    )
+    with pytest.raises(JobError) as rejected:
+        await harness.service.handle(context, Request.model_validate(job.payload))
+    # A direct handler call bypasses Worker.execute's failure completion. Finish
+    # the rejected job with its fence so subsequent tests do not await a live lease.
+    assert await harness.repository.finish(job, "failed", rejected.value.code)
     with harness.browser.lab.owner() as c:
         assert (
             c.execute(
@@ -691,3 +701,53 @@ async def test_oversized_assertions_rollback_without_result(harness: Harness) ->
             ).fetchone()["n"]
             == 0
         )
+
+
+async def test_first_imported_deep_nvd_revision_reaches_native_candidate_lookup(
+    harness: Harness, tmp_path: Path
+) -> None:
+    from tests.cve_importer import fixtures
+
+    snapshot = await harness.snapshot()
+    identity = "CVE-2096-" + str(uuid4().int >> 96)
+    cpe = "cpe:2.3:a:acme:app:1.0.0:*:*:*:*:*:*:*"
+    tree: dict[str, Any] = {
+        "operator": "OR",
+        "cpeMatch": [{"criteria": cpe, "vulnerable": True, "matchCriteriaId": str(uuid4())}],
+    }
+    for _ in range(17):
+        tree = {"operator": "OR", "cpeMatch": [], "nodes": [tree]}
+    # The public host schema does not yet collect CPEs. Seed a native CPE search
+    # identity to exercise the real SQL candidate boundary independently of collection.
+    with harness.browser.lab.owner() as s:
+        s.execute(
+            "INSERT INTO matching.inventory_keys(snapshot_id,key) VALUES(%s,%s)",
+            (snapshot, "cpe:a:acme:app"),
+        )
+        assert not s.execute(
+            "SELECT 1 FROM matching.current_results WHERE identity=%s", (identity,)
+        ).fetchone()
+    env = Env(Lab(harness.browser.lab.config), tmp_path / "deep-nvd")
+    try:
+        env.importer.wire.nvd = [{**fixtures.nvd(identity), "configurations": [tree]}]
+        await env.importer.run("nvd")
+        await env.drain()
+        await harness.drain()
+        with harness.browser.lab.owner() as s:
+            row = s.execute(
+                "SELECT r.id FROM matching.result_revisions r WHERE r.identity=%s "
+                "AND r.snapshot_id=%s",
+                (identity, snapshot),
+            ).fetchone()
+            assert row, "The first imported revision must reach evaluation without an older result"
+            assert s.execute(
+                "SELECT 1 FROM matching.vulnerability_keys k JOIN cve.enrichment_revisions r "
+                "ON r.id=k.enrichment_revision_id WHERE r.identity=%s AND k.key='cpe:a:acme:app'",
+                (identity,),
+            ).fetchone()
+    finally:
+        await env.importer.transport.close()
+        await env.importer.database.close()
+        await env.pipeline.close()
+        await env.client.close()
+        await env.database.close()

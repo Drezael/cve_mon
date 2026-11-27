@@ -52,7 +52,17 @@ def test_container_and_nginx_dns(service_lab: Lab) -> None:
         lab.config.project + "_cve_data",
     }
     assert info["Config"]["User"].split(":")[0] != "0"
-    assert {m["Destination"] for m in info["Mounts"]} == {"/run/cve-api", "/run/cve-status"}
+    expected_mounts = {
+        "/run/cve-api": lab.config.secrets_base / "services" / lab.config.project,
+        "/run/cve-status": lab.config.root / ".runtime/status" / lab.config.project,
+        "/run/cve-status/postfix": (
+            lab.config.mount_base / "status" / lab.config.project / "postfix"
+        ),
+    }
+    assert {m["Destination"]: m["Source"] for m in info["Mounts"]} == {
+        destination: str(source) for destination, source in expected_mounts.items()
+    }
+    assert all(m["Type"] == "bind" for m in info["Mounts"])
     assert all(m["RW"] is False for m in info["Mounts"])
     nginx = compose(lab.config, ["ps", "-q", "cve-nginx"]).stdout.strip()
     reply = run(

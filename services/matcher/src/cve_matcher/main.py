@@ -1,7 +1,6 @@
 """Private matcher health, metrics and existing fenced PostgreSQL workers."""
 
 import asyncio
-import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from uuid import UUID
@@ -9,6 +8,7 @@ from uuid import UUID
 import uvicorn
 from cve_common.config.validation import load_settings
 from cve_common.database.transactions import transaction
+from cve_common.health.ready import worker_ready as execution_ready
 from cve_common.http.errors import install_handlers
 from cve_common.http.middleware import TechnicalMiddleware
 from cve_common.http.responses import problem
@@ -73,12 +73,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/health/ready")
     async def ready(request: Request) -> Response:
         worker: Worker = request.app.state.worker
-        if (
-            not proof(config.guard_proof_file)
-            or request.app.state.task.done()
-            or not worker.healthy
-            or time.monotonic() - worker.last_tick > 10
-            or not await request.app.state.resources.ready()
+        if not await execution_ready(
+            request.app.state.resources,
+            worker,
+            request.app.state.task,
+            guarded=proof(config.guard_proof_file),
         ):
             return problem(503)
         return JSONResponse({"status": "ready"})

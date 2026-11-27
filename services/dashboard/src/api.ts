@@ -1,3 +1,6 @@
+function checkAborted(signal?: AbortSignal) {
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+}
 import { clearMessageCache, t } from "./i18n/core";
 import { z } from "zod";
 export class ApiError extends Error {
@@ -14,9 +17,9 @@ export class ApiError extends Error {
                       403: t("Für diese Ansicht fehlt die Berechtigung."),
                       404: t("Der Eintrag ist nicht verfügbar."),
                       400: t("Die Eingaben konnten nicht übernommen werden."),
-                      413: t("Die Datei ist zu groß."),
+                      413: t("Die Anfrage ist zu groß."),
                       415: t("Dieses Dateiformat wird nicht unterstützt."),
-                      422: t("Bitte prüfen Sie die markierten Eingaben."),
+                      422: t("Bitte prüfen Sie die Eingaben."),
                       412: t(
                           "Versionskonflikt: Der Stand wurde inzwischen geändert.",
                       ),
@@ -62,14 +65,17 @@ export async function api<T>(
     active.add(c);
     const abort = () => c.abort();
     options.signal?.addEventListener("abort", abort, { once: true });
+    if (options.signal?.aborted) c.abort();
     const timeout = setTimeout(
         abort,
         Math.min(options.timeoutMs ?? 8000, 60000),
     );
     try {
+        checkAborted(c.signal);
         const headers: Record<string, string> = { Accept: "application/json" };
         if (options.method && options.method !== "GET") {
-            if (!csrf) await getCsrf();
+            if (!csrf) await getCsrf(c.signal);
+            checkAborted(c.signal);
             headers["X-CSRF-Token"] = csrf ?? "";
             if (!(options.body instanceof FormData))
                 headers["Content-Type"] = "application/json";
@@ -108,7 +114,7 @@ export async function api<T>(
                     const detail = await response.json();
                     const issues = detail.detail ?? detail.errors ?? [];
                     if (Array.isArray(issues))
-                        fields = issues.flatMap((i: { loc?: unknown[] }) =>
+                        fields = issues.flatMap((i: { loc?: unknown[]; pointer?: string }) =>
                             Array.isArray(i.loc)
                                 ? [
                                       i.loc
@@ -119,7 +125,9 @@ export async function api<T>(
                                           )
                                           .join("."),
                                   ]
-                                : [],
+                                : typeof i.pointer === "string"
+                                  ? [i.pointer.replace(/^\/(body\/)?/, "").replaceAll("/", ".")]
+                                  : [],
                         );
                 } catch {
                     /* bounded public validation only */
@@ -153,18 +161,69 @@ export async function api<T>(
             throw error;
         throw new ApiError(0);
     } finally {
+        // A failed/aborted mutation can still have consumed a preauth context.
+        // Never retry the mutation; renew its context for the next user action.
+        if (options.method && options.method !== "GET") csrf = null;
         clearTimeout(timeout);
         active.delete(c);
         options.signal?.removeEventListener("abort", abort);
     }
 }
-export async function getCsrf() {
-    const data = await api(
-        "/api/v1/auth/csrf",
-        z.object({ csrf_token: z.string() }),
-    );
-    csrf = data.csrf_token;
-    return csrf;
+let csrfFlight: {
+    epoch: number;
+    controller: AbortController;
+    promise: Promise<string>;
+    waiters: number;
+} | null = null;
+
+export async function getCsrf(signal?: AbortSignal): Promise<string> {
+    checkAborted(signal);
+    if (csrf) return csrf;
+    if (!csrfFlight || csrfFlight.epoch !== generation) {
+        const epoch = generation;
+        const controller = new AbortController();
+        const flight = {
+            epoch,
+            controller,
+            waiters: 0,
+            promise: Promise.resolve(""),
+        };
+        flight.promise = api(
+            "/api/v1/auth/csrf",
+            z.object({ csrf_token: z.string() }),
+            { signal: controller.signal },
+        )
+            .then((data) => {
+                checkAborted(controller.signal);
+                if (epoch !== generation)
+                    throw new DOMException("Superseded", "AbortError");
+                csrf = data.csrf_token;
+                return csrf;
+            })
+            .finally(() => {
+                if (csrfFlight === flight) csrfFlight = null;
+            });
+        csrfFlight = flight;
+    }
+    const flight = csrfFlight;
+    flight.waiters++;
+    let abort: (() => void) | undefined;
+    try {
+        return await Promise.race([
+            flight.promise,
+            new Promise<never>((_, reject) => {
+                abort = () => reject(new DOMException("Aborted", "AbortError"));
+                signal?.addEventListener("abort", abort, { once: true });
+                if (signal?.aborted) abort();
+            }),
+        ]);
+    } finally {
+        if (abort) signal?.removeEventListener("abort", abort);
+        if (--flight.waiters === 0 && csrfFlight === flight) {
+            csrfFlight = null;
+            flight.controller.abort();
+        }
+    }
 }
 export const authResult = z
     .object({

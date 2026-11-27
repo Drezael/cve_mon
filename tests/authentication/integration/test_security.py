@@ -84,6 +84,7 @@ async def test_csrf_is_session_bound_and_tokens_rotate(browser: Browser) -> None
     assert (
         await browser.client.post("/api/v1/auth/logout", headers={"x-csrf-token": old_csrf})
     ).status_code == 403
+
     assert (
         await browser.client.post(
             "/api/v1/auth/logout",
@@ -93,6 +94,18 @@ async def test_csrf_is_session_bound_and_tokens_rotate(browser: Browser) -> None
             },
         )
     ).status_code == 403
+
+
+async def test_authenticated_tabs_share_stable_csrf_until_session_rotates(browser: Browser) -> None:
+    _, name, password = await browser.user()
+    await browser.login(name, password)
+    first = await browser.prepare()
+    tab_a = first.json()["csrf_token"]
+    tab_b = (await browser.client.get("/api/v1/auth/csrf")).json()["csrf_token"]
+    assert tab_a == tab_b
+    await asyncio.gather(*(browser.client.get("/api/v1/auth/csrf") for _ in range(3)))
+    response = await browser.client.post("/api/v1/auth/logout", headers={"x-csrf-token": tab_a})
+    assert response.status_code == 204
 
 
 async def test_session_fixation_and_fake_identity_headers(browser: Browser) -> None:

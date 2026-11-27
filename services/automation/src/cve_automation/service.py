@@ -20,12 +20,13 @@ from cve_common.jobs.errors import ErrorCode, LeaseLost
 from cve_common.jobs.execution import ExecutionContext
 from cve_common.jobs.registry import JobDefinition, Registry
 from cve_common.jobs.worker import WorkerSettings
-from cve_common.ssh_credentials import SSHKeyring
+from cve_common.user_vault import FORMAT, UserVaultKeyring, decrypt_credentials
 from pydantic import BaseModel
 from pydantic_settings import SettingsConfigDict
 from sqlalchemy import text
 
-from cve_automation.inventory_adapter import encode, normalize, validate
+from cve_automation.inventory_adapter import InventoryError, encode, validate
+from cve_automation.output import load
 
 
 class Settings(WorkerSettings):
@@ -74,7 +75,7 @@ class Service:
                 "ofile_version=p.version "
                 "JOIN inventory.servers server ON server.id=p.server_id WHERE r.id"
                 "=:id AND server.status='active' "
-                "AND inventory.ansible_owner_active(p.owner_id)",
+                "AND p.key_id='user-vault-v1' AND inventory.ansible_owner_active(p.owner_id)",
                 id=run,
             )
 
@@ -89,11 +90,25 @@ class Service:
                 profile["host"],
                 profile["port"],
             )
-            credentials = SSHKeyring(self.settings.keyring_file).decrypt(
-                profile["server_id"],
-                profile["version"],
-                profile["key_id"],
-                bytes(profile["ciphertext"]),
+            async with transaction(self.database) as s:
+                vault = await one(
+                    s,
+                    "SELECT key_id,runtime_envelope FROM security.ansible_vaults WHERE user_id=:id",
+                    id=profile["owner_id"],
+                )
+            if vault is None or profile["key_id"] != FORMAT:
+                raise ValueError("Personal vault unavailable")
+            credentials = (
+                {}
+                if profile["action"] == "probe"
+                else decrypt_credentials(
+                    UserVaultKeyring(self.settings.keyring_file).runtime_key(
+                        profile["owner_id"], vault
+                    ),
+                    profile["owner_id"],
+                    profile["server_id"],
+                    bytes(profile["ciphertext"]),
+                )
             )
         except Exception:
             return await self.finish(ctx, req, False, "destination_or_credentials_unavailable")
@@ -125,19 +140,23 @@ class Service:
                     "credentials": credentials,
                 }
             )
-            path = root / "plan.json"
-            path.write_text(json.dumps(plan))
-            path.chmod(0o600)
             process = await asyncio.create_subprocess_exec(
                 sys.executable,
                 "-m",
                 "cve_automation.execute",
-                str(path),
+                str(root),
+                "--stdin",
+                stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL,
                 start_new_session=True,
             )
             try:
+                assert process.stdin is not None
+                process.stdin.write(json.dumps(plan).encode())
+                await process.stdin.drain()
+                process.stdin.close()
+                del plan, credentials
                 while process.returncode is None:
                     with contextlib.suppress(TimeoutError):
                         await asyncio.wait_for(process.wait(), 2)
@@ -162,13 +181,35 @@ class Service:
                 output = root / "result.json"
                 if not output.exists():
                     return await self.finish(ctx, req, False, "execution_failed")
-                result = json.loads(output.read_text())
+                result = load(output, 65536)
                 if not result["success"]:
                     return await self.finish(ctx, req, False, result["error_code"])
                 document = None
                 if profile["action"] == "collect":
-                    document = normalize(json.loads((root / "inventory-input.json").read_text()))
+                    normalized = root / "normalized.json"
+                    parser = await asyncio.create_subprocess_exec(
+                        sys.executable,
+                        "-m",
+                        "cve_automation.output",
+                        str(root / "inventory-input.json"),
+                        str(normalized),
+                        stdout=asyncio.subprocess.DEVNULL,
+                        stderr=asyncio.subprocess.DEVNULL,
+                    )
+                    try:
+                        async with asyncio.timeout(15):
+                            if await parser.wait() != 0:
+                                return await self.finish(
+                                    ctx, req, False, "inventory_output_invalid"
+                                )
+                        document = load(normalized)
+                    finally:
+                        if parser.returncode is None:
+                            parser.kill()
+                            await parser.wait()
                 return await self.finish(ctx, req, True, None, result.get("host_key"), document)
+            except (InventoryError, OSError, TimeoutError):
+                return await self.finish(ctx, req, False, "inventory_output_invalid")
             finally:
                 if process.returncode is None:
                     os.killpg(process.pid, signal.SIGTERM)

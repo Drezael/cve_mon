@@ -1,6 +1,26 @@
 name: Integration
 
 on:
+  pull_request:
+    paths:
+      - 'workflows/**'
+      - 'cve_mon'
+      - 'services/**'
+      - 'packages/**'
+      - 'database/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'infrastructure/**'
+      - 'contracts/**'
+      - 'configuration/**'
+      - '.env.example'
+      - 'Makefile'
+      - 'requirements/**'
+      - 'compose.yml'
+      - 'pyproject.toml'
+      - '.github/workflows/integration.yml'
+  schedule:
+    - cron: '17 2 * * 1'
   workflow_dispatch:
     inputs:
       suite:
@@ -18,6 +38,7 @@ permissions:
 
 jobs:
   integration:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
@@ -49,3 +70,160 @@ jobs:
       - name: Supply-chain and image gates
         if: inputs.suite == 'supply-chain'
         run: make security-tools security-dependencies security-images
+
+  campaign:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3]
+    env:
+      CVE_ENV_FILE: configuration/examples/development.env
+      CVE_TEST_COMPACT_NETWORKS: '1'
+      PLAYWRIGHT_BROWSERS_PATH: '${{ github.workspace }}/.runtime/playwright'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Build headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpq-dev python3-dev
+      - run: make setup
+      - name: Pinned inventory scanner
+        run: >-
+          .venv/bin/python -m scripts.container_inventory.install
+          --destination .runtime/syft/syft
+      - name: Dashboard and browser prerequisites
+        run: |
+          make dashboard-build
+          .venv/bin/python - <<'PY'
+          from pathlib import Path
+          from scripts.dashboard.manage import npm
+          npm(Path.cwd(), "exec", "--", "playwright", "install", "--with-deps", "chromium")
+          PY
+      - name: Current source campaign
+        run: >-
+          .venv/bin/python -m scripts.testing.campaign --exclude-deployment
+          --shard ${{ matrix.shard }}/4 --output .runtime/ci-campaign
+      - name: Source-bound JUnit and batch summary
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: integration-${{ github.sha }}-${{ matrix.shard }}
+          path: |
+            .runtime/ci-campaign
+            .runtime/test-reports/phase-23-performance-after.json
+            .runtime/test-reports/phase-23-recovery.json
+            .runtime/test-reports/phase-23-postgres-portability.json
+          if-no-files-found: error
+
+  deployment:
+    needs: campaign
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CVE_ENV_FILE: configuration/examples/development.env
+      CVE_TEST_COMPACT_NETWORKS: '1'
+      PLAYWRIGHT_BROWSERS_PATH: '${{ github.workspace }}/.runtime/playwright'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Build headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpq-dev python3-dev
+      - run: make setup
+      - name: Dashboard and browser prerequisites
+        run: |
+          make dashboard-build
+          .venv/bin/python - <<'PY'
+          from pathlib import Path
+          from scripts.dashboard.manage import npm
+          npm(Path.cwd(), "exec", "--", "playwright", "install", "--with-deps", "chromium")
+          PY
+      - name: Current release artifact and vulnerability evidence
+        run: |
+          .venv/bin/python - <<'PY'
+          from scripts.hardening.runtime_images import ensure
+          from scripts.infrastructure.images import REFERENCES
+          for name in ("nginx", "postgres", "mail", "n8n"):
+              ensure(REFERENCES[name])
+          PY
+          make application-build security-tools security-dependencies security-images
+          .venv/bin/python -m scripts.hardening.components
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: integration-${{ github.sha }}-*
+          path: .runtime/shards
+      - name: Verify mandatory domains and source identity
+        run: |
+          .venv/bin/python - <<'PY'
+          import shutil
+          from pathlib import Path
+          target = Path(".runtime/test-reports")
+          target.mkdir(parents=True, exist_ok=True)
+          for name in ("phase-23-performance-after.json", "phase-23-recovery.json",
+                       "phase-23-postgres-portability.json"):
+              matches = list(Path(".runtime/shards").rglob(name))
+              if len(matches) != 1:
+                  raise ValueError("Exactly one native evidence file required: " + name)
+              shutil.copyfile(matches[0], target / name)
+          PY
+          .venv/bin/python -m scripts.testing.merge_campaign \
+            .runtime/shards .runtime/merged-campaign
+          .venv/bin/python -m scripts.testing.evidence .runtime/merged-campaign
+      - name: Deployment and recovery against the same sources
+        run: >-
+          .venv/bin/python -m pytest -m deployment tests/deployment
+          --junitxml=.runtime/deployment.xml
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: deployment-${{ github.sha }}
+          path: |
+            .runtime/deployment.xml
+            .runtime/merged-campaign/summary.json
+          if-no-files-found: error
+
+  supply-chain:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CVE_ENV_FILE: configuration/examples/development.env
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Build headers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpq-dev python3-dev
+      - run: make setup
+      - name: Exact upstream artifacts
+        run: >-
+          .venv/bin/python -c 'from scripts.hardening.runtime_images import ensure;
+          from scripts.infrastructure.images import REFERENCES;
+          [ensure(REFERENCES[n]) for n in ("nginx", "postgres", "mail", "n8n")]'
+      - name: Current application and expiring vulnerability gates
+        run: make application-build security-tools security-dependencies security-images
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: supply-chain-${{ github.sha }}
+          path: .runtime/test-reports/phase-23-supply-chain
+          if-no-files-found: error

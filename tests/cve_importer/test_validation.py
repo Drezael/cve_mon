@@ -12,7 +12,7 @@ from cve_importer.validation import archive_batch, archive_stream, decode, recor
 
 from tests.cve_importer.fixtures import catalog, cve, nvd, osv, ubuntu
 
-pytestmark = pytest.mark.cve_importer
+pytestmark = [pytest.mark.cve_importer, pytest.mark.domain]
 
 
 @pytest.mark.parametrize("version", ["5.0", "5.1", "5.1.0", "5.1.1", "5.2", "5.2.0"])

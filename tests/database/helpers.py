@@ -38,10 +38,11 @@ def group(connection: Connection) -> uuid.UUID:
             required_row(
                 connection.execute(
                     (
-                        "INSERT INTO inventory.server_groups(name,sort_order) VALUES (%s,%s) "
+                        "INSERT INTO inventory.server_groups(name,sort_order,owner_id) "
+                        "VALUES (%s,%s,%s) "
                         "RETURNING id"
                     ),
-                    (uuid.uuid4().hex, uuid.uuid4().int >> 66),
+                    (uuid.uuid4().hex, uuid.uuid4().int >> 66, user(connection)),
                 )
             )["id"]
         )

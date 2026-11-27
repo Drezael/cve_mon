@@ -19,7 +19,7 @@ TITLES = {
 }
 
 
-def problem(status: int) -> JSONResponse:
+def problem(status: int, *, errors: list[dict[str, str]] | None = None) -> JSONResponse:
     code, title = TITLES.get(status, TITLES[500])
     rid = request_id.get() or valid_id(None)
     cid = correlation_id.get() or rid
@@ -30,6 +30,7 @@ def problem(status: int) -> JSONResponse:
             "status": status,
             "code": code,
             "request_id": rid,
+            **({"errors": errors} if errors else {}),
         },
         status_code=status,
         media_type="application/problem+json",

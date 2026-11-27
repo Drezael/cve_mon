@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 
 from cve_api.access.router import router as access
+from cve_api.ansible.router import router as ansible
+from cve_api.ansible.vault import router as vault
 from cve_api.auth.router import router as auth
 from cve_api.custom_dashboards.router import router as custom_dashboards
 from cve_api.cve_data import router as cve_data
@@ -20,12 +22,15 @@ from cve_api.servers.router_admin import router as servers
 from cve_api.smtp import router as smtp
 from cve_api.users.router import router as users
 from cve_api.workflows import router as workflows
+from cve_common.release import VERSION
 from fastapi import FastAPI
 
 
 def export(root: Path) -> Path:
-    app = FastAPI(title="Dashboard administration", version="0.21.0")
+    app = FastAPI(title="Dashboard administration", version=VERSION)
     for router in [
+        ansible,
+        vault,
         custom_dashboards,
         personal_groups,
         localization,

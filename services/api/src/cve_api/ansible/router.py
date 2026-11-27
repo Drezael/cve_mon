@@ -3,11 +3,10 @@
 import base64
 import hashlib
 import json
-from pathlib import Path
 from typing import Any, Literal
 from uuid import UUID
 
-from cve_common.ssh_credentials import SSHKeyring
+from cve_common.user_vault import FORMAT, update_credentials
 from fastapi import APIRouter, Request
 from sqlalchemy import text
 
@@ -19,15 +18,12 @@ from cve_api.auth.transactions import security_transaction
 from cve_api.authorization.errors import Denied
 from cve_api.authorization.principal import Principal, load_principal
 
-from .schemas import ConfirmKey, Connection
+from .audit import audit
+from .schemas import Confirmed, ConfirmKey, Connection, RunAccepted, Saved, SettingsRead
+from .vault import keyring
 
 router = APIRouter(prefix="/api/v1/dashboard/servers", tags=["ansible-collection"])
 SECRET_FIELDS = ("private_key", "passphrase", "password", "sudo_password")
-
-
-def keyring(request: Request) -> SSHKeyring:
-    auth, _ = transport(request)
-    return SSHKeyring(Path(auth.settings.keyring_file).with_name("ssh-keys.json"))
 
 
 async def owned(session: Any, actor: Principal, server: UUID) -> None:
@@ -42,7 +38,7 @@ async def owned(session: Any, actor: Principal, server: UUID) -> None:
         raise Denied(404)
 
 
-@router.get("/{server}/ansible")
+@router.get("/{server}/ansible", response_model=SettingsRead)
 async def settings(server: UUID, request: Request) -> dict[str, Any]:
     auth, _ = transport(request)
     async with security_transaction(auth.database, mutation=False) as s:
@@ -51,7 +47,7 @@ async def settings(server: UUID, request: Request) -> dict[str, Any]:
         profile = await one(
             s,
             "SELECT host,port,username,auth_method,use_sudo,enabled,interval_seconds,version,"
-            "next_due,host_key,host_key_confirmed,mount_paths FROM inventory.a"
+            "next_due,host_key,host_key_confirmed,mount_paths,owner_id,key_id FROM inventory.a"
             "nsible_profiles WHERE server_id=:id",
             id=server,
         )
@@ -78,10 +74,28 @@ async def settings(server: UUID, request: Request) -> dict[str, Any]:
                 if public
                 else None
             )
-        return {"profile": profile, "credentials_configured": profile is not None, "runs": runs}
+        vault = await one(
+            s, "SELECT user_id FROM security.ansible_vaults WHERE user_id=:id", id=actor.user_id
+        )
+        credentials_configured = profile is not None and profile["key_id"] == FORMAT
+        if profile:
+            editable = profile.pop("owner_id") == actor.user_id
+            profile.pop("key_id")
+        else:
+            server_row = await one(
+                s, "SELECT created_by FROM inventory.servers WHERE id=:id", id=server
+            )
+            editable = bool(server_row and server_row["created_by"] == actor.user_id)
+        return {
+            "profile": profile,
+            "credentials_configured": credentials_configured,
+            "vault_configured": vault is not None,
+            "editable": editable,
+            "runs": runs,
+        }
 
 
-@router.put("/{server}/ansible")
+@router.put("/{server}/ansible", response_model=Saved)
 async def configure(server: UUID, body: Connection, request: Request) -> dict[str, bool]:
     auth, _ = transport(request)
     async with security_transaction(auth.database) as s:
@@ -92,25 +106,44 @@ async def configure(server: UUID, body: Connection, request: Request) -> dict[st
         old = await one(
             s, "SELECT * FROM inventory.ansible_profiles WHERE server_id=:id FOR UPDATE", id=server
         )
-        secrets = (
-            keyring(request).decrypt(
-                server, old["version"], old["key_id"], bytes(old["ciphertext"])
-            )
+        owner = (
+            old["owner_id"]
             if old
-            else {}
+            else (
+                await one(s, "SELECT created_by FROM inventory.servers WHERE id=:id", id=server)
+                or {}
+            ).get("created_by")
         )
+        if owner != actor.user_id:
+            raise Denied(403, "personal_vault_owner_required")
+        if body.version != (old["version"] if old else 0):
+            raise Denied(412, "stale_version")
+        vault = await one(
+            s, "SELECT * FROM security.ansible_vaults WHERE user_id=:id", id=actor.user_id
+        )
+        if not vault:
+            raise Denied(409, "personal_vault_required")
+        previous = bytes(old["ciphertext"]) if old and old["key_id"] == FORMAT else None
+        updates = {}
         if body.private_key is not None and body.passphrase is None:
-            secrets.pop("passphrase", None)
+            updates["passphrase"] = ""
         for field in SECRET_FIELDS:
             value = getattr(body, field)
-            if value is not None:
-                secrets[field] = value.get_secret_value()
+            if value is not None and field != "sudo_password":
+                updates[field] = value.get_secret_value()
         obsolete_fields = (
             ("private_key", "passphrase") if body.auth_method == "password" else ("password",)
         )
         for obsolete in obsolete_fields:
-            secrets.pop(obsolete, None)
-        if not secrets.get("private_key" if body.auth_method == "key" else "password"):
+            updates[obsolete] = ""
+        cipher = update_credentials(
+            keyring(request).runtime_key(actor.user_id, vault),
+            actor.user_id,
+            server,
+            previous,
+            updates,
+        )
+        if not json.loads(cipher).get("private_key" if body.auth_method == "key" else "password"):
             raise Denied(422, "credentials_required")
         if old:
             outstanding = await rows(
@@ -125,7 +158,7 @@ async def configure(server: UUID, body: Connection, request: Request) -> dict[st
                     text("SELECT automation.control_job(:id,'cancel')"), {"id": job["id"]}
                 )
         version = old["version"] + 1 if old else 1
-        kid, cipher = keyring(request).encrypt(server, version, secrets)
+        kid = FORMAT
         unchanged = old is not None and old["host"] == body.host and old["port"] == body.port
         await s.execute(
             text(
@@ -161,10 +194,11 @@ async def configure(server: UUID, body: Connection, request: Request) -> dict[st
                 "confirmed": old["host_key_confirmed"] if old is not None and unchanged else False,
             },
         )
+        await audit(s, actor.user_id, server, "configured", version)
     return {"saved": True}
 
 
-@router.post("/{server}/ansible/confirm-key")
+@router.post("/{server}/ansible/confirm-key", response_model=Confirmed)
 async def confirm(server: UUID, body: ConfirmKey, request: Request) -> dict[str, bool]:
     auth, _ = transport(request)
     async with security_transaction(auth.database) as s:
@@ -174,7 +208,7 @@ async def confirm(server: UUID, body: ConfirmKey, request: Request) -> dict[str,
         await owned(s, actor, server)
         run = await one(
             s,
-            "SELECT r.host_key FROM inventory.ansible_runs r JOIN inventory.an"
+            "SELECT r.host_key,r.profile_version FROM inventory.ansible_runs r JOIN inventory.an"
             "sible_profiles p ON p.server_id=r.server_id "
             "AND p.version=r.profile_version WHERE r.server_id=:id AND r.actio"
             "n='probe' AND r.state='succeeded' ORDER BY r.finished_at DESC LIM"
@@ -196,10 +230,13 @@ async def confirm(server: UUID, body: ConfirmKey, request: Request) -> dict[str,
             ),
             {"id": server, "key": run["host_key"]},
         )
+        await audit(
+            s, actor.user_id, server, "host_key_confirmed", run["profile_version"], fingerprint
+        )
     return {"confirmed": True}
 
 
-@router.post("/{server}/ansible/{action}", status_code=202)
+@router.post("/{server}/ansible/{action}", status_code=202, response_model=RunAccepted)
 async def run(
     server: UUID, action: Literal["collect", "test", "probe"], request: Request
 ) -> dict[str, Any]:
@@ -218,6 +255,8 @@ async def run(
                 actor=actor.user_id,
             )
         except Exception as error:
+            if getattr(getattr(error, "orig", None), "sqlstate", None) == "P0002":
+                raise Denied(409, "personal_vault_credentials_required") from None
             if getattr(getattr(error, "orig", None), "sqlstate", None) == "23514":
                 raise Denied(409, "host_key_confirmation_required") from None
             raise

@@ -37,6 +37,21 @@ class AuthBoundary:
             )
         )
         maximum = 32768 if large else 8192
+        if scope["path"] in {
+            "/api/v1/dashboard/administration/smtp",
+            "/api/v1/dashboard/notifications/mail",
+        }:
+            # 1,000 ASCII mailboxes <=254 bytes, worst-case JSON escaping,
+            # plus escaped 4 KiB credentials and the bounded configuration envelope.
+            maximum = 6 * (1000 * 254 + 4096 + 1024) + 8192
+        if re.fullmatch(r"/api/v1/dashboard/servers/[0-9a-f-]{36}/ansible", scope["path"]):
+            maximum = 131072
+        if re.fullmatch(
+            r"/api/v1/dashboard/custom-dashboards(?:/(?:validate|[0-9a-f-]{36}))?",
+            scope["path"],
+        ):
+            # 32 KiB UTF-8 YAML, worst-case JSON escaping (6 bytes per byte), plus envelope.
+            maximum = 6 * 32768 + 1024
         chunks = []
         size = 0
         try:

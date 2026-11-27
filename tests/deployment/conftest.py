@@ -39,11 +39,14 @@ def stage() -> Iterator[tuple[Environment, Path, dict[str, Any]]]:
 
 
 @pytest.fixture(scope="session")
-def upload_lab(stage: tuple[Environment, Path, dict[str, Any]]) -> Lab:
+def upload_lab(stage: tuple[Environment, Path, dict[str, Any]]) -> Iterator[Lab]:
     target, _, _ = stage
     assert target.config.project.startswith("cve-db-test-phase24-")
     password = secrets.token_urlsafe(32)
     identity = asyncio.run(
         auth.bootstrap(target.config, "phase24-initial", "initial@example.test", password)
     )
-    return Lab(target.config, password, UUID(identity))
+    from tests.inventory_upload.integration.technical_gateway import gateway
+
+    with gateway(target.config):
+        yield Lab(target.config, password, UUID(identity))

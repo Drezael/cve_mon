@@ -20,13 +20,57 @@ test("backend outage never becomes zero metrics", async ({ page, context }) => {
     );
     await page.goto("/dashboard");
     await expect(page.getByRole("alert")).toContainText("vorübergehend");
-    await expect(page.locator(".kpi")).toHaveCount(0);
+    await expect(page.locator(".kpis > .kpi")).toHaveCount(0);
 });
+test("authenticated tabs can mutate with the same session CSRF token", async ({ page, context }) => {
+    await authorized(context);
+    await page.goto("/dashboard");
+    const other = await context.newPage();
+    await other.goto("/dashboard");
+    const getToken = async (tab: import("@playwright/test").Page) => tab.evaluate(async () => {
+        const r = await fetch("/api/v1/auth/csrf");
+        if (!r.ok) throw new Error("CSRF request failed");
+        return (await r.json()).csrf_token as string;
+    });
+    const [a,b] = await Promise.all([getToken(page),getToken(other)]);
+    expect(a).toBe(b);
+    for (const tab of [page,other]) {
+        const status = await tab.evaluate(async (csrf) => {
+            const current = await fetch("/api/v1/dashboard/me/locale").then(r=>r.json());
+            const changed = await fetch("/api/v1/dashboard/me/locale", {method:"PUT",
+                headers:{"Content-Type":"application/json","X-CSRF-Token":csrf,"If-Match":`"${current.version}"`},
+                body:JSON.stringify({locale:"de"})});
+            return changed.status;
+        }, a);
+        expect(status).toBe(200);
+    }
+    await other.close();
+});
+
 test("real TLS scoped reads, deep links, CSP, responsive access and logout", async ({
     page,
     context,
 }) => {
     await authorized(context);
+    page.on("response", (response) => {
+        if (
+            response.url().includes("/api/v1/dashboard/") &&
+            response.status() >= 400
+        )
+            console.log(
+                "Dashboard response",
+                response.status(),
+                new URL(response.url()).pathname,
+            );
+    });
+    page.on("requestfailed", (request) => {
+        if (request.url().includes("/api/v1/dashboard/"))
+            console.log(
+                "Dashboard request failed",
+                new URL(request.url()).pathname,
+                request.failure()?.errorText,
+            );
+    });
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
     const violations: string[] = [];
@@ -84,7 +128,10 @@ test("real TLS scoped reads, deep links, CSP, responsive access and logout", asy
     await expect(
         page.getByRole("heading", { name: "Server", exact: true }),
     ).toBeVisible();
-    await page.getByRole("link", { name: "Findings", exact: true }).click();
+    await page
+        .getByRole("navigation", { name: "Hauptnavigation" })
+        .locator('a[href="/findings"]')
+        .click();
     await expect(
         page.getByRole("heading", { name: "Findings", exact: true }),
     ).toBeVisible();
@@ -120,7 +167,7 @@ test("real TLS scoped reads, deep links, CSP, responsive access and logout", asy
         await expect(
             page.getByRole("heading", { name: "Sicherheitsübersicht" }),
         ).toBeVisible();
-        await expect(page.locator(".kpi")).toHaveCount(4);
+        await expect(page.locator(".kpis > .kpi")).toHaveCount(4);
         await expect(page.getByText("Daten werden geladen …")).toHaveCount(0);
         expect(
             await page.evaluate(
@@ -177,6 +224,11 @@ test("real TLS scoped reads, deep links, CSP, responsive access and logout", asy
 test("real password login and viewer navigation", async ({ page }) => {
     await page.goto("/login");
     await page.getByLabel("Benutzername").fill(process.env.CVE_E2E_USER!);
+    await page.getByLabel("Passwort", { exact: true }).fill(crypto.randomUUID());
+    const rejected = page.waitForResponse(r=>r.url().endsWith("/api/v1/auth/login") && r.status()===401);
+    await page.getByRole("button",{name:"Fortfahren"}).click();
+    await rejected;
+    await expect(page.getByRole("alert")).toBeVisible();
     await page
         .getByLabel("Passwort", { exact: true })
         .fill(process.env.CVE_E2E_PASSWORD!);
@@ -188,7 +240,9 @@ test("real password login and viewer navigation", async ({ page }) => {
         page.getByRole("link", { name: "Übersicht", exact: true }),
     ).toHaveCount(0);
     await page.goto("/dashboard");
-    await expect(page.getByRole("alert").first()).toContainText("Berechtigung");
+    await expect(page.getByRole("alert").first()).toContainText(
+        "Zugriff nicht erlaubt",
+    );
 });
 
 test("real MFA enrollment, recovery handoff and verification", async ({
@@ -221,25 +275,45 @@ test("real MFA enrollment, recovery handoff and verification", async ({
         .fill(process.env.CVE_E2E_MFA_PASSWORD!);
     await page.getByRole("button", { name: "Fortfahren" }).click();
     await expect(
-        page.getByRole("heading", { name: "MFA einrichten" }),
+        page.getByRole("heading", { name: "Sicherheitsübersicht" }),
     ).toBeVisible();
+    await page.goto("/settings/account");
     await page
-        .getByRole("button", { name: "Authenticator einrichten" })
+        .getByRole("button", { name: "MFA einrichten", exact: true })
         .click();
+    await page
+        .locator("section.admin-form")
+        .getByRole("button", { name: "Speichern", exact: true })
+        .click();
+    await page
+        .getByRole("button", { name: "Änderung bestätigen", exact: true })
+        .click();
+    await page
+        .getByLabel("Aktuelles Passwort", { exact: true })
+        .fill(process.env.CVE_E2E_MFA_PASSWORD!);
+    await page
+        .getByRole("button", { name: "Identität bestätigen und speichern" })
+        .click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     const secret = await page.locator(".secret").textContent();
     expect(secret).toMatch(/^[A-Z2-7]+$/);
     await page.getByLabel("Sechsstelliger Bestätigungscode").fill("000000");
-    await page.getByRole("button", { name: "Fortfahren" }).click();
+    await page
+        .getByRole("button", { name: "MFA aktivieren", exact: true })
+        .click();
     await expect(page.getByRole("alert")).toBeVisible();
     await page.getByLabel("Sechsstelliger Bestätigungscode").fill(otp(secret!));
-    await page.getByRole("button", { name: "Fortfahren" }).click();
+    await page
+        .getByRole("button", { name: "MFA aktivieren", exact: true })
+        .click();
     await expect(
         page.getByRole("heading", { name: "Wiederherstellungscodes sichern" }),
     ).toBeVisible();
     expect(await page.locator("li code").count()).toBeGreaterThan(0);
     await page
-        .getByRole("button", { name: "Sicher aufbewahrt – fortfahren" })
+        .getByRole("button", { name: "Sicher aufbewahrt", exact: true })
         .click();
+    await page.goto("/dashboard");
     await expect(
         page.getByRole("heading", { name: "Sicherheitsübersicht" }),
     ).toBeVisible();

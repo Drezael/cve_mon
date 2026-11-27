@@ -1,0 +1,49 @@
+{
+  "scope": "Standard suite only; complete source-bound integration campaign remains mandatory",
+  "scopes": {
+    "authentication": {
+      "paths": [
+        "services/api/src/cve_api/auth/"
+      ],
+      "minimum_lines": 48,
+      "minimum_branches": 20
+    },
+    "authorization": {
+      "paths": [
+        "services/api/src/cve_api/authorization/"
+      ],
+      "minimum_lines": 34,
+      "minimum_branches": 10
+    },
+    "jobs": {
+      "paths": [
+        "packages/cve_common/src/cve_common/jobs/"
+      ],
+      "minimum_lines": 69,
+      "minimum_branches": 40
+    },
+    "events": {
+      "paths": [
+        "packages/cve_common/src/cve_common/events/"
+      ],
+      "minimum_lines": 50,
+      "minimum_branches": 16
+    },
+    "matching": {
+      "paths": [
+        "services/matcher/src/cve_matcher/engine.py",
+        "services/matcher/src/cve_matcher/versions.py",
+        "services/matcher/src/cve_matcher/ranges.py"
+      ],
+      "minimum_lines": 80,
+      "minimum_branches": 70
+    },
+    "smtp": {
+      "paths": [
+        "services/notification/src/cve_notification/smtp.py"
+      ],
+      "minimum_lines": 80,
+      "minimum_branches": 70
+    }
+  }
+}

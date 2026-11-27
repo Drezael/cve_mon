@@ -11,7 +11,7 @@ pytestmark = [pytest.mark.mail, pytest.mark.security]
 def test_effective_native_configuration(mail_lab: Lab) -> None:
     lab = mail_lab
     for key, expected in {
-        "relayhost": "[cve-egress-proxy]:1587",
+        "relayhost": "[mail.allowed.test]:587",
         "mynetworks": "",
         "relay_domains": "",
         "mydestination": "",

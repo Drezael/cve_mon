@@ -5,8 +5,8 @@ from typing import Annotated, Any
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from cve_common.database.queries import one, rows
 from cve_common.jobs.contracts import Payload
-from cve_notification.repository import one, rows
 from fastapi import APIRouter, Depends, Header, Request, Response
 from pydantic import Field, field_validator
 

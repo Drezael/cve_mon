@@ -11,6 +11,7 @@ import logging
 import os
 import secrets
 import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -208,6 +209,17 @@ def _erase_once(config: Config, value: dict[str, Any]) -> dict[str, Any]:
     server, actor = UUID(value["server_id"]), UUID(value["actor_id"])
     expected = int(value["version"])
     base = directory(config)
+    receipt = base / "erase-receipts" / (str(UUID(value["request_id"])) + ".json")
+    binding = hashlib.sha256(
+        json.dumps(
+            {"server": str(server), "actor": str(actor), "version": expected}, sort_keys=True
+        ).encode()
+    ).hexdigest()
+    if receipt.exists():
+        saved = json.loads(receipt.read_text())
+        if saved.get("binding") != binding:
+            return {"status": 409}
+        return {"status": 204}
     operation = base / ("erase-" + str(UUID(value["request_id"])) + ".json")
     if not operation.exists():
         atomic(
@@ -222,6 +234,12 @@ def _erase_once(config: Config, value: dict[str, Any]) -> dict[str, Any]:
     if (base / "erasure-paused.json").exists():
         return {"status": 503}
     state = json.loads(operation.read_text())
+    if (state.get("server_id"), state.get("actor_id"), state.get("version")) != (
+        str(server),
+        str(actor),
+        expected,
+    ):
+        return {"status": 409}
     if state.get("phase") == "failed":
         return {"status": 503}
     lock = base / "erasure.lock"
@@ -331,8 +349,32 @@ def _erase_once(config: Config, value: dict[str, Any]) -> dict[str, Any]:
                     if time.monotonic() >= deadline:
                         raise RuntimeError("executor_cleanup_pending")
                     time.sleep(0.5)
+        atomic(receipt, {"actor_id": str(actor), "binding": binding, "state": "completed"})
         operation.unlink(missing_ok=True)
         return {"status": 204}
+
+
+def erasure_status(config: Config, value: dict[str, Any]) -> dict[str, Any]:
+    """Read-only receipt lookup, bound to the authenticated original requesting account."""
+    identity = str(UUID(value["request_id"]))
+    actor = str(UUID(value["actor_id"]))
+    base = directory(config)
+    candidates = [
+        base / "erase-receipts" / (identity + ".json"),
+        base / ("erase-" + identity + ".json"),
+        base / "deferred-erasure" / ("erase-" + identity + ".json"),
+    ]
+    for path in candidates:
+        if path.is_symlink():
+            raise ValueError("unsafe_receipt")
+        if not path.is_file():
+            continue
+        saved = json.loads(path.read_text())
+        if saved.get("actor_id") != actor:
+            return {"status": 404}
+        state = saved.get("state") or ("failed" if saved.get("phase") == "failed" else "running")
+        return {"status": 200, "state": state}
+    return {"status": 404}
 
 
 ERASURE_FAILURES = {
@@ -493,6 +535,8 @@ async def serve(config: Config) -> None:
                 result = {"status": 200}
             elif message.get("operation") == "erase":
                 result = await asyncio.to_thread(erase, config, message)
+            elif message.get("operation") == "erase-status":
+                result = await asyncio.to_thread(erasure_status, config, message)
             else:
                 raise ValueError("operation_denied")
         except Exception:
@@ -662,6 +706,44 @@ def start(config: Config) -> None:
             break
         time.sleep(0.1)
     raise RuntimeError("Host control agent did not start")
+
+
+def stop(config: Config) -> None:
+    """Stop only this project's host controller, never an unrelated PID or user unit."""
+    unit = "cve-automation-control-" + config.project
+    if shutil.which("systemctl"):
+        active = subprocess.run(
+            ["systemctl", "--user", "is-active", "--quiet", unit], capture_output=True, check=False
+        )
+        if active.returncode == 0:
+            working = run(
+                ["systemctl", "--user", "show", "--property=WorkingDirectory", "--value", unit]
+            ).stdout.strip()
+            if working != str(config.root):
+                raise ValueError("Hostcontroller gehört zu einem anderen Arbeitsverzeichnis.")
+            run(["systemctl", "--user", "stop", unit])
+    pidfile = directory(config) / "agent.pid"
+    if not pidfile.exists():
+        return
+    pid = int(pidfile.read_text())
+    commandline = Path("/proc") / str(pid) / "cmdline"
+    if commandline.exists():
+        args = commandline.read_bytes().decode().split("\0")
+        expected = str(directory(config) / "agent-config.json")
+        if pid <= 1 or args[1:5] != [
+            "-m",
+            "scripts.automation_executor.agent",
+            "--config",
+            expected,
+        ]:
+            raise ValueError("Controller-PID konnte diesem Projekt nicht sicher zugeordnet werden.")
+        os.kill(pid, signal.SIGTERM)
+        deadline = time.monotonic() + 15
+        while commandline.exists() and commandline.read_bytes():
+            if time.monotonic() >= deadline:
+                raise ValueError("Hostcontroller wurde nicht rechtzeitig beendet.")
+            time.sleep(0.1)
+    pidfile.unlink(missing_ok=True)
 
 
 def main() -> None:

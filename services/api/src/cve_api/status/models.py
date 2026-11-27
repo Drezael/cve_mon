@@ -149,17 +149,19 @@ class Coverage(Payload):
 
 
 class ControlRead(Payload):
-    enabled: bool
+    enabled: bool | None
+    sample_stale: bool = False
+    sample_checked_at: datetime | None = None
     state: State
     workflow_state: State
     queue_state: State
     heartbeat_at: datetime | None
-    pending: int
-    processing: int
-    paused: int
-    failed: int
-    oldest_seconds: float
-    expired_leases: int
+    pending: int | None
+    processing: int | None
+    paused: int | None
+    failed: int | None
+    oldest_seconds: float | None
+    expired_leases: int | None
     capped: bool
 
 

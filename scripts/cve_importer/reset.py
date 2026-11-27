@@ -43,7 +43,11 @@ FROM pg_constraint WHERE contype='f'
         following = tables | {
             r["child"]
             for r in foreign
-            if r["parent"] in tables and r["child"] != "automation.n8n_queue"
+            if r["parent"] in tables
+            and r["child"] != "automation.n8n_queue"
+            # Reports are retained; only their affected notification link is detached below.
+            and (r["child"], r["parent"])
+            != ("automation.mail_reports", "automation.notification_intents")
         }
         if following == tables:
             break
@@ -111,10 +115,21 @@ WHERE c.contype='f' AND c.confrelid='automation.jobs'::regclass AND cardinality(
         ).fetchone()
         if exists:
             raise ValueError("Unrelated job reference in " + row["child"])
-    if connection.execute(
-        "SELECT 1 FROM automation.notification_intents WHERE finding_id IS NULL LIMIT 1"
-    ).fetchone():
-        raise ValueError("Unrelated notification state must be preserved before CVE reset")
+    connection.execute("""
+CREATE TEMP TABLE reset_cve_notifications ON COMMIT DROP AS
+WITH RECURSIVE affected AS (
+ SELECT id,digest_id FROM automation.notification_intents WHERE finding_id IS NOT NULL
+ OR event_id IN (SELECT id FROM reset_cve_events)
+ UNION
+ SELECT n.id,n.digest_id FROM automation.notification_intents n JOIN affected a ON n.id=a.digest_id
+) SELECT DISTINCT id FROM affected
+""")
+    connection.execute("CREATE UNIQUE INDEX ON reset_cve_notifications(id)")
+    connection.execute("""
+CREATE TEMP TABLE reset_cve_attempts ON COMMIT DROP AS
+SELECT id FROM automation.notification_delivery_attempts
+WHERE notification_id IN (SELECT id FROM reset_cve_notifications)
+""")
     # The shared n8n queue also owns SMTP/restart/recovery commands. A TRUNCATE
     # closure would erase those unrelated settings, so delete only reviewed CVE
     # runtime rows under the same explicit, quiescent operator transaction.
@@ -122,11 +137,28 @@ WHERE c.contype='f' AND c.confrelid='automation.jobs'::regclass AND cardinality(
     connection.execute("""
 DELETE FROM automation.n8n_queue WHERE job_id IN (SELECT id FROM reset_cve_jobs)
  OR event_id IN (SELECT id FROM reset_cve_events)
- OR notification_id IN (SELECT id FROM automation.notification_intents WHERE finding_id IS NOT NULL)
+ OR notification_id IN (SELECT id FROM reset_cve_notifications)
  OR (kind='command' AND message_type='cve.refresh')
 """)
+    connection.execute("""
+UPDATE automation.mail_reports SET notification_id=NULL,state='cancelled',
+ error_code='cve_data_reset'
+WHERE notification_id IN (SELECT id FROM reset_cve_notifications)
+""")
     for name in tables:
-        connection.execute(sql.SQL("DELETE FROM {}").format(sql.Identifier(*name.split("."))))
+        query = sql.SQL("DELETE FROM {}").format(sql.Identifier(*name.split(".")))
+        if name in NOTIFICATION_RUNTIME:
+            if name == "automation.notification_exception_warnings":
+                pass  # Every exception belongs to the findings being reset.
+            elif name == "automation.notification_intents":
+                query += sql.SQL(" WHERE id IN (SELECT id FROM reset_cve_notifications)")
+            elif name == "automation.notification_delivery_results":
+                query += sql.SQL(" WHERE attempt_id IN (SELECT id FROM reset_cve_attempts)")
+            else:
+                query += sql.SQL(
+                    " WHERE notification_id IN (SELECT id FROM reset_cve_notifications)"
+                )
+        connection.execute(query)
     workflow_table = connection.execute(
         "SELECT to_regclass('automation.workflow_requests') AS name"
     ).fetchone()

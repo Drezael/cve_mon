@@ -70,7 +70,7 @@ def test_private_callback_rejects_unauthorized(runtime: Config) -> None:
     assert execute(runtime, "cve-notification", code).strip() == "401"
 
 
-async def test_e2e_finding_n8n_mtls_postfix_envoy_and_no_second_submit(
+async def test_e2e_finding_n8n_mtls_postfix_direct_and_no_second_submit(
     runtime: Config,
     browser: object,
     tmp_path: object,
@@ -80,6 +80,8 @@ async def test_e2e_finding_n8n_mtls_postfix_envoy_and_no_second_submit(
     import asyncio
     import os
     import shutil
+    from email.parser import Parser
+    from email.policy import default as mime_policy
     from pathlib import Path
 
     from tests.cve_enricher.test_native import Env
@@ -107,39 +109,34 @@ async def test_e2e_finding_n8n_mtls_postfix_envoy_and_no_second_submit(
         runtime.root / "tests/infrastructure/envoy/fixtures/servers.py", files / "base.py"
     )
     sink = runtime.project + "-notification-sink"
-    run(
-        [
-            *docker_command(),
-            "run",
-            "-d",
-            "--name",
-            sink,
-            "--label",
-            "org.cve-monitoring.notification-test=" + runtime.project,
-            "--network",
-            runtime.project + "_cve_egress_external",
-            "--user",
-            f"{os.getuid()}:{os.getgid()}",
-            "--cap-drop",
-            "ALL",
-            "--read-only",
-            "--tmpfs",
-            "/tmp:rw,size=8m",
-            "-v",
-            str(files) + ":/fixture:ro",
-            PYTHON_IMAGE,
-            "python",
-            "/fixture/smarthost.py",
-        ]
-    )
     harness = None
     try:
-        info = envoy.inspect_container(sink)
-        address = info["NetworkSettings"]["Networks"][runtime.project + "_cve_egress_external"][
-            "IPAddress"
-        ]
-        envoy.namespace_command(
-            int(info["State"]["Pid"]), ["ip", "address", "add", "93.184.216.34/32", "dev", "lo"]
+        run(
+            [
+                *docker_command(),
+                "run",
+                "-d",
+                "--name",
+                sink,
+                "--label",
+                "org.cve-monitoring.notification-test=" + runtime.project,
+                "--network",
+                runtime.project + "_cve_outbound",
+                "--network-alias",
+                "mail.allowed.test",
+                "--user",
+                f"{os.getuid()}:{os.getgid()}",
+                "--cap-drop",
+                "ALL",
+                "--read-only",
+                "--tmpfs",
+                "/tmp:rw,size=8m",
+                "-v",
+                str(files) + ":/fixture:ro",
+                PYTHON_IMAGE,
+                "python",
+                "/fixture/smarthost.py",
+            ]
         )
         policy = json.loads((base / "state/policy.json").read_text())
         policy.update(
@@ -174,19 +171,13 @@ async def test_e2e_finding_n8n_mtls_postfix_envoy_and_no_second_submit(
         ]
         mail.validate(policy)
         (base / "state/policy.json").write_text(json.dumps(policy))
-        epolicy = envoy.policy()
-        epolicy["rules"] = []
-        epolicy["dns"] = {
-            "address": address,
-            "port": 53,
-            "refresh_seconds": 1,
-            "timeout_seconds": 1,
-        }
-        envoy.render(runtime, epolicy, {})
         mail.start(runtime)
-        _, pid = envoy.netns(runtime)
-        envoy.namespace_command(pid, ["ip", "route", "add", "93.184.216.34/32", "via", address])
+        from scripts.smtp.manage import reload_postfix
+
+        reload_postfix(runtime)
         manage.guard(runtime)
+        # Prepare the finding and its recipient deterministically before native delivery.
+        compose(runtime, ["stop", "cve-notification"])
         with browser.lab.owner() as c:
             present = c.execute("SELECT 1 FROM cve.source_revisions LIMIT 1").fetchone()
         if not present and finding_factory is None:
@@ -203,15 +194,25 @@ async def test_e2e_finding_n8n_mtls_postfix_envoy_and_no_second_submit(
         harness.enable()
         f = await finding_factory() if finding_factory else await harness.findings.create()
         with browser.lab.owner() as c:
-            intended = c.execute(
-                "SELECT id FROM security.users WHERE email='initial@example.test'"
-            ).fetchone()["id"]
+            owner = c.execute(
+                "SELECT s.created_by,u.email FROM inventory.servers s "
+                "JOIN security.users u ON u.id=s.created_by WHERE s.id=%s",
+                (f["server_id"],),
+            ).fetchone()
+            assert owner and owner["created_by"]
+            intended = owner["created_by"]
+        policy["recipients"] = [owner["email"]]
+        mail.validate(policy)
+        (base / "state/policy.json").write_text(json.dumps(policy))
+        mail.start(runtime)
+        reload_postfix(runtime)
+        manage.start(runtime)
         chosen = None
         for _ in range(100):
             found = [
                 n
                 for n in harness.intents()
-                if n["finding_id"] == f["id"]
+                if n["reported_server_id"] == f["server_id"]
                 and n["recipient_user_id"] == intended
                 and n["status"] in {"ready", "leased", "submitting", "relay_accepted"}
             ]
@@ -219,7 +220,19 @@ async def test_e2e_finding_n8n_mtls_postfix_envoy_and_no_second_submit(
                 chosen = found[0]
                 break
             await asyncio.sleep(0.2)
-        assert chosen is not None, "Persistent real worker did not create intent"
+        assert chosen is not None, "Persistent real worker did not create scan-report intent"
+        assert chosen["finding_id"] is None
+        with browser.lab.owner() as c:
+            report = c.execute(
+                "SELECT r.origin,r.user_id,s.snapshot_id,m.snapshot_id AS matching_snapshot "
+                "FROM automation.mail_reports r "
+                "JOIN automation.mail_report_servers s ON s.report_id=r.id "
+                "JOIN matching.result_revisions m ON m.id=%s "
+                "WHERE r.notification_id=%s AND s.server_id=%s",
+                (f["latest_matching_result_id"], chosen["id"], f["server_id"]),
+            ).fetchone()
+            assert report and report["origin"] == "scan" and report["user_id"] == intended
+            assert report["snapshot_id"] == report["matching_snapshot"]
         code = (
             "import asyncio\nfrom cve_common.config.validation i"
             "mport load_settings\nfrom cve_common.database.engin"
@@ -297,10 +310,20 @@ async def test_e2e_finding_n8n_mtls_postfix_envoy_and_no_second_submit(
                     ]
                 ).stdout
             )
-            if data.get("messages"):
+            delivered = [
+                item for item in data.get("messages", []) if chosen["message_id"] in item["body"]
+            ]
+            if delivered:
                 break
             await asyncio.sleep(0.2)
-        assert data.get("messages"), "No message traversed the actual Envoy/SMTP path"
+        assert len(delivered) == 1, "Expected one matching message on the direct Postfix/SMTP path"
+        assert owner["email"] in delivered[0]["recipients"]
+        message = Parser(policy=mime_policy).parsestr(delivered[0]["body"])
+        assert message["Message-ID"] == chosen["message_id"]
+        contents = "\n".join(
+            part.get_content() for part in message.walk() if part.get_content_maintype() == "text"
+        )
+        assert f["cve_id"] in contents
         # The upstream syslog transport and SMTP completion are asynchronous.
         # Poll boundedly; a provider message alone is not delivery evidence.
         for _ in range(50):
@@ -335,7 +358,9 @@ async def test_e2e_finding_n8n_mtls_postfix_envoy_and_no_second_submit(
             await harness.database.close()
             await harness.findings.database.close()
             await harness.findings.matcher.database.close()
-        run([*docker_command(), "rm", "-f", sink])
+        from tests.resources import remove
+
+        remove("container", sink, "org.cve-monitoring.notification-test", runtime.project)
 
 
 def test_container_boundaries_and_encrypted_credentials(runtime: Config) -> None:

@@ -229,6 +229,10 @@ async def test_n8n_periodic_recovery_resumes_network_failure_without_restart(
     upstream: tuple[Path, Callable[[], str]],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    with db.connect(platform) as session:
+        restart_count = required_row(
+            session.execute("SELECT count(*) n FROM status.service_restarts")
+        )["n"]
     harness = Harness(SourceLab(platform), tmp_path / "recover")
     configure(harness)
     root, publish = upstream
@@ -340,7 +344,7 @@ async def test_n8n_periodic_recovery_resumes_network_failure_without_restart(
                 required_row(session.execute("SELECT count(*) AS n FROM status.service_restarts"))[
                     "n"
                 ]
-                == 0
+                == restart_count
             )
     finally:
         with db.connect(platform) as session:

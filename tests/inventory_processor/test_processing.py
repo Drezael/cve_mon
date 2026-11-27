@@ -3,6 +3,7 @@
 import asyncio
 import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -541,6 +542,7 @@ async def test_permanent_rejection(browser: Browser, monkeypatch: pytest.MonkeyP
 @pytest.mark.asyncio
 async def test_runtime_container_recovery_and_isolation(browser: Browser) -> None:
     from scripts.infrastructure.manage import compose, docker_command, run
+    from scripts.infrastructure.topology import PORTS
     from scripts.inventory_processor import manage
 
     cfg = browser.lab.config
@@ -586,7 +588,7 @@ async def test_runtime_container_recovery_and_isolation(browser: Browser) -> Non
                     "python",
                     "-c",
                     "import urllib.request,urllib.error; "
-                    "\ntry: print(urllib.request.urlopen('http://127.0.0.1:8000/"
+                    f"\ntry: print(urllib.request.urlopen('http://127.0.0.1:{PORTS['cve-inventory']}/"
                     + path
                     + "',timeout=2).status)"
                     "\nexcept urllib.error.HTTPError as e: print(e.code)",
@@ -616,12 +618,19 @@ async def test_runtime_container_recovery_and_isolation(browser: Browser) -> Non
         assert not info["HostConfig"]["PortBindings"]
         assert info["HostConfig"]["ReadonlyRootfs"]
         assert not info["HostConfig"]["Privileged"]
-        assert set(info["NetworkSettings"]["Networks"]) == {cfg.project + "_cve_data"}
-        assert all(
-            not m.get("RW") and "docker.sock" not in m["Source"]
-            for m in info["Mounts"]
-            if m["Type"] == "bind"
-        )
+        assert set(info["NetworkSettings"]["Networks"]) == {
+            cfg.project + "_" + zone for zone in ("cve_data", "cve_internal", "cve_outbound")
+        }
+        binds = [m for m in info["Mounts"] if m["Type"] == "bind"]
+        writable = {
+            "/work/" + role: (cfg.mount_base / ("cve-" + role) / cfg.project / "scratch").resolve()
+            for role in ("importer", "enricher")
+        }
+        assert {m["Destination"] for m in binds if m.get("RW")} == writable.keys()
+        assert all("docker.sock" not in m["Source"] for m in binds)
+        for mount in binds:
+            if mount.get("RW"):
+                assert Path(mount["Source"]).resolve() == writable[mount["Destination"]]
         network = compose(
             cfg,
             [
@@ -630,12 +639,19 @@ async def test_runtime_container_recovery_and_isolation(browser: Browser) -> Non
                 "cve-inventory",
                 "python",
                 "-c",
-                "import socket; s=socket.socket(); s.settimeout(.5)"
-                "\ntry: s.connect(('1.1.1.1',443)); print('open')"
-                "\nexcept OSError: print('blocked')",
+                "import socket,json; results={}"
+                "\nfor host,port in [('1.1.1.1',443),('1.1.1.1',80),"
+                "('169.254.169.254',80),('172.17.0.1',22)]:"
+                "\n try:"
+                "\n  s=socket.create_connection((host,port),timeout=1);s.close();"
+                "results[host+':'+str(port)]=True"
+                "\n except OSError: results[host+':'+str(port)]=False"
+                "\nprint(json.dumps(results))",
             ],
         )
-        assert network.stdout.strip() == "blocked"
+        connectivity = json.loads(network.stdout)
+        assert connectivity.pop("1.1.1.1:443") is True
+        assert not any(connectivity.values())
         await asyncio.to_thread(compose, cfg, ["stop", "cve-postgres"])
         assert await asyncio.to_thread(probe, "health/live") == 200
         for _ in range(30):

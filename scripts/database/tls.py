@@ -15,6 +15,15 @@ def prepare_bind(config: Config) -> None:
     if any(p.is_symlink() or not p.is_file() for p in paths):
         raise ValueError("Provision database TLS files before starting PostgreSQL")
     prepare(config, ["cve-postgres"])
+    # Upstream Alpine and Debian use different postgres UIDs. The entrypoint
+    # repairs PGDATA itself, but must also be able to traverse its bind parents.
+    helper(
+        config,
+        ["type=bind,source=" + str(path(config, "postgres_data")) + ",target=/data"],
+        "chown postgres:postgres /data; "
+        "if [ -d /data/18 ]; then chown postgres:postgres /data/18; fi",
+        image=image,
+    )
     target = path(config, "postgres_tls")
     helper(
         config,

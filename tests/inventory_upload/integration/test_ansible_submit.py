@@ -25,6 +25,9 @@ REPOSITORY = Path(__file__).resolve().parents[3]
 def project(browser: Browser, root: Path, entries: list[dict[str, Any]]) -> dict[str, str]:
     root.mkdir(parents=True, mode=0o700)
     cfg = browser.lab.config
+    from .technical_gateway import GATEWAYS
+
+    gateway = GATEWAYS[cfg.project]
     targets = {}
     for item in entries:
         hostname = item.get("hostname", "target")
@@ -43,8 +46,8 @@ def project(browser: Browser, root: Path, entries: list[dict[str, Any]]) -> dict
                     "origin": "https://"
                     + cfg.values["INVENTORY_DOMAIN"]
                     + ":"
-                    + cfg.values["INGRESS_HTTPS_PORT"],
-                    "ca_file": cfg.values["TLS_TRUST_FILE"],
+                    + str(gateway["port"]),
+                    "ca_file": str(gateway["ca_file"]),
                     "certificate_file": item["client_cert"],
                     "key_file": item["client_key"],
                     "token_file": str(token),
@@ -60,16 +63,21 @@ def project(browser: Browser, root: Path, entries: list[dict[str, Any]]) -> dict
     (dns / "sitecustomize.py").write_text(
         "import socket\n_original=socket.getaddrinfo\n"
         "def _resolve(host,*args,**kwargs):\n"
-        "    return _original('127.0.0.1' if host=="
+        "    return _original("
+        + repr(gateway["address"])
+        + " if host=="
         + repr(cfg.values["INVENTORY_DOMAIN"])
         + " else host,*args,**kwargs)\nsocket.getaddrinfo=_resolve\n"
     )
-    return {"root": str(root), "dns": str(dns)}
+    return {"root": str(root), "dns": str(dns), "project": cfg.project}
 
 
 def run(
     local: dict[str, str], extra: dict[str, Any] | None = None, batch: bool = False
 ) -> subprocess.CompletedProcess[str]:
+    from .technical_gateway import reload
+
+    reload(local["project"])
     root = Path(local["root"])
     targets = json.loads((root / "targets.json").read_text())
     value = extra or {}
@@ -165,7 +173,15 @@ async def test_real_parallel_submits_have_one_immutable_receipt(
         browser, tmp_path / "submit", [entry(browser, upload, payload(upload.server["id"]))]
     )
     results = await asyncio.gather(asyncio.to_thread(run, local), asyncio.to_thread(run, local))
-    assert all(r.returncode == 0 for r in results), [r.stdout + r.stderr for r in results]
+    assert any(r.returncode == 0 for r in results), [r.stdout + r.stderr for r in results]
+    # The current upload contract admits one parser at a time. A competing
+    # request can receive capacity backpressure; retry after the first completes.
+    for result in results:
+        if result.returncode:
+            assert json.loads(result.stdout) == {"http_status": 429}, result.stderr
+            retry = await asyncio.to_thread(run, local)
+            assert retry.returncode == 0, retry.stdout + retry.stderr
+            assert json.loads(retry.stdout)["duplicate"] is True
     assert len(list((Path(local["root"]) / "inventory_receipts").glob("*/*.json"))) == 1
     with connect(browser.lab.config) as c:
         row = c.execute(

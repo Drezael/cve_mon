@@ -1,6 +1,7 @@
 """Private health listener and the supervised n8n-authorized automation worker."""
 
 import asyncio
+import resource
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -48,6 +49,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
 
 def main() -> None:
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     config = load_settings(Settings)
     uvicorn.run(
         create_app(config),

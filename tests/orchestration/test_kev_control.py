@@ -22,6 +22,7 @@ def test_n8n_allows_v5_and_kev_but_rejects_other_sources(import_lab: Lab) -> Non
                 (source, Jsonb({"configuration": configuration}), str(uuid4()), uuid4()),
             ).fetchone()
             assert row and row["id"]
+            session.rollback()
     for source, changes in (
         ("nvd", {}),
         ("cisa_kev", {"epss_enabled": "true"}),

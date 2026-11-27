@@ -1,5 +1,7 @@
 """Real Nginx HTTPS, scoped API restarts and protected administration routes."""
 
+import ssl
+
 import pytest
 
 from scripts.infrastructure.manage import compose
@@ -30,14 +32,19 @@ async def test_real_https_admin_user_admin_and_viewer_boundaries(browser: Browse
         if person == manager:
             assert str(admin.id) not in response.body
     assert request(browser.lab.config, path="/api/v1/dashboard/admin/users").status == 401
+    with pytest.raises(ssl.SSLError):
+        request(browser.lab.config, domain="api.example.test", path="/api/v1/dashboard/admin/users")
     assert (
         request(
-            browser.lab.config, domain="api.example.test", path="/api/v1/dashboard/admin/users"
+            browser.lab.config,
+            path="/api/v1/dashboard/admin/users",
+            headers={"Host": "api.example.test"},
         ).status
-        == 403
+        == 421
     )
-    for path in ("/api/v1/dashboard/admin/servers", "/api/v1/dashboard/admin/groups"):
+    for path in ("/api/v1/dashboard/admin/servers", "/api/v1/dashboard/groups"):
         assert request(browser.lab.config, path=path).status == 401
+    assert request(browser.lab.config, path="/api/v1/dashboard/admin/groups").status == 403
     assert request(browser.lab.config, path="/api/v1/inventories").status in (403, 404, 503)
 
 

@@ -1,6 +1,7 @@
 """Verify the existing glibc cluster, builtin application locales and role data on musl."""
 
 import json
+from dataclasses import replace
 from uuid import uuid4
 
 import pytest
@@ -18,7 +19,8 @@ def test_existing_cluster_and_builtin_locale_survive_runtime_change() -> None:
     override = db.workdir(cfg) / "old-runtime.json"
     override.write_text(json.dumps({"services": {"cve-postgres": {"image": OLD}}}))
     try:
-        compose(cfg, ["-f", str(override), "up", "-d", "--wait", "cve-postgres"])
+        old_config = replace(cfg, compose_overrides=(*cfg.compose_overrides, override))
+        compose(old_config, ["up", "-d", "--wait", "cve-postgres"])
         db.provision(cfg)
         db.migrate(cfg)
         with db.connect(cfg) as conn:
@@ -74,4 +76,7 @@ def test_existing_cluster_and_builtin_locale_survive_runtime_change() -> None:
             )
         )
     finally:
+        logs = cfg.root / ".runtime/test-reports/qa-postgres-portability.log"
+        logs.write_text(compose(cfg, ["logs", "--no-color", "cve-postgres"]).stdout)
+        logs.chmod(0o600)
         db.cleanup_test(cfg)

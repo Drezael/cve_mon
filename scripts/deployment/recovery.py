@@ -85,8 +85,27 @@ def snapshot(
                     if not original.exists():
                         continue
                     capture_configuration(
-                        original, plain / "configuration" / directory, plain, modes
+                        original,
+                        plain / "configuration" / directory,
+                        plain,
+                        modes,
+                        dashboard_pointer=directory == "nginx",
                     )
+                bootstrap_state = (
+                    target.config.mount_base
+                    / "n8n"
+                    / target.config.project
+                    / "data"
+                    / "cve-bootstrap-state.json"
+                )
+                if not bootstrap_state.is_file() or bootstrap_state.is_symlink():
+                    raise ValueError("Private n8n bootstrap state missing from backup")
+                capture_configuration(
+                    bootstrap_state,
+                    plain / "configuration/n8n-bootstrap-state.json",
+                    plain,
+                    modes,
+                )
                 pki = Path(target.config.values["TLS_CERT_FILE"]).parent
                 capture_configuration(pki, plain / "configuration/ingress-pki", plain, modes)
                 for path in sorted(plain.rglob("*")):
@@ -282,6 +301,10 @@ def recover_stage(
         if pki.exists():
             raise ValueError("Recovery refuses existing ingress PKI")
         shutil.copytree(plain / "configuration/ingress-pki", pki)
+        # The target configuration was loaded before its restored CA existed.
+        # Bind trust to the CA included in the authenticated backup.
+        if (pki / "ca.crt").is_file():
+            cfg.values["TLS_TRUST_FILE"] = str(pki / "ca.crt")
         previous_pki = str(Path(inventory["configuration"]["TLS_CERT_FILE"]).parent)
         for issuer_config in pki.rglob("*.cnf"):
             issuer_config.write_text(issuer_config.read_text().replace(previous_pki, str(pki)))
@@ -327,6 +350,18 @@ def recover_stage(
         if not old_key.is_file() or old_key.read_bytes() != new_key.read_bytes():
             raise ValueError("n8n encryption key was not preserved")
         prepare_runtime(target, bundle)
+        bootstrap_state = plain / "configuration/n8n-bootstrap-state.json"
+        if bootstrap_state.is_file():
+            destination = cfg.mount_base / "n8n" / cfg.project / "data/cve-bootstrap-state.json"
+            if destination.exists():
+                if (
+                    destination.is_symlink()
+                    or destination.read_bytes() != bootstrap_state.read_bytes()
+                ):
+                    raise ValueError("Recovery refuses conflicting n8n bootstrap state")
+            else:
+                shutil.copyfile(bootstrap_state, destination)
+            destination.chmod(0o600)
         compose(cfg, ["create", "--no-build", "cve-mail-relay"])
         mail.restore(cfg, plain / "mail-queue")
         start_runtime(target, bundle)
@@ -416,10 +451,31 @@ def capture_configuration(
     destination: Path,
     root: Path,
     modes: dict[str, dict[str, Any]],
+    *,
+    dashboard_pointer: bool = False,
 ) -> None:
     """Keep plaintext private while authenticating original runtime permissions in the index."""
     for path in [source, *source.rglob("*")]:
         if path.is_symlink():
+            if dashboard_pointer and path == source / "dashboard":
+                relative = path.readlink()
+                releases = source / "dashboard-releases"
+                if (
+                    relative.is_absolute()
+                    or len(relative.parts) != 2
+                    or relative.parts[0] != "dashboard-releases"
+                    or not relative.parts[1].startswith(("release-", "legacy-"))
+                    or releases.is_symlink()
+                    or (source / relative).is_symlink()
+                ):
+                    raise ValueError("Invalid managed dashboard pointer")
+                target = path.resolve(strict=True)
+                if not target.is_dir() or target.parent != releases.resolve(strict=True):
+                    raise ValueError("Dashboard pointer escapes managed releases")
+                # Store a real directory, never a restorable link. Activation already
+                # supports such legacy directories and retains their original assets.
+                capture_configuration(target, destination / "dashboard", root, modes)
+                continue
             raise ValueError("Symlink in backup configuration")
         if path.name == "control.sock" and stat.S_ISSOCK(path.stat().st_mode):
             continue

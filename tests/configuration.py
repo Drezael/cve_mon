@@ -14,7 +14,22 @@ def load_test_config(
     root: Path = ROOT,
 ) -> Config:
     supplied = dict(overrides or {})
-    internal = {key: supplied.pop(key) for key in tuple(supplied) if key in INTERNAL_DEFAULTS}
+    fixture_paths = {
+        "TLS_CERT_FILE",
+        "TLS_KEY_FILE",
+        "TLS_TRUST_FILE",
+        "CLIENT_CA_FILE",
+        "CLIENT_CRL_FILE",
+    }
+    internal = {
+        key: supplied.pop(key)
+        for key in tuple(supplied)
+        if key in INTERNAL_DEFAULTS or key in fixture_paths
+    }
+    if "CLIENT_CA_FILE" in internal and "CLIENT_CRL_FILE" not in internal:
+        internal["CLIENT_CRL_FILE"] = str(
+            Path(internal["CLIENT_CA_FILE"]).with_name("client-ca.crl")
+        )
     # Host IDs used to be explicit in older fixtures; the controller now derives them.
     supplied.pop("NGINX_UID", None)
     supplied.pop("NGINX_GID", None)

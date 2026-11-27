@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+from cve_api.ansible.router import router as ansible
+from cve_api.ansible.vault import router as vault
 from cve_api.custom_dashboards.router import router as custom_dashboards
 from cve_api.cve_data import router as cve_data
 from cve_api.dashboard.container_inventory import router as container_inventory
@@ -15,12 +17,15 @@ from cve_api.notifications.router import router as notifications
 from cve_api.servers.router_read import router as servers
 from cve_api.servers.scan import router as server_scan
 from cve_api.workflows import router as workflows
+from cve_common.release import VERSION
 from fastapi import FastAPI
 
 
 def export(root: Path) -> Path:
-    app = FastAPI(title="CVE Dashboard read contracts", version="0.20.0")
+    app = FastAPI(title="CVE Dashboard read contracts", version=VERSION)
     for router in [
+        ansible,
+        vault,
         custom_dashboards,
         personal_groups,
         localization,

@@ -65,19 +65,19 @@ async def test_acl_filter_search_pagination_group_counts_and_no_inheritance(
         ).fetchone()["display_name"]
         group = c.execute(
             (
-                "INSERT INTO inventory.server_groups(name,sort_order) "
-                "SELECT %s,coalesce(max(sort_order),-1)+1 FROM inventory"
+                "INSERT INTO inventory.server_groups(name,sort_order,owner_id) "
+                "SELECT %s,coalesce(max(sort_order),-1)+1,%s FROM inventory"
                 ".server_groups RETURNING id"
             ),
-            ("group-" + secrets.token_hex(4),),
+            ("group-" + secrets.token_hex(4), viewer.id),
         ).fetchone()["id"]
         invisible_group = c.execute(
             (
-                "INSERT INTO inventory.server_groups(name,sort_order) "
-                "SELECT %s,coalesce(max(sort_order),-1)+1 FROM inventory"
+                "INSERT INTO inventory.server_groups(name,sort_order,owner_id) "
+                "SELECT %s,coalesce(max(sort_order),-1)+1,%s FROM inventory"
                 ".server_groups RETURNING id"
             ),
-            ("hidden-" + secrets.token_hex(4),),
+            ("hidden-" + secrets.token_hex(4), viewer.id),
         ).fetchone()["id"]
         for position, server in enumerate((allowed, hidden)):
             c.execute(
@@ -91,15 +91,6 @@ async def test_acl_filter_search_pagination_group_counts_and_no_inheritance(
             ("INSERT INTO inventory.server_group_memberships(server_id,group_id) VALUES(%s,%s)"),
             (another, invisible_group),
         )
-        c.execute(
-            ("UPDATE inventory.servers SET primary_group_id=%s,version=version+1 WHERE id=%s"),
-            (group, hidden),
-        )
-        for server, primary in ((allowed, group), (another, invisible_group)):
-            c.execute(
-                "UPDATE inventory.servers SET primary_group_id=%s,version=version+1 WHERE id=%s",
-                (primary, server),
-            )
         # Even a legacy explicit group grant never becomes a browser server capability.
         c.execute(
             ("INSERT INTO security.user_group_access(user_id,group_id) VALUES(%s,%s)"),

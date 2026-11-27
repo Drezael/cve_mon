@@ -275,6 +275,10 @@ main:focus {
 .filters label {
     font-size: 12px;
 }
+.table-scroll:focus-visible {
+    outline: 3px solid #1765b2;
+    outline-offset: 3px;
+}
 .table-scroll {
     overflow: auto;
     max-width: 100%;

@@ -239,6 +239,23 @@ def test_reset_clears_cve_rows_and_preserves_configuration_in_rollback(import_la
     from scripts.database import manage as db
 
     with db.connect(import_lab.config) as connection:
+        from tests.database.helpers import server, snapshot, user
+
+        person = user(connection)
+        target = server(connection)
+        snap = snapshot(connection, target)
+        report = required_row(
+            connection.execute(
+                "INSERT INTO automation.mail_reports(user_id,origin,correlation_id) "
+                "VALUES(%s,'manual',%s) RETURNING *",
+                (person, uuid4()),
+            )
+        )
+        connection.execute(
+            "INSERT INTO automation.mail_report_servers(report_id,server_id,snapshot_id) "
+            "VALUES(%s,%s,%s)",
+            (report["id"], target, snap),
+        )
         before = required_row(connection.execute("SELECT count(*) n FROM security.roles"))["n"]
         result = reset_in(connection)
         assert not any(
@@ -271,6 +288,23 @@ def test_reset_clears_cve_rows_and_preserves_configuration_in_rollback(import_la
         assert [
             r["id"] for r in connection.execute("SELECT id FROM cve.sources WHERE enabled")
         ] == ["cve_list"]
+        assert (
+            required_row(
+                connection.execute(
+                    "SELECT * FROM automation.mail_reports WHERE id=%s", (report["id"],)
+                )
+            )
+            == report
+        )
+        assert (
+            required_row(
+                connection.execute(
+                    "SELECT snapshot_id FROM automation.mail_report_servers WHERE report_id=%s",
+                    (report["id"],),
+                )
+            )["snapshot_id"]
+            == snap
+        )
         connection.rollback()
 
 

@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 from uuid import UUID, uuid4
 
-from cve_findings.repository import rows
+from cve_common.database.queries import rows
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError

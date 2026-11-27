@@ -103,7 +103,10 @@ def isolated_upload_lab(initial_values: dict[str, str] | None = None) -> Iterato
         api.build(cfg)
         render(cfg)
         compose(cfg, ["up", "-d", "--wait", "--wait-timeout", "60", "cve-api", "cve-nginx"])
-        yield Lab(cfg, password, uid)
+        from tests.inventory_upload.integration.technical_gateway import gateway
+
+        with gateway(cfg):
+            yield Lab(cfg, password, uid)
     finally:
         reports = root / ".runtime/test-reports"
         reports.mkdir(exist_ok=True, parents=True)
@@ -179,7 +182,7 @@ async def browser(upload_lab: Lab) -> AsyncIterator[Browser]:
             inventory=inventory,
             allowed_hosts=[
                 "dashboard.example.test",
-                "inventory.example.test",
+                "inventory.internal",
                 "cve-api",
                 "localhost",
                 "127.0.0.1",

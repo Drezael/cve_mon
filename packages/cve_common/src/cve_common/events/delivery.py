@@ -15,7 +15,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from cve_common.database.engine import Database
 from cve_common.database.transactions import transaction
 from cve_common.events.contracts import EventEnvelope
-from cve_common.jobs.errors import ErrorCode, classify
+from cve_common.jobs.errors import ErrorCode, LeaseLost, classify
 from cve_common.jobs.worker import WorkerSettings
 from cve_common.logging.correlation import correlation_id, request_id
 
@@ -148,7 +148,7 @@ class Dispatcher:
                 if not await self.repository.heartbeat(delivery, self.settings.lease_seconds):
                     task.cancel()
                     return
-        except SQLAlchemyError:
+        except (SQLAlchemyError, OSError, TimeoutError):
             self.healthy = False
             task.cancel()
 
@@ -163,22 +163,29 @@ class Dispatcher:
             correlation_id.set(str(event.correlation_id))
             async with asyncio.timeout(30):
                 await self.transports[delivery.destination](event)
-            await self.repository.finish(delivery, "delivered")
+            if not await self.repository.finish(delivery, "delivered"):
+                raise LeaseLost()
             logging.getLogger("cve.events").info(
                 "delivery_finished", extra={"event_id": str(event.event_id)}
             )
         except asyncio.CancelledError:
             try:
                 await self.repository.finish(delivery, "retry", ErrorCode.SHUTDOWN)
-            except SQLAlchemyError:
+            except (SQLAlchemyError, OSError, TimeoutError):
                 self.healthy = False
         except Exception as error:
             failure = classify(error)
+            logging.getLogger("cve.events").warning(
+                "delivery_failed",
+                extra={"event_id": str(delivery.event_id), "error_code": failure.code.value},
+            )
+            if isinstance(error, LeaseLost):
+                return
             try:
                 await self.repository.finish(
                     delivery, "retry" if failure.retry else "failed", failure.code
                 )
-            except SQLAlchemyError:
+            except (SQLAlchemyError, OSError, TimeoutError):
                 self.healthy = False
         finally:
             heartbeat.cancel()
@@ -213,7 +220,7 @@ class Dispatcher:
                         task = asyncio.create_task(self.execute(delivery))
                         self.active.add(task)
                         task.add_done_callback(self.active.discard)
-                except SQLAlchemyError:
+                except (SQLAlchemyError, OSError, TimeoutError):
                     self.healthy = False
                     logging.getLogger("cve.events").warning("worker_unavailable")
                 with contextlib.suppress(TimeoutError):

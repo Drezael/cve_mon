@@ -3,6 +3,7 @@
 import base64
 import json
 import os
+import resource
 import subprocess
 import sys
 from importlib.resources import files
@@ -10,6 +11,8 @@ from pathlib import Path
 from typing import Any
 
 import ansible_runner  # type: ignore[import-untyped]
+from cryptography.exceptions import UnsupportedAlgorithm
+from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_ssh_private_key
 
 
 def run(plan: dict[str, Any], root: Path) -> dict[str, Any]:
@@ -29,6 +32,17 @@ def run(plan: dict[str, Any], root: Path) -> dict[str, Any]:
     if plan.get("use_sudo") or plan["username"] == "root":
         return {"success": False, "error_code": "unprivileged_account_required"}
     cfg = plan["credentials"]
+    if plan["auth_method"] == "key":
+        # ssh-add otherwise keeps prompting indefinitely for an incorrect passphrase.
+        raw = cfg["private_key"].strip().encode()
+        phrase = cfg.get("passphrase", "").encode() or None
+        loader = (
+            load_ssh_private_key if raw.startswith(b"-----BEGIN OPENSSH") else load_pem_private_key
+        )
+        try:
+            loader(raw, password=phrase)
+        except (ValueError, TypeError, UnsupportedAlgorithm):
+            return {"success": False, "error_code": "ssh_credentials_invalid"}
     inventory = {
         "all": {
             "hosts": {
@@ -126,18 +140,23 @@ def run(plan: dict[str, Any], root: Path) -> dict[str, Any]:
 
 
 def main() -> None:
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+    resource.setrlimit(resource.RLIMIT_AS, (1024 * 1024 * 1024,) * 2)
+    resource.setrlimit(resource.RLIMIT_FSIZE, (16 * 1024 * 1024,) * 2)
     os.umask(0o077)
     p = Path(sys.argv[1])
-    plan = json.loads(p.read_text())
+    piped = sys.argv[2:] == ["--stdin"]
+    root = p if piped else p.parent
+    plan = json.loads(sys.stdin.buffer.read(262145) if piped else p.read_text())
     try:
-        result = run(plan, p.parent)
+        result = run(plan, root)
     except Exception as error:
         result = {
             "success": False,
             "error_code": "execution_failed",
             "error_class": type(error).__name__,
         }
-    (p.parent / "result.json").write_text(json.dumps(result))
+    (root / "result.json").write_text(json.dumps(result))
 
 
 if __name__ == "__main__":

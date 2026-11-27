@@ -267,7 +267,12 @@ function ServerWidget({
                             )}
                         </p>
                     )}
-                    <div className="table-scroll">
+                    <div
+                        className="table-scroll"
+                        tabIndex={0}
+                        role="region"
+                        aria-label={t("Scrollbare Tabelle")}
+                    >
                         <table>
                             <thead>
                                 <tr>
@@ -335,7 +340,12 @@ function FindingWidget({
                             )}
                         </p>
                     )}
-                    <div className="table-scroll">
+                    <div
+                        className="table-scroll"
+                        tabIndex={0}
+                        role="region"
+                        aria-label={t("Scrollbare Tabelle")}
+                    >
                         <table>
                             <thead>
                                 <tr>

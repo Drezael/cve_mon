@@ -66,7 +66,12 @@ export function Resources() {
                 <State error={result.error} reload={result.reload} />
             ) : (
                 <Card title={t("Bestand")}>
-                    <div className="table-scroll">
+                    <div
+                        className="table-scroll"
+                        tabIndex={0}
+                        role="region"
+                        aria-label={t("Scrollbare Tabelle")}
+                    >
                         <table>
                             <thead>
                                 <tr>

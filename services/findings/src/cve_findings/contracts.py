@@ -71,7 +71,7 @@ class MatchingEvent(Payload):
     identity: str = Field(pattern=r"^CVE-[0-9]{4}-[0-9]{4,}$", max_length=256)
     enrichment_revision_id: UUID
     result_id: UUID
-    rule_version: Literal["matching-1"]
+    rule_version: Literal["matching-1", "matching-2", "matching-3"]
     status: Literal["affected", "not_affected", "potentially_affected", "unknown", "not_applicable"]
     current_version: int = Field(ge=1)
 

@@ -52,6 +52,12 @@ def test_real_identity_and_restricted_role(db_config: Config, role: str) -> None
         )
         if not (role == "api_security" and operation.startswith("SELECT * FROM security."))
         and not (
+            role == "api_security"
+            and operation.startswith(
+                ("UPDATE inventory.server_groups", "DELETE FROM inventory.server_group_memberships")
+            )
+        )
+        and not (
             role == "dashboard_admin"
             and operation.startswith(("UPDATE inventory.", "DELETE FROM inventory."))
         )
@@ -120,7 +126,12 @@ def test_container_network_volume_and_process(db_config: Config) -> None:
     assert not value["HostConfig"]["Privileged"]
     assert value["State"]["Health"]["Status"] == "healthy"
     assert any(
-        m["Type"] == "volume" and m["Destination"] == "/var/lib/postgresql" for m in value["Mounts"]
+        m["Type"] == "bind"
+        and m["Destination"] == "/var/lib/postgresql"
+        and m["RW"]
+        and m["Source"]
+        == str(db_config.mount_base / "storage" / db_config.project / "postgres-data")
+        for m in value["Mounts"]
     )
     actual = run(
         [*docker_command(), "exec", container_id(db_config), "cat", "/proc/1/status"]

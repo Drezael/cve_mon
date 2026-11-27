@@ -20,29 +20,27 @@ from tests.database.helpers import (
 pytestmark = pytest.mark.database
 
 
-def test_primary_group_membership_deferred_and_multiple(owner: Connection) -> None:
+def test_personal_memberships_are_multiple_and_legacy_primary_is_rejected(
+    owner: Connection,
+) -> None:
     target = server(owner)
-    one, two = (group(owner), group(owner))
+    one, two = group(owner), group(owner)
     owner.execute(
-        (
-            "INSERT INTO inventory.server_group_memberships(server_id,group_id) "
-            "VALUES (%s,%s),(%s,%s)"
-        ),
+        "INSERT INTO inventory.server_group_memberships(server_id,group_id) VALUES (%s,%s),(%s,%s)",
         (target, one, target, two),
     )
-    owner.execute(
-        ("UPDATE inventory.servers SET primary_group_id=%s,version=version+1 WHERE id=%s"),
-        (two, target),
-    )
     owner.execute("SET CONSTRAINTS ALL IMMEDIATE")
-    with pytest.raises(psycopg.errors.ForeignKeyViolation):
+    assert owner.execute(
+        "SELECT count(*) n FROM inventory.server_group_memberships WHERE server_id=%s", (target,)
+    ).fetchone() == {"n": 2}
+    with pytest.raises(psycopg.errors.CheckViolation, match="primary_group_retired"):
         owner.execute(
-            ("DELETE FROM inventory.server_group_memberships WHERE server_id=%s AND group_id=%s"),
-            (target, two),
+            "UPDATE inventory.servers SET primary_group_id=%s,version=version+1 WHERE id=%s",
+            (two, target),
         )
 
 
-def test_primary_removal_atomic_and_stale_version(owner: Connection) -> None:
+def test_personal_membership_removal_and_server_stale_version(owner: Connection) -> None:
     target = server(owner)
     grouping = group(owner)
     owner.execute(
@@ -50,11 +48,11 @@ def test_primary_removal_atomic_and_stale_version(owner: Connection) -> None:
         (target, grouping),
     )
     owner.execute(
-        "UPDATE inventory.servers SET primary_group_id=%s,version=2 WHERE id=%s", (grouping, target)
+        "UPDATE inventory.servers SET description='changed',version=2 WHERE id=%s", (target,)
     )
     owner.execute("DELETE FROM inventory.server_group_memberships WHERE server_id=%s", (target,))
     owner.execute(
-        "UPDATE inventory.servers SET primary_group_id=NULL,version=3 WHERE id=%s", (target,)
+        "UPDATE inventory.servers SET description='again',version=3 WHERE id=%s", (target,)
     )
     owner.execute("SET CONSTRAINTS ALL IMMEDIATE")
     with pytest.raises(psycopg.errors.SerializationFailure):
@@ -92,10 +90,6 @@ def test_sort_order_single_truth_and_deferred_swap(owner: Connection) -> None:
     owner.execute(
         ("UPDATE inventory.server_groups SET sort_order=%s,version=version+1 WHERE id=%s"),
         (first, two),
-    )
-    owner.execute(
-        "UPDATE inventory.servers SET primary_group_id=%s,version=version+1 WHERE id=%s",
-        (one, target),
     )
     owner.execute("SET CONSTRAINTS ALL IMMEDIATE")
 

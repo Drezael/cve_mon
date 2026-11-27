@@ -112,7 +112,12 @@ def test_master_and_subworkflows_are_published_and_private(platform: Config) -> 
         rows = s.execute(
             "SELECT id,active FROM public.workflow_entity WHERE id LIKE 'cve-control-%'"
         ).fetchall()
-        assert len(rows) == 10 and all(r["active"] for r in rows)
+        expected = {
+            json.loads(path.read_text())["id"]
+            for path in (platform.root / "workflows/n8n").glob("cve-control-*.json")
+        }
+        assert {r["id"] for r in rows} == expected
+        assert all(r["active"] for r in rows)
     eventually(
         platform,
         "SELECT EXISTS(SELECT 1 FROM automation.workflow_requests WHERE stage='status' AND "
@@ -740,7 +745,7 @@ async def test_smtp_settings_apply_through_real_n8n_without_restarting_container
             ).fetchone()
             assert applied and applied["state"] == "applied", applied
         profiles.append((user, host, username, password))
-    from scripts.infrastructure import envoy, mail
+    from scripts.infrastructure import mail
     from scripts.notifications.manage import directory as notification_directory
 
     relay = mail.container(platform)["Id"]
@@ -748,7 +753,7 @@ async def test_smtp_settings_apply_through_real_n8n_without_restarting_container
         (mail.directory(platform) / "state/smtp-profiles.json").read_text()
     )
     assert len(public_profiles) == 2
-    assert len({p["listen_port"] for p in public_profiles}) == 2
+    assert len({(p["host"], p["port"]) for p in public_profiles}) == 2
     assert len({p["envelope_sender"] for p in public_profiles}) == 2
     routes = json.loads((notification_directory(platform) / "smtp-delivery.json").read_text())
     for user, host, username, password in profiles:
@@ -782,10 +787,11 @@ async def test_smtp_settings_apply_through_real_n8n_without_restarting_container
                 "texthash:/run/postfix/sender-relays",
             ]
         ).stdout.strip()
-        assert saved_relay == "[cve-egress-proxy]:" + str(upstream["listen_port"])
+        assert saved_relay == "[" + upstream["host"] + "]:" + str(upstream["port"])
         assert password not in json.dumps(public_profiles) and password not in json.dumps(routes)
-    policy = json.loads((envoy.directory(platform) / "policy.json").read_text())
-    assert not policy["smtp"]["enabled"] and len(policy["smtp"]["routes"]) == 2
+    policy = json.loads((mail.directory(platform) / "state/policy.json").read_text())
+    assert policy["enabled"]
+    assert all(p["host"] in {host for _, host, _, _ in profiles} for p in public_profiles)
     # Both custom routes remain usable even though the central SMTP server is disabled.
     # RSET before DATA proves recipient admission without placing any message in the queue.
     from scripts.application.manage import identity as application_identity
@@ -836,14 +842,12 @@ def verify_personal_provider_delivery(config: Config, profiles: list[Any], direc
 
     from cve_common.smtp_settings import SMTPConfig
 
-    from scripts.infrastructure import envoy
     from scripts.infrastructure.manage import docker_command, run
     from scripts.smtp.manage import apply, reload_postfix
     from tests.infrastructure.envoy.conftest import PYTHON_IMAGE
 
     base = mail.directory(config)
     sinks: list[str] = []
-    addresses = []
 
     def control(sink: str, value: dict[str, Any] | None = None) -> dict[str, Any]:
         program = (
@@ -881,6 +885,7 @@ def verify_personal_provider_delivery(config: Config, profiles: list[Any], direc
                 config.root / "tests/infrastructure/envoy/fixtures/servers.py", files / "base.py"
             )
             sink = config.project + "-personal-sink-" + str(index)
+            sinks.append(sink)
             run(
                 [
                     *docker_command(),
@@ -888,8 +893,12 @@ def verify_personal_provider_delivery(config: Config, profiles: list[Any], direc
                     "-d",
                     "--name",
                     sink,
+                    "--label",
+                    "org.cve-monitoring.personal-smtp-test=" + config.project,
                     "--network",
-                    config.project + "_cve_egress_external",
+                    config.project + "_cve_outbound",
+                    "--network-alias",
+                    host,
                     "--user",
                     f"{os.getuid()}:{os.getgid()}",
                     "--cap-drop",
@@ -904,16 +913,6 @@ def verify_personal_provider_delivery(config: Config, profiles: list[Any], direc
                     "/fixture/smarthost.py",
                 ]
             )
-            sinks.append(sink)
-            info = envoy.inspect_container(sink)
-            address = info["NetworkSettings"]["Networks"][config.project + "_cve_egress_external"][
-                "IPAddress"
-            ]
-            addresses.append(address)
-            envoy.namespace_command(
-                int(info["State"]["Pid"]),
-                ["ip", "address", "add", f"93.184.216.{34 + index}/32", "dev", "lo"],
-            )
             for _ in range(30):
                 ready = subprocess.run(
                     [*docker_command(), "exec", sink, "test", "-f", "/tmp/fixture-ready"],
@@ -925,25 +924,6 @@ def verify_personal_provider_delivery(config: Config, profiles: list[Any], direc
                 time.sleep(0.2)
             else:
                 raise AssertionError("private SMTP sink did not become ready")
-        records = {
-            host: ["A", f"93.184.216.{34 + index}"]
-            for index, (_user, host, _username, _password) in enumerate(profiles)
-        }
-        control(sinks[0], {"records": records})
-        _, pid = envoy.netns(config)
-        for index, address in enumerate(addresses):
-            envoy.namespace_command(
-                pid, ["ip", "route", "add", f"93.184.216.{34 + index}/32", "via", address]
-            )
-        proxy = envoy.directory(config) / "policy.json"
-        policy = json.loads(proxy.read_text())
-        policy["dns"] = {
-            "address": addresses[0],
-            "port": 53,
-            "refresh_seconds": 1,
-            "timeout_seconds": 1,
-        }
-        proxy.write_text(json.dumps(policy))
         public = json.loads((base / "state/smtp-profiles.json").read_text())
         credentials = json.loads((base / "secrets/smtp-profiles.json").read_text())
         projected = [{**p, "credentials": credentials[p["envelope_sender"]]} for p in public]
@@ -994,5 +974,7 @@ def verify_personal_provider_delivery(config: Config, profiles: list[Any], direc
                 and result["counters"].get("auth_before_tls", 0) == 0
             )
     finally:
-        for sink in sinks:
-            subprocess.run([*docker_command(), "rm", "-f", sink], check=False, capture_output=True)
+        from tests.resources import remove
+
+        for sink in reversed(sinks):
+            remove("container", sink, "org.cve-monitoring.personal-smtp-test", config.project)

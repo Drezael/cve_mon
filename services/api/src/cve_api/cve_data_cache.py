@@ -6,7 +6,7 @@ from copy import deepcopy
 from time import monotonic
 from typing import Any
 
-from cve_findings.repository import one
+from cve_common.database.queries import one
 from sqlalchemy.ext.asyncio import AsyncSession
 
 

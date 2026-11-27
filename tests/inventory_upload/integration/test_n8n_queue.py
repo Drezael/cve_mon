@@ -1,5 +1,6 @@
 """The dashboard only queues; fenced n8n FIFO decisions start the real import later."""
 
+from collections.abc import Iterator
 from typing import Any, cast
 from uuid import uuid4
 
@@ -9,10 +10,18 @@ from cve_importer.contracts import Configuration
 
 from scripts.cve_importer.manage import directory
 from scripts.database import manage as db
+from tests.authentication.integration.conftest import Lab
 from tests.authorization.integration.conftest import actor
 from tests.inventory_upload.integration.conftest import Browser
 
 pytestmark = pytest.mark.inventory_upload
+
+
+@pytest.fixture(scope="module")
+def upload_lab() -> Iterator[Lab]:
+    from tests.inventory_upload.integration.conftest import isolated_upload_lab
+
+    yield from isolated_upload_lab()
 
 
 async def test_refresh_waits_for_n8n_and_has_one_fenced_receipt(browser: Browser) -> None:
@@ -36,14 +45,35 @@ async def test_refresh_waits_for_n8n_and_has_one_fenced_receipt(browser: Browser
             "SELECT * FROM automation.n8n_queue WHERE id=%s", (first.json()["jobs"][0]["id"],)
         ).fetchone()
         assert item["state"] == "pending" and item["kind"] == "command"
+    with browser.lab.owner() as s:
+        queued = s.execute(
+            "SELECT count(*) n FROM automation.n8n_queue WHERE state='pending'"
+        ).fetchone()["n"]
+        own = s.execute(
+            "SELECT count(*) n FROM automation.n8n_queue WHERE correlation_id=%s "
+            "AND kind='command' AND message_type='cve.refresh'",
+            (key,),
+        ).fetchone()["n"]
+        assert own == 1
     status = (await browser.client.get("/api/v1/dashboard/cve-data")).json()
     assert (
-        status["queue"]["pending"] == 1 and status["queue"]["position"] == 1 and status["updating"]
+        status["queue"]["pending"] >= 1 and status["queue"]["position"] >= 1 and status["updating"]
     )
-    with db.connect(config, "workflow_control") as s:
-        item = cast(
-            Any, s.execute("SELECT automation.n8n_claim('first','cve-control-queue') v").fetchone()
-        )["v"]
+    for _ in range(queued + 1):
+        with db.connect(config, "workflow_control") as s:
+            item = cast(
+                Any,
+                s.execute("SELECT automation.n8n_claim('first','cve-control-queue') v").fetchone(),
+            )["v"]
+            assert item["kind"] != "empty"
+            if item["id"] == first.json()["jobs"][0]["id"]:
+                break
+            s.execute(
+                "SELECT automation.n8n_decide(%s,%s,%s,'first','cve-control-queue')",
+                (item["id"], item["lease_token"], item["kind"]),
+            )
+    else:
+        raise AssertionError("Refresh command did not reach the FIFO head")
     with db.connect(config, "workflow_control") as s:
         assert (
             cast(

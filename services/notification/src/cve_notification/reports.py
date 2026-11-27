@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+from pydantic import ValidationError
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -120,7 +121,20 @@ async def maintain(s: AsyncSession, correlation: UUID) -> int:
             "ences p ON p.user_id=u.id WHERE u.id=:id",
             id=report["user_id"],
         )
-        prefs = Preferences.model_validate(user["config"] or {}) if user else Preferences()
+        try:
+            prefs = Preferences.model_validate(user["config"] or {}) if user else Preferences()
+        except ValidationError:
+            # This report has no valid recipient policy. Quarantine the report,
+            # preserving its inputs; unrelated reports must still make progress.
+            await s.execute(
+                text(
+                    "UPDATE automation.mail_reports SET state='failed',"
+                    "error_code='invalid_recipient_preferences',completed_at=clock_timestamp() "
+                    "WHERE id=:id"
+                ),
+                {"id": report["id"]},
+            )
+            continue
         if (
             reason
             or not user
@@ -185,6 +199,17 @@ def threat(finding: dict[str, Any]) -> str:
     }.get(finding["current_priority"], "Unbekannt")
 
 
+def affected_label(finding: dict[str, Any]) -> str:
+    label = {
+        "affected": "Betroffen",
+        "potentially_affected": "Möglicherweise betroffen",
+        "unknown": "Betroffenheit unbekannt",
+        "not_affected": "Nicht betroffen",
+        "not_applicable": "Nicht anwendbar",
+    }.get(finding.get("latest_matching_status", "unknown"), "Betroffenheit unbekannt")
+    return label + (" (veraltetes Ergebnis)" if finding.get("is_stale", True) else "")
+
+
 async def content(
     s: AsyncSession, notification: UUID, user: UUID, prefs: Preferences
 ) -> tuple[list[tuple[str, str]], str, bool] | None:
@@ -209,7 +234,7 @@ LEFT JOIN inventory.server_current_snapshots c ON c.server_id=srv.id
 LEFT JOIN inventory.snapshots snap ON snap.id=c.snapshot_id
 WHERE r.report_id=:report AND automation.report_server_access(:user,srv.id)
 AND (:origin<>'scan' OR srv.created_by=:user)
-ORDER BY srv.display_name,srv.id
+ORDER BY srv.display_name,srv.id LIMIT 1001
 """,
         report=report["id"],
         user=user,
@@ -217,19 +242,26 @@ ORDER BY srv.display_name,srv.id
     )
     if report["origin"] == "scan" and not servers:
         return [], "recipient_not_authorized", False
+    if len(servers) > 1000:
+        return [], "report_size_limit", False
+    all_findings = await rows(
+        s,
+        "SELECT f.* FROM findings.current_findings f WHERE f.server_id=ANY(:servers) AND "
+        "f.status IN ('open','in_progress') ORDER BY f.server_id,CASE f.current_priority "
+        "WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 "
+        "ELSE 4 END,f.cve_id LIMIT 10001",
+        servers=[srv["id"] for srv in servers],
+    )
+    if len(all_findings) > 10000:
+        return [], "report_size_limit", False
+    grouped: dict[Any, list[dict[str, Any]]] = {}
+    for finding in all_findings:
+        grouped.setdefault(finding["server_id"], []).append(finding)
     lines: list[tuple[str, str]] = []
+    text_bytes = 0
     for server in servers:
-        # Current ACLs are checked again before rendering any finding details.
-        findings = await rows(
-            s,
-            "SELECT f.* FROM findings.current_findings f WHERE f.server_id=:server AND"
-            " f.status IN ('open','in_progress') ORDER BY CASE f.current_priority WHEN"
-            " 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THE"
-            "N 3 ELSE 4 END,f.cve_id LIMIT 10001",
-            server=server["id"],
-        )
-        if len(findings) > 10000:
-            return [], "report_size_limit", False
+        first_line = len(lines)
+        findings = grouped.get(server["id"], [])
         lines.append(
             (
                 "unrated",
@@ -247,7 +279,13 @@ ORDER BY srv.display_name,srv.id
                 )
             )
         elif not findings:
-            lines.append(("unrated", "Keine aktuellen Findings vorhanden."))
+            lines.append(
+                (
+                    "unrated",
+                    "Keine offenen Findings vorhanden; dies ist kein Nachweis "
+                    "einer vollständigen Analyse oder Schwachstellenfreiheit.",
+                )
+            )
         for f in findings:
             basis = f.get("priority_basis") or {}
             cvss = basis.get("cvss") or {}
@@ -260,11 +298,15 @@ ORDER BY srv.display_name,srv.id
             lines.append(
                 (
                     "unrated",
-                    f"{f['cve_id']} | Betroffen | Bedrohung: {threat(f)} | "
+                    f"{f['cve_id']} | {affected_label(f)} | Bearbeitung: {f['status']} | "
+                    f"Bedrohung: {threat(f)} | "
                     f"CVSS: {cvss.get('base_score', cvss.get('calculated_score', 'Unbekannt'))} | "
                     f"EPSS: {probability}",
                 )
             )
+        text_bytes += sum(len(line.encode()) for _, line in lines[first_line:])
+        if text_bytes > 4 * 1024 * 1024:
+            return [], "report_size_limit", False
     if not servers:
         lines.append(("unrated", "Derzeit sind keine verwalteten Server vorhanden."))
     subject = (

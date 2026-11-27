@@ -6,10 +6,12 @@ from cve_common.config.validation import load_settings
 from cve_common.http.errors import install_handlers
 from cve_common.http.middleware import TechnicalMiddleware
 from cve_common.lifecycle.resources import Resources
+from cve_common.release import VERSION
 from fastapi import FastAPI
 
 from cve_api.access.router import router as access_router
 from cve_api.ansible.router import router as ansible_router
+from cve_api.ansible.vault import router as vault_router
 from cve_api.auth.handlers import install_auth_handlers
 from cve_api.auth.middleware import AuthBoundary
 from cve_api.auth.router import router as auth_router
@@ -50,7 +52,7 @@ def create_app(
     settings = settings or load_settings(ApiSettings)
     app = FastAPI(
         title="CVE technical API",
-        version="0.23.0",
+        version=VERSION,
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
@@ -82,6 +84,7 @@ def create_app(
         app.include_router(roles_router)
         app.include_router(access_router)
         app.include_router(ansible_router)
+        app.include_router(vault_router)
         app.include_router(server_deletion)
         app.include_router(server_scan_router)
         app.include_router(server_admin_router)

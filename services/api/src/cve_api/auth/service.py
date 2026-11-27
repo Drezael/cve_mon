@@ -1,6 +1,7 @@
 """Transactional authentication state machine; secrets never leave authorized enrollment."""
 
 import asyncio
+import base64
 import hmac
 import logging
 import unicodedata
@@ -9,6 +10,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid4
 
+from cve_common.concurrency import BoundedThreads
 from cve_common.config.secrets import read_secret
 from cve_common.database.engine import Database
 from sqlalchemy.exc import SQLAlchemyError
@@ -36,6 +38,7 @@ class AuthService:
             Database(settings.administration_database) if settings.administration_database else None
         )
         self.passwords = Passwords(settings)
+        self.vault_work = BoundedThreads(settings.argon_concurrency)
         self.keyring = Keyring(settings.keyring_file)
         self.gateway = read_secret(settings.gateway_file).get_secret_value()
         if len(self.gateway) < 43:
@@ -99,7 +102,12 @@ class AuthService:
     async def user(
         self, session: AsyncSession, uid: UUID, *, restricted: bool = False
     ) -> dict[str, Any]:
-        user = await one(session, "SELECT * FROM security.users WHERE id=:id FOR UPDATE", id=uid)
+        user = await one(
+            session,
+            "SELECT * FROM security.users WHERE id=:id"
+            + (" FOR UPDATE" if session.info.get("security_mutation", True) else ""),
+            id=uid,
+        )
         if user is None:
             raise AuthError()
         credential = await one(
@@ -140,7 +148,12 @@ class AuthService:
         if lookup is None:
             raise AuthError()
         user = await self.user(session, lookup["user_id"], restricted=restricted)
-        row = await one(session, "SELECT * FROM security.sessions WHERE id=:id FOR UPDATE", id=uid)
+        row = await one(
+            session,
+            "SELECT * FROM security.sessions WHERE id=:id"
+            + (" FOR UPDATE" if session.info.get("security_mutation", True) else ""),
+            id=uid,
+        )
         now = await self.now(session)
         if (
             row is None
@@ -176,17 +189,22 @@ class AuthService:
         idle = self.settings.admin_idle if user["admin"] else self.settings.user_idle
         if row["auth_state"] != "authenticated":
             idle = self.settings.challenge_seconds
-        await execute(
-            session,
-            (
-                "UPDATE security.sessions SET last_seen_at=:now,idle_exp"
-                "ires_at=least(expires_at,:now+make_interval(secs=>:idle"
-                ")) WHERE id=:id"
-            ),
-            now=now,
-            idle=idle,
-            id=uid,
-        )
+        # The shared security gate fences revocation throughout a read transaction.
+        # Avoid retaining a session write lock across every dashboard read from each tab.
+        if session.info.get("security_mutation", True) or (
+            now - row["last_seen_at"]
+        ).total_seconds() >= min(30, idle / 4):
+            await execute(
+                session,
+                (
+                    "UPDATE security.sessions SET last_seen_at=:now,idle_exp"
+                    "ires_at=least(expires_at,:now+make_interval(secs=>:idle"
+                    ")) WHERE id=:id"
+                ),
+                now=now,
+                idle=idle,
+                id=uid,
+            )
         return {**row, "user": user, "method": method, "now": now}
 
     async def create(
@@ -200,7 +218,7 @@ class AuthService:
         reauth: bool = False,
     ) -> dict[str, Any]:
         sid, token, verifier = new_token()
-        csrf = random_value()
+        csrf = self.session_csrf(token)
         full = state == "authenticated"
         absolute = (
             (self.settings.admin_absolute if user["admin"] else self.settings.user_absolute)
@@ -255,13 +273,18 @@ class AuthService:
             )
         return {"cookie": token, "max_age": absolute, "state": state, "csrf_token": csrf}
 
+    def session_csrf(self, cookie: str) -> str:
+        """Stable per opaque session, independently keyed and rotated with its cookie."""
+        value = hmac.digest(self.gateway.encode(), b"cve:csrf:v1:" + cookie.encode(), "sha256")
+        return base64.urlsafe_b64encode(value).decode().rstrip("=")
+
     async def csrf(self, cookie: str | None, ip: str) -> dict[str, Any]:
         await self.limits.admit(ip)
         if cookie:
             try:
                 async with transaction(self.database) as session:
                     current = await self.resolve(session, cookie)
-                    csrf = random_value()
+                    csrf = self.session_csrf(cookie)
                     await execute(
                         session,
                         "UPDATE security.sessions SET csrf_verifier=:v WHERE id=:id",

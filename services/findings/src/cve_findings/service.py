@@ -1,5 +1,6 @@
 """Idempotent event receipts, bounded reconciliation and durable deadline maintenance."""
 
+from datetime import timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -240,8 +241,11 @@ class Service:
                 ),
                 id=value["id"],
             )
-            assert f is not None
+            if f is None or f["status"] not in {"open", "in_progress"}:
+                continue
             now = (await s.execute(text("SELECT clock_timestamp()"))).scalar_one()
+            if f["due_at"] > now + timedelta(hours=warning):
+                continue
             kind = "overdue" if f["due_at"] < now else "approaching"
             if kind == "approaching" and not policy.deadline_warning_hours:
                 continue

@@ -3,7 +3,7 @@
 from typing import Any
 from uuid import UUID
 
-from cve_findings.repository import rows
+from cve_common.database.queries import rows
 from sqlalchemy.ext.asyncio import AsyncSession
 
 

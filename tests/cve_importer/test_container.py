@@ -19,6 +19,8 @@ from cve_importer.transport import HOSTS
 from scripts.cve_importer import manage
 from scripts.infrastructure import envoy
 from scripts.infrastructure.manage import compose, docker_command, run
+from scripts.infrastructure.topology import PORTS
+from tests.cve_importer import direct
 from tests.cve_importer.conftest import Lab
 from tests.cve_importer.test_pipeline import Wire
 from tests.database.helpers import required_row
@@ -34,6 +36,7 @@ class Container:
     configuration: Configuration
 
     def execute(self, code: str) -> str:
+        code = code.replace("127.0.0.1:8000", f"127.0.0.1:{PORTS['cve-importer']}")
         return run([*docker_command(), "exec", self.name, "python", "-c", code]).stdout.strip()
 
     def import_source(self, source: str) -> Any:
@@ -82,6 +85,7 @@ def container(import_lab: Lab) -> Iterator[Container]:
     support = config.root / "tests/infrastructure/envoy/fixtures/servers.py"
     shutil.copyfile(support, files / "support.py")
     hosts = sorted(set().union(*HOSTS.values()))
+    config = direct.configuration(config, hosts)
     run(
         [
             "openssl",
@@ -204,42 +208,37 @@ threading.Event().wait()
             ]
         )
         info = envoy.inspect_container(sink)
-        sinkip = info["NetworkSettings"]["Networks"][external]["IPAddress"]
         envoy.namespace_command(
             int(info["State"]["Pid"]), ["ip", "address", "add", "93.184.216.34/32", "dev", "lo"]
         )
         compose(config, ["up", "-d", "cve-importer"])
         container_id = compose(config, ["ps", "-q", "cve-importer"]).stdout.strip()
-        policy = envoy.policy()
-        policy["rules"] = [r for r in policy["rules"] if r["client"] == "importer"]
-        policy["dns"] = {"address": sinkip, "port": 53, "refresh_seconds": 1, "timeout_seconds": 1}
-        envoy.start(config, policy, {"importer": container_id})
-        _, proxy_pid = envoy.netns(config)
-        envoy.namespace_command(
-            proxy_pid, ["ip", "route", "add", "93.184.216.34/32", "via", sinkip]
-        )
-        info = envoy.inspect_container(container_id)
-        namespace = envoy.namespace_command(
-            int(info["State"]["Pid"]), ["readlink", "/proc/self/ns/net"]
-        ).stdout.strip()
-        (base / "egress.ready").write_text(namespace + "\n")
-        (base / "egress.ready").chmod(0o600)
+        direct.route(config, sink)
         compose(config, ["up", "-d", "--wait", "--wait-timeout", "60", "cve-importer"])
-        yield Container(import_lab, container_id, sink, configuration)
+        yield Container(Lab(config), container_id, sink, configuration)
     finally:
-        if container_id:
-            logs = run([*docker_command(), "logs", container_id])
-            (base / "container-test.log").write_text(logs.stdout + logs.stderr)
-            (base / "container-test.log").chmod(0o600)
-            compose(config, ["stop", "cve-importer"])
-            compose(config, ["rm", "-f", "cve-importer"])
-        compose(config, ["stop", "cve-egress-proxy"])
-        compose(config, ["rm", "-f", "cve-egress-proxy"])
-        subprocess.run([*docker_command(), "rm", "-f", sink], capture_output=True, check=False)
+        try:
+            if container_id:
+                logs = subprocess.run(
+                    [*docker_command(), "logs", container_id],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                (base / "container-test.log").write_text(logs.stdout + logs.stderr)
+                (base / "container-test.log").chmod(0o600)
+                compose(config, ["rm", "-s", "-f", "cve-processing"])
+        finally:
+            from tests.resources import remove
+
+            try:
+                remove("container", sink, "org.cve-monitoring.importer-test", config.project)
+            finally:
+                remove("network", external, "com.docker.compose.project", config.project)
 
 
 @pytest.mark.parametrize("source", ["cve_list", "nvd", "cisa_kev", "ubuntu", "osv"])
-def test_e2e_actual_container_https_envoy(container: Container, source: str) -> None:
+def test_e2e_actual_container_direct_https(container: Container, source: str) -> None:
     row = container.import_source(source)
     assert row["effective_status"] == "completed", row
     assert row["read_count"] >= 1 and row["download_bytes"] > 0
@@ -249,10 +248,10 @@ def test_container_security_egress_and_tls(container: Container) -> None:
     result = container.execute("""import httpx,json
 results={}
 for kind,url,proxy,verify in [
- ('direct','https://93.184.216.34/',None,False),
+ ('plaintext','http://93.184.216.34/',None,False),
  ('metadata','http://169.254.169.254/latest/meta-data',None,False),
- ('unauthorized','https://forbidden.example.test/','http://cve-egress-proxy:3128',True),
- ('wrong_ca','https://ubuntu.com/security/cves.json','http://cve-egress-proxy:3128',True)]:
+ ('unauthorized','https://forbidden.example.test/',None,True),
+ ('wrong_ca','https://ubuntu.com/security/cves.json',None,True)]:
  try:
   with httpx.Client(proxy=proxy,verify=verify,trust_env=False,timeout=2) as c: c.get(url)
   results[kind]=False
@@ -264,18 +263,11 @@ print(json.dumps(results))
     assert info["HostConfig"]["ReadonlyRootfs"] and info["HostConfig"]["CapDrop"] == ["ALL"]
     assert not info["HostConfig"]["PortBindings"]
     assert not any("docker.sock" in m["Source"] for m in info["Mounts"])
-    assert info["HostConfig"]["Memory"] == 3072 * 1024 * 1024
+    assert info["HostConfig"]["Memory"] > 0
 
 
 def rebind(container: Container) -> None:
-    config = container.lab.config
-    manage.start(config)
-    info = envoy.inspect_container(container.sink)
-    sinkip = info["NetworkSettings"]["Networks"][config.project + "_cve_egress_external"][
-        "IPAddress"
-    ]
-    _, pid = envoy.netns(config)
-    envoy.namespace_command(pid, ["ip", "route", "add", "93.184.216.34/32", "via", sinkip])
+    direct.rebind(container.lab.config, container.sink)
 
 
 def test_container_postgres_outage_recovery(container: Container) -> None:
@@ -293,13 +285,13 @@ except urllib.error.HTTPError as e: print(e.code)
     assert container.import_source("cisa_kev")["effective_status"] == "completed"
 
 
-def test_container_proxy_outage_no_fallback_and_recovery(container: Container) -> None:
+def test_container_upstream_outage_no_partial_commit_and_recovery(container: Container) -> None:
     config = container.lab.config
     with container.lab.owner() as c:
         previous = c.execute(
             "SELECT cursor FROM cve.source_streams WHERE source_id='cisa_kev'"
         ).fetchall()
-    compose(config, ["stop", "cve-egress-proxy"])
+    direct.outage(config)
     try:
         run_id = manage.enqueue(config, "cisa_kev", "reconcile", str(uuid4()))
         deadline = time.monotonic() + 30

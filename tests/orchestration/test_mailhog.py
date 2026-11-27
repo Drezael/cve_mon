@@ -3,10 +3,12 @@
 import asyncio
 import json
 from collections.abc import Iterator
+from dataclasses import replace
 from uuid import uuid4
 
 import httpx
 import pytest
+import yaml
 
 from scripts.infrastructure.manage import Config, compose, docker_command, run
 from scripts.smtp.manage import process as configure_smtp
@@ -16,7 +18,7 @@ from tests.authorization.integration.conftest import actor
 from tests.inventory_upload.integration.conftest import Browser, isolated_upload_lab
 from tests.orchestration.test_runtime import browser, eventually, platform
 
-__all__ = ["browser", "platform", "upload_lab"]
+__all__ = ["browser", "mailhog", "platform", "upload_lab"]
 pytestmark = pytest.mark.orchestration
 
 
@@ -33,9 +35,41 @@ def upload_lab() -> Iterator[Lab]:
     )
 
 
+@pytest.fixture
+def mailhog(platform: Config) -> Iterator[Config]:
+    assert platform.project.startswith("cve-db-test-")
+    model = yaml.safe_load((platform.root / "infrastructure/compose/mail-test.yml").read_text())
+    ports = model["services"]["cve-mailhog"]["ports"]
+    assert len(ports) == 1 and ports[0]["target"] == 8025
+    assert ports[0]["host_ip"] == "127.0.0.1"
+    # Keep the optional stock definition, with a private port unique to this test lab.
+    ports[0]["published"] = int(platform.values["MAILHOG_HTTP_PORT"])
+    overlay = platform.directory / "mailhog-test.compose.json"
+    overlay.write_text(json.dumps(model))
+    platform = replace(platform, compose_overrides=(*platform.compose_overrides, overlay))
+    try:
+        yield platform
+    finally:
+        compose(platform, ["rm", "-s", "-f", "cve-mailhog"])
+        remaining = run(
+            [
+                *docker_command(),
+                "ps",
+                "-a",
+                "-q",
+                "--filter",
+                "label=com.docker.compose.project=" + platform.project,
+                "--filter",
+                "label=com.docker.compose.service=cve-mailhog",
+            ]
+        ).stdout.strip()
+        assert not remaining, "Own optional MailHog capture was not removed"
+
+
 async def test_local_mailhog_compose_bootstrap_and_both_delivery_paths(
-    platform: Config, browser: Browser
+    mailhog: Config, browser: Browser
 ) -> None:
+    platform = mailhog
     await asyncio.to_thread(
         compose,
         platform,

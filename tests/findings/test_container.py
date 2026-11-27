@@ -11,6 +11,7 @@ import pytest
 from scripts.cve_findings import manage
 from scripts.infrastructure import envoy
 from scripts.infrastructure.manage import Config, compose, docker_command, run
+from scripts.infrastructure.topology import PORTS
 from tests.authentication.integration.conftest import Lab
 
 pytestmark = pytest.mark.findings
@@ -29,6 +30,7 @@ def findings_container(upload_lab: Lab) -> Iterator[tuple[Config, str]]:
 
 
 def execute(identity: str, code: str) -> dict[str, Any]:
+    code = code.replace("127.0.0.1:8000", f"127.0.0.1:{PORTS['cve-findings']}")
     value = json.loads(run([*docker_command(), "exec", identity, "python", "-c", code]).stdout)
     assert isinstance(value, dict)
     return value
@@ -48,19 +50,23 @@ def test_e2e_container_health_and_metrics(findings_container: tuple[Config, str]
     assert "queued" in data["metrics"]
 
 
-def test_network_no_internet_no_peer_access(findings_container: tuple[Config, str]) -> None:
+def test_network_allows_https_and_blocks_private_peers(
+    findings_container: tuple[Config, str],
+) -> None:
     cfg, identity = findings_container
     api = envoy.inspect_container(compose(cfg, ["ps", "-q", "cve-api"]).stdout.strip())
     networks = api["NetworkSettings"]["Networks"]
     peer = next(iter(networks.values()))["IPAddress"]
     code = """import socket,json
 out={}
-for host,port in [("93.184.216.34",443),("169.254.169.254",80),("172.17.0.1",22),("PEER",8000)]:
+for host,port in [("1.1.1.1",443),("169.254.169.254",80),("172.17.0.1",22),("PEER",8000)]:
  try:
   s=socket.create_connection((host,port),timeout=1);s.close();out[host]=True
  except OSError:out[host]=False
 print(json.dumps(out))""".replace("PEER", peer)
-    assert not any(execute(identity, code).values())
+    result = execute(identity, code)
+    assert result.pop("1.1.1.1") is True
+    assert not any(result.values())
 
 
 def test_container_security_configuration(findings_container: tuple[Config, str]) -> None:

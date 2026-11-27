@@ -22,6 +22,20 @@
       register: collected_packages
       failed_when: false
       no_log: true
+    - name: Read native package and source identities
+      ansible.builtin.command:
+        argv: >-
+          {{ ['dpkg-query', '-W',
+          '-f=${Package}\t${Version}\t${Architecture}\t${db:Status-Status}'
+          ~ '\t${source:Package}\t${source:Version}\n']
+          if collected_system.ansible_facts.ansible_pkg_mgr in ['apt', 'dpkg']
+          else ['rpm', '-qa', '--qf',
+          '%{NAME}\t%{EPOCH}\t%{VERSION}\t%{RELEASE}\t%{ARCH}'
+          ~ '\t%{SOURCERPM}\n'] }}
+      register: collected_package_sources
+      changed_when: false
+      failed_when: false
+      no_log: true
     - name: Read services
       ansible.builtin.service_facts:
       register: collected_services
@@ -52,7 +66,8 @@
         content: >-
           {{ {"host": (collected_identity.stdout | from_json).host,
           "ansible_version": ansible_version.full, "system": collected_system,
-          "packages": collected_packages, "services": collected_services,
+          "packages": collected_packages, "package_fallback": collected_package_sources,
+          "services": collected_services,
           "docker": (collected_docker.stdout | from_json).docker,
           "container_software": (collected_docker.stdout | from_json).container_software}
           | to_json }}

@@ -1,9 +1,62 @@
 # Automatische Servererfassung
 
 Die Serververwaltung bietet eine optionale SSH-Verbindung pro Server. Nach dem
-Anlegen werden Host/IP, Port, Benutzer und Schlüssel oder Passwort hinterlegt.
+Anlegen richtet der Benutzer zunächst unter **Einstellungen → Mein Ansible-Vault**
+sein persönliches Vault-Passwort ein. Erst danach können Host/IP, Port, Benutzer
+und Schlüssel oder Passwort hinterlegt werden.
 Eine Schlüssel-Passphrase ist optional; sudo und Root-Anmeldung sind ausgeschlossen. Geheimnisse
 werden nicht zurückgegeben; leere Eingaben behalten gespeicherte Werte bei.
+
+## Persönlicher Vault
+
+Jeder Benutzer besitzt einen eigenen zufälligen 256-Bit-Vault-Schlüssel. Ein aus
+dem Vault-Passwort mit Argon2id abgeleiteter Schlüssel schützt diesen Schlüssel;
+das Passwort selbst wird nicht gespeichert. Das Passwort muss 15 bis 256 Zeichen
+enthalten und zur Bestätigung zweimal eingegeben werden. Einrichtung und Änderung
+erfordern die bestehende erneute Kontoanmeldung, einschließlich MFA, falls aktiviert.
+Für einen Passwortwechsel ist zusätzlich das bisherige Vault-Passwort notwendig.
+Dabei bleiben bereits hinterlegte SSH-Zugangsdaten und Zeitpläne verwendbar.
+Vergessene Vault-Passwörter können weder angezeigt noch heruntergeladen werden.
+
+SSH-Passwörter, private Schlüssel und Schlüssel-Passphrases werden einzeln mit
+AES-256-GCM verschlüsselt und an Benutzer, Server und Feld gebunden. Nur der
+Profileigentümer darf diese Zugangsdaten ersetzen; auch Administratoren erhalten
+keinen Lese- oder Downloadzugriff. Die API liefert ausschließlich Verbindungsdaten,
+Konfigurationsstatus und Laufmetadaten. Profiländerungen übernehmen unveränderte
+Geheimnisfelder verschlüsselt, ohne sie zu entschlüsseln. Ein neuer privater
+Schlüssel ohne neue Passphrase entfernt die bisherige Passphrase.
+
+Damit geplante Abfragen ohne erneute Eingabe möglich bleiben, wird der persönliche
+Vault-Schlüssel zusätzlich mit dem separaten SSH-Dienstschlüssel verschlüsselt.
+Der Executor entschlüsselt die benötigten Zugangsdaten erst während eines Laufs
+und übergibt sie über eine private Prozess-Pipe an den festen Ansible-Runner.
+Hostkey-Abfragen benötigen keine Entschlüsselung der SSH-Zugangsdaten.
+Es gibt keine Klartext-`plan.json`, keine Übergabe als Kommandozeilenargument und
+keine Übergabe der Geheimnisse an n8n oder die Jobqueue. Von Ansible benötigte
+temporäre Schlüssel-/Inventardateien liegen ausschließlich im privaten
+tmpfs-Arbeitsverzeichnis; dieses wird nach Erfolg, Fehler oder Abbruch entfernt.
+Core-Dumps sind für Executor und Runner deaktiviert.
+Private Schlüssel und Passphrases werden vor `ssh-add` lokal geprüft; falsche
+Passphrases beenden den Lauf mit `ssh_credentials_invalid`, statt wiederholt
+Passworteingaben anzufordern. Für passphrasegeschützte OpenSSH-Schlüssel ist die
+optionale `bcrypt`-Unterstützung von `cryptography` in den gesperrten
+Laufzeitabhängigkeiten enthalten; siehe [Schlüsselimport](https://cryptography.io/en/latest/hazmat/primitives/asymmetric/serialization/).
+
+Diese Absicherung verhindert das Auslesen über die Anwendung. Ein Administrator
+mit Kontrolle über Host, Dienstschlüssel und laufende Prozesse kann technisch auf
+Laufzeitgeheimnisse zugreifen. Auch unverschlüsselter Swap und Host-Speicherabbilder
+liegen außerhalb dieser Anwendungsgrenze. Datenbank-Backups und die getrennten
+Dienstschlüssel müssen deshalb weiterhin geschützt werden. Der Vault betrifft die
+verwaltete Ansible-Anbindung; persönliche SMTP-Einstellungen verwenden weiterhin
+ihre eigene Verschlüsselung.
+
+Mit Migration `00075_personal_ansible_vault` werden bisherige Ansible-Profile
+deaktiviert und ihre alten Läufe durch eine neue Profilversion ungültig. Bisherige
+verschlüsselte Zugangsdaten bleiben bis zur expliziten Neukonfiguration erhalten,
+werden aber nicht mehr ausgeführt oder automatisch übernommen. Jeder Eigentümer
+richtet seinen Vault ein, hinterlegt die Zugangsdaten pro Server erneut und aktiviert
+anschließend gegebenenfalls den Zeitplan. Beim Speichern ersetzen die neuen
+Vault-Credentials die alten verschlüsselten Daten.
 
 Vor dem ersten Login wird der öffentliche SSH-Hostkey ohne Anmeldung ausgelesen.
 Der Benutzer vergleicht ihn mit dem Zielsystem und bestätigt ihn ausdrücklich.

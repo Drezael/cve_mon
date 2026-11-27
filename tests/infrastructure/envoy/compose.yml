@@ -1,0 +1,27 @@
+# Isolated compatibility laboratory for the Envoy policy generator.
+# The application deployment uses direct HTTPS; this file is never loaded by cve_mon.
+services:
+  cve-egress-proxy:
+    image: "envoyproxy/envoy:v1.40.2@sha256:\
+      8de97e654644827d62afdbf7e1d3dc9fee01a8690d410dd1c63a30dc6b6cecbb"
+    user: '65532:65532'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    labels:
+      org.cve-monitoring.project: ${COMPOSE_PROJECT_NAME}
+    entrypoint: [/usr/local/bin/envoy]
+    command: [-c, /etc/cve-envoy/bootstrap.yaml, --log-level, info, --concurrency, '2']
+    volumes:
+      - ${SECRETS_BASE}/envoy/${COMPOSE_PROJECT_NAME}:/etc/cve-envoy:ro
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m,mode=1777
+    networks: [cve_egress_internal, cve_egress_external]
+    mem_limit: 256m
+    pids_limit: 64
+    cpus: 1
+networks:
+  cve_egress_internal:
+    internal: true
+  cve_egress_external:
+    internal: false

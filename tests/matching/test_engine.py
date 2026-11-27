@@ -8,7 +8,7 @@ from cve_matcher.cpe import attribute, configuration
 from cve_matcher.engine import cna, component_keys, components, evaluate, source_keys, ubuntu
 from cve_matcher.ranges import osv, osv_range
 
-pytestmark = pytest.mark.matching
+pytestmark = [pytest.mark.matching, pytest.mark.domain]
 CPE = "cpe:2.3:a:vendor:product:1.0.0:*:*:*:*:*:*:*"
 
 
@@ -80,12 +80,37 @@ def test_osv_end_semantics(op: str, version: str, expected: bool | None) -> None
     ("kind", "ecosystem", "reason"),
     [
         ("GIT", "npm", "git_graph_unavailable"),
-        ("ECOSYSTEM", "PyPI", "unsupported_comparator"),
+        ("ECOSYSTEM", "Maven", "unsupported_comparator"),
         ("NEW", "npm", "unsupported_comparator"),
     ],
 )
 def test_osv_unknown(kind: str, ecosystem: str, reason: str) -> None:
     assert osv_range("1.0.0", {"type": kind}, ecosystem) == (None, reason)
+
+
+def test_pypi_name_normalization_and_pep440_ranges_keep_global_negative_conservative() -> None:
+    affected = {
+        "kind": "osv_package",
+        "matching_usable": True,
+        "value": {
+            "package": {"name": "my-pkg", "ecosystem": "PyPI"},
+            "ranges": [{"type": "ECOSYSTEM", "events": [{"introduced": "0"}, {"fixed": "2.0"}]}],
+        },
+    }
+    component = {
+        "id": "python-package",
+        "kind": "package",
+        "context": "host",
+        "name": "My_Pkg",
+        "version": "1.0",
+        "ecosystem": "PyPI",
+    }
+    result = evaluate({"affected": [affected]}, [component], {"packages": "complete"})
+    assert result.status == "affected" and result.components[0].adapter == "pep440"
+    component["version"] = "2.0"
+    result = evaluate({"affected": [affected]}, [component], {"packages": "complete"})
+    assert result.components[0].status == "not_affected"
+    assert result.status == "unknown" and result.coverage["global_negative"] is False
 
 
 def test_osv_multiple_intervals_and_explicit_versions() -> None:
@@ -184,8 +209,12 @@ def test_bounded_nested_nvd() -> None:
     tree: dict[str, Any] = {"cpeMatch": [leaf()]}
     for _ in range(34):
         tree = {"nodes": [tree]}
-    assert configuration(tree, [{"cpe": CPE}])[0] is None
-    assert configuration({"cpeMatch": [leaf()] * 4097}, [{"cpe": CPE}])[0] is None
+    from cve_matcher.limits import EvaluationLimit
+
+    with pytest.raises(EvaluationLimit):
+        configuration(tree, [{"cpe": CPE}])
+    with pytest.raises(EvaluationLimit):
+        configuration({"cpeMatch": [leaf()] * 4097}, [{"cpe": CPE}])
 
 
 @pytest.mark.parametrize(
@@ -447,6 +476,7 @@ def test_decision_limits_fail_without_partial_success() -> None:
         evaluate(enrichment(*[assertion("osv_package", osv_value())] * 4097), [package()], {})
 
 
+@pytest.mark.performance
 def test_performance_large_inventory(record_property: Any) -> None:
     import time
     import tracemalloc

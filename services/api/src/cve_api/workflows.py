@@ -3,8 +3,8 @@
 from typing import Any, Literal
 from uuid import UUID
 
+from cve_common.database.queries import one, rows
 from cve_common.jobs.contracts import Payload
-from cve_findings.repository import one, rows
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import Field
 from sqlalchemy import text

@@ -5,9 +5,10 @@ from typing import Any
 
 import pytest
 
+from scripts.database import manage as db
 from scripts.deployment import orchestration
 from scripts.deployment.contracts import Environment, atomic, read
-from scripts.infrastructure import envoy, mail
+from scripts.infrastructure import mail
 from scripts.infrastructure.manage import compose
 from tests.inventory_upload.integration.conftest import Browser
 
@@ -44,7 +45,7 @@ async def test_02_real_dashboard_mfa_upload_and_acl_revocation(browser: Browser)
     await upload(browser)
 
 
-async def test_03_collector_enricher_matching_finding_n8n_postfix_envoy_delivery(
+async def test_03_collector_enricher_matching_finding_n8n_postfix_direct_delivery(
     browser: Browser, tmp_path: Path, stage: tuple[Environment, Path, dict[str, Any]]
 ) -> None:
     from tests.cve_enricher.test_native import Env
@@ -55,17 +56,26 @@ async def test_03_collector_enricher_matching_finding_n8n_postfix_envoy_delivery
         test_e2e_acceptance_snapshot_enrichment_match_outbox as match,
     )
     from tests.notifications.test_container import (
-        test_e2e_finding_n8n_mtls_postfix_envoy_and_no_second_submit as deliver,
+        test_e2e_finding_n8n_mtls_postfix_direct_and_no_second_submit as deliver,
     )
 
     target, bundle, manifest = stage
     c = target.config
     original_mail = read(mail.directory(c) / "state/policy.json")
-    original_egress = read(envoy.directory(c) / "policy.json")
+    with db.connect(c) as connection:
+        workflow_settings = connection.execute(
+            "SELECT enabled FROM automation.workflow_settings WHERE singleton"
+        ).fetchone()
+        assert workflow_settings is not None
+        original_enabled = workflow_settings["enabled"]
+        connection.execute("UPDATE automation.workflow_settings SET enabled=false")
 
     async def finding() -> dict[str, Any]:
         # Avoid competing claims while exercising exactly the application handlers in this
         # staged database. Persistent native worker execution is separately covered by Phase 23.
+        from scripts.automation_executor.agent import stop
+
+        stop(c)
         compose(c, ["stop", *PROCESSORS])
         source = Env(SourceLab(c), tmp_path / "source")
         matcher = Matching(browser)
@@ -101,7 +111,7 @@ async def test_03_collector_enricher_matching_finding_n8n_postfix_envoy_delivery
                 "real_dashboard_mfa_upload": True,
                 "controlled_import_enrichment_matching": True,
                 "actual_finding_event": True,
-                "n8n_postfix_envoy_test_delivery": True,
+                "n8n_postfix_direct_test_delivery": True,
                 "no_duplicate_submit": True,
                 "real_external_notifications": False,
                 "processing_mode": (
@@ -113,6 +123,9 @@ async def test_03_collector_enricher_matching_finding_n8n_postfix_envoy_delivery
     finally:
         with browser.lab.owner() as connection:
             connection.execute(
+                "UPDATE automation.workflow_settings SET enabled=%s", (original_enabled,)
+            )
+            connection.execute(
                 "INSERT INTO automation.notification_rules(rule_key,version,config,reason) "
                 "SELECT rule_key,version+1,config||'{\"enabled\":false}'::jsonb,"
                 "'Phase24 controlled delivery completed' FROM (SELECT DISTINCT ON(rule_key) "
@@ -120,7 +133,6 @@ async def test_03_collector_enricher_matching_finding_n8n_postfix_envoy_delivery
                 "WHERE coalesce((config->>'enabled')::boolean,false)"
             )
         atomic(mail.directory(c) / "state/policy.json", original_mail)
-        envoy.render(c, original_egress, {})
         orchestration.start_runtime(target, bundle)
 
 
@@ -128,10 +140,24 @@ async def test_03_collector_enricher_matching_finding_n8n_postfix_envoy_delivery
 def lifecycle_stage(stage: tuple[Environment, Path, dict[str, Any]]) -> Any:
     target, bundle, manifest = stage
     results: dict[str, bool] = {}
+    from scripts.automation_executor.agent import stop
+
+    stop(target.config)
     compose(target.config, ["stop", *PROCESSORS])
+    with db.connect(target.config) as connection:
+        workflow_settings = connection.execute(
+            "SELECT enabled FROM automation.workflow_settings WHERE singleton"
+        ).fetchone()
+        assert workflow_settings is not None
+        original_enabled = workflow_settings["enabled"]
+        connection.execute("UPDATE automation.workflow_settings SET enabled=false")
     try:
         yield (*stage, results)
     finally:
+        with db.connect(target.config) as connection:
+            connection.execute(
+                "UPDATE automation.workflow_settings SET enabled=%s", (original_enabled,)
+            )
         orchestration.start_runtime(target, bundle)
         if len(results) == 5:
             atomic(
@@ -164,15 +190,28 @@ async def test_04_finding_lifecycle_and_real_administrative_browser(
         "triage_csrf_etag": test_api.test_triage_etag_actor_csrf_and_mass_assignment,
         "false_positive_reopening": test_api.test_false_positive_close_and_reopen_same_identity,
         "approved_resolution_recurrence": (
-            test_api.test_approved_fix_policy_resolution_and_recurrence
+            test_api.test_legacy_approved_fix_policy_resolution_and_recurrence
         ),
         "exception_expiry_idempotent": test_api.test_exception_expiry_and_idempotent_maintenance,
         "real_browser_administration": test_real_browser_administration,
     }
     harness = Harness(browser)
+    config = browser.lab.config
+    original_rate = config.values["WEB_RATE"]
+    assert config.project.startswith("cve-db-test-phase24-")
     try:
+        if scenario == "real_browser_administration":
+            # Match the functional browser lab budget; default limits have their own native test.
+            config.values["WEB_RATE"] = "1000r/m"
         await cases[scenario](harness)
         results[scenario] = True
     finally:
-        await harness.database.close()
-        await harness.matcher.database.close()
+        try:
+            if scenario == "real_browser_administration":
+                from scripts.dashboard.manage import activate
+
+                config.values["WEB_RATE"] = original_rate
+                activate(config)
+        finally:
+            await harness.database.close()
+            await harness.matcher.database.close()

@@ -4,6 +4,7 @@ import asyncio
 import importlib
 import json
 import time
+from dataclasses import replace
 from uuid import uuid4
 
 import pytest
@@ -29,7 +30,7 @@ async def test_existing_v5_revisions_convert_without_changing_evidence_ids(
     from cve_common.v5 import revisions
     from cve_matcher.service import index_revision
 
-    identities = ["CVE-2096-98001", "CVE-2096-98002"]
+    identities = ["CVE-2096-98001", "CVE-2096-98002", "CVE-2096-98003"]
     harness.wire.cve = [cve(identifier=i) for i in identities]
     run = await harness.run("cve_list")
     enrichment = Database(harness.lab.settings("enricher"))
@@ -40,6 +41,18 @@ async def test_existing_v5_revisions_convert_without_changing_evidence_ids(
         prepared = await prepare_many(
             enrichment, identities, run["job_id"], uuid4(), Configuration()
         )
+        # Simulate the historical V5-only input rather than importing a previous case's KEV catalog.
+        unknown_kev = {"status": "unknown", "reason": "catalog_unavailable", "provenance": None}
+        prepared = [
+            replace(v, document={**v.document, "kev": unknown_kev}, kev=unknown_kev)
+            for v in prepared[:2]
+        ] + [
+            replace(
+                prepared[2],
+                document={**prepared[2].document, "kev": {"status": "absent"}},
+                kev={"status": "absent"},
+            )
+        ]
         async with transaction(enrichment) as s:
             results = await publish(s, prepared)
         ids = [r.revision_id for r in results]
@@ -60,14 +73,18 @@ async def test_existing_v5_revisions_convert_without_changing_evidence_ids(
             assert [r["current_revision_id"] for r in handles] == ids
             assert not c.execute(
                 "SELECT 1 FROM cve.enrichment_assertions WHERE enrichment_revision_id=ANY(%s)",
-                (ids,),
+                (ids[:2],),
+            ).fetchone()
+            assert c.execute(
+                "SELECT 1 FROM cve.enrichment_assertions WHERE enrichment_revision_id=%s",
+                (ids[2],),
             ).fetchone()
             indexed = c.execute(
                 "SELECT count(*) n FROM matching.indexed_revisions "
                 "WHERE enrichment_revision_id=ANY(%s)",
                 (ids,),
             ).fetchone()
-            assert indexed is not None and indexed["n"] == 2
+            assert indexed is not None and indexed["n"] == 3
         async with transaction(matcher) as s:
             converted = await revisions(s, [r for r in ids if r is not None], include_cvss=True)
         for row in converted:

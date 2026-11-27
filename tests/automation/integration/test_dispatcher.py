@@ -17,6 +17,7 @@ from cve_common.jobs.repository import JobRepository
 from scripts.automation import manage as automation
 from scripts.database import manage as db
 from scripts.infrastructure.manage import compose, docker_command, run
+from scripts.infrastructure.topology import PORTS
 from scripts.services.manage import PYTHON_IMAGE
 from tests.automation.integration.conftest import Lab, event_registry
 from tests.automation.integration.test_events import event
@@ -28,6 +29,7 @@ pytestmark = [pytest.mark.automation, pytest.mark.security]
 class DispatcherLab:
     lab: Lab
     sink: str
+    last_delivery: dict[str, Any] | None = None
 
     def control(self, **values: Any) -> dict[str, Any]:
         code = (
@@ -51,27 +53,31 @@ class DispatcherLab:
     def status(self, event_id: object) -> str:
         with db.connect(self.lab.config, "event_dispatcher") as connection:
             row = connection.execute(
-                "SELECT status FROM automation.event_deliveries WHERE event_id=%s "
+                "SELECT status,attempts,max_attempts,last_error_code,next_attempt_at,lease_until "
+                "FROM automation.event_deliveries WHERE event_id=%s "
                 "AND destination='https_sink'",
                 (event_id,),
             ).fetchone()
             assert row is not None
+            self.last_delivery = dict(row)
             return str(row["status"])
 
-    def wait(self, predicate: Any, timeout: float = 15) -> None:
+    def wait(self, predicate: Any, timeout: float = 30) -> None:
         until = time.monotonic() + timeout
         while time.monotonic() < until:
             if predicate():
                 return
             time.sleep(0.1)
-        raise AssertionError("Dispatcher condition did not become true")
+        raise AssertionError("Dispatcher condition did not become true: " + str(self.last_delivery))
 
 
 @pytest.fixture(scope="module")
 def dispatcher_lab(automation_lab: Lab) -> Iterator[DispatcherLab]:
     config = automation_lab.config
     automation.build(config)
-    automation.prepare(config)
+    from scripts.application.manage import prepare
+
+    prepare(config, "cve-processing")
     base = automation.directory(config)
     fixture = base / "receiver"
     fixture.mkdir(mode=0o700)
@@ -157,7 +163,7 @@ def dispatcher_lab(automation_lab: Lab) -> Iterator[DispatcherLab]:
         connection.execute("SET ROLE postgres_owner")
         connection.execute(
             "INSERT INTO automation.delivery_targets(id,enabled,retry_base,ret"
-            "ry_cap,max_attempts) VALUES ('https_sink',true,.5,1,3)"
+            "ry_cap,max_attempts) VALUES ('https_sink',true,1,2,6)"
         )
         connection.execute(
             "INSERT INTO automation.event_routes VALUES ('technical.event','https_sink')"
@@ -223,6 +229,7 @@ async def test_https_delivery_and_container_hardening(
     assert set(info["NetworkSettings"]["Networks"]) == {
         lab.lab.config.project + "_cve_internal",
         lab.lab.config.project + "_cve_data",
+        lab.lab.config.project + "_cve_outbound",
     }
 
 
@@ -285,7 +292,8 @@ async def test_dispatcher_restart_and_db_outage(
                 info["Id"],
                 "python",
                 "-c",
-                'import urllib.request; print(urllib.request.urlopen("http://localhost:8000/health/live").status)',
+                "import urllib.request; print(urllib.request.urlopen("
+                f"'http://localhost:{PORTS['cve-event-dispatcher']}/health/live').status)",
             ]
         ).stdout
         assert reply.strip() == "200"

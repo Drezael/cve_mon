@@ -4,10 +4,9 @@
 
 Linux, Git, GNU Make sowie Python **3.12.x** mit `venv` und `ensurepip` sind erforderlich.
 Systempakete müssen gegebenenfalls durch die Systemverwaltung bereitgestellt werden;
-das Setup führt kein `sudo` aus. Docker und das Compose-Plugin sind erst ab Phase 2 nötig.
-Nach Bereitstellung einer Remote-URL: `git clone <repository-url> cve-monitoring` und
-`cd cve-monitoring`. Der aktuelle lokale Projektordner wurde mit Git initialisiert;
-eine Remote-URL und ein veröffentlichter Checkout existieren noch nicht.
+das Setup führt kein `sudo` aus. Docker und das Compose-Plugin werden für den Anwendungsstart und die
+Integrationskampagne benötigt. Nach dem Klonen in die Repositorywurzel wechseln.
+Die Standardprüfungen lassen sich dort mit folgenden Befehlen starten:
 
 ```bash
 make setup
@@ -39,7 +38,9 @@ für eine exakt frische Umgebung einen neuen Checkout verwenden.
 | `make check` | Alle verpflichtenden Prüfungen |
 
 Optionale Coverage: `.venv/bin/python -m pytest --cov --cov-report=term-missing`.
-Compose-Validierung wird erst mit echten Compose-Dateien ergänzt und ist derzeit nicht ausgeführt.
+Compose-Validierung: `make compose-check`; tatsächliche TLS-/Netzwerkprüfungen: `make infra-test`.
+Die vollständige Integrationskampagne läuft mit `make qa-full`, siehe
+[Tests und QA](../testing/README.md). `make check` prüft die Standardauswahl.
 JSON-Schemas werden an `*.schema.json` oder `$schema` erkannt und auf gültige Definition geprüft.
 Zusätzlich legt contracts/phase-00-manifest.json die versionierten Inventarbeispiele und ihre
 positiven/negativen Erwartungen fest. UUID- und RFC3339-Prüfung ist aktiviert; negative Beispiele
@@ -245,3 +246,27 @@ Die optionale integrierte SSH-Erfassung arbeitet mit zwei parallelen Jobs.
 Zieladressen und Zielnetze sind nicht eingeschränkt. Die Erfassung erfolgt ohne sudo
 und verändert keine Zielkonfiguration. Voraussetzungen und Löschverhalten:
 [Automatische Servererfassung](../operations/managed-ansible.md).
+
+## Release- und Prüfnachweise
+
+`cve_common.release.VERSION` definiert API- und interne OpenAPI-Vertragsversion.
+Pythonpakete, Dashboard (`services/dashboard/package.json`), Datenbankschema
+(Alembic-Head) und gemeinsames Laufzeitimage behalten eigene Versionsreihen.
+Eine Freigabe muss deren konkrete Paketstände, den Alembic-Head und die Image-ID
+zusammen mit dem Git-Commit und dem Hash der tatsächlichen Quelldateien erfassen.
+Eine API-Versionsnummer allein identifiziert keine Installation.
+
+Der Standardlauf umfasst mit `domain` markierte reine Fachtests. Gemessene
+Performancefälle laufen zusätzlich ohne Coverage-Instrumentierung, damit deren
+Zeitbudget unverändert aussagekräftig bleibt. Die Branch-Coverage enthält die
+Anwendungspakete und Betriebswerkzeuge. Direkter Pytest-Aufruf und IDE setzen nur
+bei fehlendem `CVE_ENV_FILE` den expliziten Entwicklungsdefault; vorhandene
+Operatorvariablen bleiben erhalten.
+
+Die Integrationskampagne läuft bei relevanten Pull-Request-Änderungen und wöchentlich
+in vier deterministischen Teilmengen mit höchstens zwei parallelen Runnern. Jeder
+Batch enthält Tests, Fehler, Setupfehler und ausgelassene Fälle getrennt im JUnit-
+Bericht. Der Zusammenführungsschritt lehnt fehlende, doppelte, fehlgeschlagene oder
+zu anderen Quellen gehörende Teilmengen ab. Deploymentprüfungen folgen erst auf
+vollständige aktuelle Fachnachweise. Lokale uncommittete Quellen werden über
+`source_sha256` erfasst; frühere Berichte gelten nach Änderungen nicht als neuer Nachweis.

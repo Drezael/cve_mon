@@ -4,6 +4,7 @@ import logging
 
 from cve_common.database.transactions import transaction
 from cve_common.http.responses import problem
+from cve_common.ssh_credentials import KeyringError
 from fastapi import FastAPI, Request
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.responses import Response
@@ -31,6 +32,13 @@ def install_auth_handlers(app: FastAPI) -> None:
             except SQLAlchemyError:
                 pass
         return problem(error.status)
+
+    @app.exception_handler(KeyringError)
+    async def key_unavailable(_request: Request, _error: KeyringError) -> Response:
+        logging.getLogger("cve.auth").error(
+            "dependency_unavailable", extra={"error_code": "vault_key_unavailable"}
+        )
+        return problem(503)
 
     @app.exception_handler(SQLAlchemyError)
     async def database_unavailable(_request: Request, _error: SQLAlchemyError) -> Response:

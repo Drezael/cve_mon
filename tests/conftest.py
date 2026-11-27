@@ -1,9 +1,17 @@
 """Gemeinsame Fixtures ohne Datenbank oder produktive Dienste."""
 
+import os
 import subprocess
 from pathlib import Path
 
 import pytest
+
+os.environ.setdefault(
+    "CVE_ENV_FILE",
+    str(Path(__file__).resolve().parents[1] / "configuration/examples/development.env"),
+)
+
+pytest_plugins = ["tests.network_pool"]
 
 
 @pytest.fixture

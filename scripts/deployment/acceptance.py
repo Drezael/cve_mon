@@ -23,7 +23,7 @@ PROOFS = {
         "real_dashboard_mfa_upload",
         "controlled_import_enrichment_matching",
         "actual_finding_event",
-        "n8n_postfix_envoy_test_delivery",
+        "n8n_postfix_direct_test_delivery",
         "no_duplicate_submit",
     ],
     "phase-24-business-administration.json": [
@@ -93,7 +93,7 @@ def evaluate() -> dict[str, Any]:
             raise ValueError("Mandatory proof missing or belongs to another release")
     if read(REPORTS / "phase-24-full-recovery.json")["credentials_decrypted_and_verified"] != 2:
         raise ValueError("Actual n8n credential recovery required")
-    if read(REPORTS / "phase-24-offline-images.json")["exported_and_imported"] != 8:
+    if read(REPORTS / "phase-24-offline-images.json")["exported_and_imported"] != 7:
         raise ValueError("Complete offline image transport required")
     tests = {
         "native": junit(REPORTS / "phase-24-native.xml", 15),

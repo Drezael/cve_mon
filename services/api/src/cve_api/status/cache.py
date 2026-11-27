@@ -165,15 +165,22 @@ class StatusCache:
             and self.control_checked_at
             and (datetime.now(UTC) - self.control_checked_at).total_seconds() <= self.stale_seconds
         ):
-            return deepcopy(self.control)
-        return {
-            "enabled": True,
-            "heartbeat_at": None,
-            "pending": 0,
-            "processing": 0,
-            "paused": 0,
-            "failed": 0,
-            "oldest_seconds": 0,
-            "expired_leases": 0,
-            "capped": False,
-        }
+            return deepcopy(self.control) | {
+                "sample_stale": False,
+                "sample_checked_at": self.control_checked_at,
+            }
+        return (
+            deepcopy(self.control)
+            if self.control is not None
+            else {
+                "enabled": None,
+                "heartbeat_at": None,
+                "pending": None,
+                "processing": None,
+                "paused": None,
+                "failed": None,
+                "oldest_seconds": None,
+                "expired_leases": None,
+                "capped": False,
+            }
+        ) | {"sample_stale": True, "sample_checked_at": self.control_checked_at}

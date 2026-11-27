@@ -128,7 +128,8 @@ def test_https_only_and_authentication_not_on_public_api_domain(auth_lab: Lab) -
         ).status
         == 426
     )
-    assert request(auth_lab.config, "api.example.test", "/api/v1/auth/csrf").status == 404
+    with pytest.raises(ssl.SSLError):
+        request(auth_lab.config, "api.example.test", "/api/v1/auth/csrf")
     assert (
         request(
             auth_lab.config,

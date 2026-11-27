@@ -32,9 +32,17 @@ def request(
 ) -> Response:
     """Verbinde Loopback, verifiziere aber den tatsächlichen Domainnamen."""
     port = int(config.values["INGRESS_HTTPS_PORT" if tls else "INGRESS_HTTP_PORT"])
-    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=timeout)
+    from tests.inventory_upload.integration.technical_gateway import GATEWAYS
+
+    internal = GATEWAYS.get(config.project) if domain == "inventory.internal" else None
+    address = internal["address"] if internal else "127.0.0.1"
+    if internal:
+        port = internal["port"]
+    connection = http.client.HTTPConnection(address, port, timeout=timeout)
     if tls:
-        context = ssl.create_default_context(cafile=config.values["TLS_TRUST_FILE"])
+        context = ssl.create_default_context(
+            cafile=str(internal["ca_file"]) if internal else config.values["TLS_TRUST_FILE"]
+        )
         if version is not None:
             context.minimum_version = version
             context.maximum_version = version
@@ -45,7 +53,7 @@ def request(
                 directory + "/" + client + ".crt", directory + "/" + client + ".key"
             )
         connection.sock = context.wrap_socket(
-            socket.create_connection(("127.0.0.1", port), timeout=timeout), server_hostname=domain
+            socket.create_connection((address, port), timeout=timeout), server_hostname=domain
         )
     try:
         connection.request(method, path, body, {"Host": domain, **(headers or {})})

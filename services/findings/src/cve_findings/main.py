@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 import uvicorn
 from cve_common.config.validation import load_settings
 from cve_common.database.transactions import transaction
+from cve_common.health.ready import worker_ready as execution_ready
 from cve_common.http.errors import install_handlers
 from cve_common.http.middleware import TechnicalMiddleware
 from cve_common.http.responses import problem
@@ -17,6 +18,7 @@ from cve_common.jobs.models import Job
 from cve_common.jobs.repository import JobRepository
 from cve_common.jobs.worker import Worker
 from cve_common.lifecycle.resources import Resources
+from cve_common.lifecycle.tasks import LoopHealth, drain_tasks
 from cve_common.logging.setup import configure_logging
 from cve_common.workflows import centrally_controlled
 from fastapi import FastAPI, Request
@@ -54,8 +56,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             stop = asyncio.Event()
             task = asyncio.create_task(worker.run(stop))
 
+            maintenance_health = LoopHealth()
+            maintenance_health.tick()
+
             async def maintain() -> None:
                 while not stop.is_set():
+                    maintenance_health.last_tick = time.monotonic()
                     try:
                         await asyncio.wait_for(stop.wait(), timeout=config.maintenance_seconds)
                         break
@@ -66,6 +72,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     try:
                         async with transaction(database) as session:
                             if await centrally_controlled(session):
+                                maintenance_health.tick()
                                 continue
                             present = (
                                 await session.execute(
@@ -92,17 +99,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                                     uuid4(),
                                     "findings-maintenance:" + str(slot),
                                 )
-                    except SQLAlchemyError:
+                        maintenance_health.tick()
+                    except (SQLAlchemyError, OSError, TimeoutError):
+                        maintenance_health.healthy = False
                         logging.getLogger("cve.findings").error("dependency_unavailable")
 
             maintenance = asyncio.create_task(maintain())
+            app.state.maintenance = maintenance
+            app.state.maintenance_health = maintenance_health
             app.state.resources, app.state.worker, app.state.task = resources, worker, task
             try:
                 yield
             finally:
                 stop.set()
-                await task
-                await maintenance
+                await drain_tasks(task, maintenance)
 
     app = FastAPI(
         title="CVE findings",
@@ -124,12 +134,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/health/ready")
     async def ready(request: Request) -> Response:
         worker: Worker = request.app.state.worker
-        if (
-            not proof(config.guard_proof_file)
-            or request.app.state.task.done()
-            or not worker.healthy
-            or time.monotonic() - worker.last_tick > 10
-            or not await request.app.state.resources.ready()
+        if not await execution_ready(
+            request.app.state.resources,
+            worker,
+            request.app.state.task,
+            guarded=proof(config.guard_proof_file),
+        ) or not request.app.state.maintenance_health.ready(
+            request.app.state.maintenance, 2 * config.maintenance_seconds + 10
         ):
             return problem(503)
         return JSONResponse({"status": "ready"})

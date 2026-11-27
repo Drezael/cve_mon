@@ -3,7 +3,7 @@
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from cve_findings.repository import one
+from cve_common.database.queries import one
 from fastapi import APIRouter, Depends, Query, Request
 
 from cve_api.auth.dependencies import transport

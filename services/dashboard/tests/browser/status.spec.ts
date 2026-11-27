@@ -100,8 +100,34 @@ test("real TLS status overview, service, pipeline and accessible history", async
     ).toBeVisible();
     await page
         .getByRole("combobox", { name: "Messreihe", exact: true })
-        .selectOption("backlog");
+        .selectOption("readiness");
+    await page.setViewportSize({ width: 390, height: 900 });
+    const region = page.getByRole("region", { name: "Scrollbare Tabelle" });
+    await page
+        .getByRole("combobox", { name: "Messreihe", exact: true })
+        .focus();
+    for (let i = 0; i < 10; i++) {
+        await page.keyboard.press("Tab");
+        if (
+            await region.evaluate(
+                (element) => element === document.activeElement,
+            )
+        )
+            break;
+    }
+    await expect(region).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect
+        .poll(() => region.evaluate((element) => element.scrollLeft))
+        .toBeGreaterThan(0);
     await accessible(page);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page
+        .getByRole("combobox", { name: "Messreihe", exact: true })
+        .selectOption("backlog");
+    await expect(
+        page.getByText("Keine Rohmessungen verfügbar.", { exact: true }),
+    ).toBeVisible();
     await page.goto("/status/pipelines/inventory");
     await expect(
         page.getByRole("heading", {
@@ -170,29 +196,30 @@ test("real maintenance metadata uses MFA and preserves raw states", async ({
     ).toBeDisabled();
     await accessible(page);
 });
-test("analyst sees minimized overview, viewer has no status right", async ({
+test("analyst and viewer cannot access administrative status", async ({
     page,
     context,
     browser,
 }) => {
     await login(context, 2);
     await page.goto("/status");
-    await expect(
-        page.getByRole("heading", {
-            name: "Aktueller Plattformzustand",
-            exact: true,
-        }),
-    ).toBeVisible();
+    await expect(page.getByRole("alert")).toContainText(
+        "Statuszugriff nicht erlaubt",
+    );
     await expect(
         page.getByRole("link", { name: "FastAPI", exact: true }),
     ).toHaveCount(0);
     await page.goto("/status/services/api");
-    await expect(page.getByRole("alert")).toContainText("Diagnoseberechtigung");
+    await expect(page.getByRole("alert")).toContainText(
+        "Statuszugriff nicht erlaubt",
+    );
     const viewer = await browser.newContext({ ignoreHTTPSErrors: true });
     await login(viewer, 3);
     const tab = await viewer.newPage();
     await tab.goto("/status");
-    await expect(tab.getByRole("alert")).toContainText("Berechtigung");
+    await expect(tab.getByRole("alert")).toContainText(
+        "Statuszugriff nicht erlaubt",
+    );
     await viewer.close();
     await accessible(page);
 });

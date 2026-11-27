@@ -149,7 +149,15 @@ async def test_status_cache_stays_fresh_when_database_diagnostics_time_out(
     from scripts.notifications import manage as notifications
     from scripts.services import manage as api
 
-    active = replace(platform, values={**platform.values, "STATUS_COLLECTOR_PAUSED": "false"})
+    override = platform.directory / "status-collector-active.json"
+    override.write_text(
+        json.dumps({"services": {"cve-api": {"environment": {"CVE_API_STATUS__PAUSED": "false"}}}})
+    )
+    active = replace(
+        platform,
+        values={**platform.values, "STATUS_COLLECTOR_PAUSED": "false"},
+        compose_overrides=(*platform.compose_overrides, override),
+    )
     api.prepare(active)
     compose(
         active,

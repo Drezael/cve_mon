@@ -1,5 +1,9 @@
-import { translateMessage, intlLocale, t, localized, useLocale } from "../i18n";
-import { useState, useId } from "react";
+import { StatusBadge, time } from "./presentation";
+import { ObservationChart } from "./ObservationChart";
+export { StatusBadge } from "./presentation";
+export { ObservationChart } from "./ObservationChart";
+import { translateMessage, t, useLocale } from "../i18n";
+import { useState } from "react";
 import { Link, Route, Routes, useParams } from "react-router-dom";
 import { z } from "zod";
 import type { components } from "../generated/status";
@@ -40,17 +44,19 @@ const overviewSchema: z.ZodType<components["schemas"]["OverviewRead"]> =
         schema_version: z.literal(1),
         control: z
             .object({
-                enabled: z.boolean(),
+                enabled: z.boolean().nullable(),
+                sample_stale: z.boolean().default(false),
+                sample_checked_at: z.string().nullable().default(null),
                 state,
                 workflow_state: state,
                 queue_state: state,
                 heartbeat_at: z.string().nullable(),
-                pending: z.number(),
-                processing: z.number(),
-                paused: z.number(),
-                failed: z.number(),
-                oldest_seconds: z.number(),
-                expired_leases: z.number(),
+                pending: z.number().nullable(),
+                processing: z.number().nullable(),
+                paused: z.number().nullable(),
+                failed: z.number().nullable(),
+                oldest_seconds: z.number().nullable(),
+                expired_leases: z.number().nullable(),
                 capped: z.boolean(),
             })
             .nullable()
@@ -68,30 +74,6 @@ const historySchema = listing.extend({
     samples_capped: z.boolean(),
     availability: row.nullable(),
 });
-const labels: Record<string, string> = localized({
-    healthy: "Gesund",
-    degraded: "Eingeschränkt",
-    unavailable: "Nicht verfügbar",
-    unknown: "Unbekannt",
-    starting: "Startphase",
-    maintenance: "Wartung",
-    open: "Offen",
-    resolved: "Wiederhergestellt",
-});
-export function StatusBadge({ value }: { value: string }) {
-    useLocale();
-    return (
-        <span className={"status-badge status-" + value}>
-            {value === "healthy" ? "✓" : value === "maintenance" ? "◇" : "!"}{" "}
-            {labels[value] ?? value}
-        </span>
-    );
-}
-function time(value: unknown) {
-    return typeof value === "string"
-        ? new Date(value).toLocaleString(intlLocale())
-        : t("Noch keine Messung");
-}
 const base = "/api/v1/status/";
 function Unavailable({
     error,
@@ -158,7 +140,7 @@ export function StatusOverview() {
                         <Card title={t("Zentrale n8n-Steuerung")}>
                             <p>
                                 <StatusBadge value={v.control.state} /> ·{" "}
-                                {v.control.enabled
+                                {v.control.enabled === null ? t("Unbekannt") : v.control.enabled
                                     ? t("Zentrale Steuerung aktiviert")
                                     : t("Zentrale Steuerung deaktiviert")}
                             </p>
@@ -171,14 +153,15 @@ export function StatusOverview() {
                             <p>
                                 {t("Job-Queue:")}{" "}
                                 <StatusBadge value={v.control.queue_state} /> ·{" "}
-                                {v.control.pending} {t("wartend ·")}{" "}
-                                {v.control.processing} {t("in Übernahme ·")}{" "}
-                                {v.control.paused} {t("pausiert ·")}{" "}
-                                {v.control.failed} {t("fehlgeschlagen")}
+                                {v.control.pending ?? "–"} {t("wartend ·")}{" "}
+                                {v.control.processing ?? "–"} {t("in Übernahme ·")}{" "}
+                                {v.control.paused ?? "–"} {t("pausiert ·")}{" "}
+                                {v.control.failed ?? "–"} {t("fehlgeschlagen")}
                             </p>
+                            {v.control.sample_stale && <p role="status">{t("Datenstand veraltet")}</p>}
                             <p>
                                 {t("Ältester fälliger Auftrag:")}{" "}
-                                {Math.round(v.control.oldest_seconds)}{" "}
+                                {v.control.oldest_seconds === null ? "–" : Math.round(v.control.oldest_seconds)}{" "}
                                 {t("Sekunden.")} {v.control.expired_leases}{" "}
                                 {t("abgelaufene Leases.")}
                                 {v.control.capped &&
@@ -457,153 +440,6 @@ function DetailData({
                     </>
                 )}
             </Card>
-        </>
-    );
-}
-export function ObservationChart({ samples }: { samples: Row[] }) {
-    useLocale();
-    const title = useId();
-    const metricTitle = useId();
-    const [metric, setMetric] = useState("duration_ms");
-    const points = samples.slice(-100);
-    const values = points.map((s) => Date.parse(String(s.checked_at)));
-    const metricKeys = [
-        ...new Set([
-            "duration_ms",
-            ...points.flatMap((p) => Object.keys((p.metrics as Row) ?? {})),
-        ]),
-    ];
-    const numeric = points.map((p) =>
-        metric === "duration_ms"
-            ? p.duration_ms
-            : ((p.metrics as Row) ?? {})[metric],
-    );
-    const maxMetric = Math.max(
-        1,
-        ...numeric.filter((v): v is number => typeof v === "number"),
-    );
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const span = Math.max(1, max - min);
-    return (
-        <>
-            {points.length ? (
-                <svg
-                    role="img"
-                    aria-labelledby={title}
-                    viewBox="0 0 700 90"
-                    className="status-chart"
-                >
-                    <title id={title}>
-                        {t(
-                            "Gemessene Statuspunkte, ohne Interpolation. Details in der folgenden Tabelle.",
-                        )}
-                    </title>
-                    {points.map((p, i) => (
-                        <rect
-                            key={i}
-                            x={8 + ((values[i] - min) / span) * 680}
-                            y={20}
-                            width={6}
-                            height={40}
-                            className={"point-" + String(p.result)}
-                        >
-                            <title>
-                                {time(p.checked_at)}: {labels[String(p.result)]}
-                            </title>
-                        </rect>
-                    ))}
-                </svg>
-            ) : (
-                <p>{t("Keine Rohmessungen verfügbar.")}</p>
-            )}
-            {points.length > 0 && (
-                <>
-                    <label>
-                        {t("Kennzahl")}
-                        <select
-                            aria-label={t("Kennzahl")}
-                            value={metric}
-                            onChange={(e) => setMetric(e.target.value)}
-                        >
-                            {metricKeys.map((k) => (
-                                <option key={k} value={k}>
-                                    {k}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <p>
-                        {t("Gemessene Kennzahl")} {metric}
-                        {t("; Skala 0 bis")} {maxMetric.toFixed(2)}. Lücken
-                        bleiben ohne Messpunkt.
-                    </p>
-                    <svg
-                        role="img"
-                        aria-labelledby={metricTitle}
-                        viewBox="0 0 700 90"
-                        className="status-chart"
-                    >
-                        <title id={metricTitle}>
-                            {t("Einzelmessungen für")} {metric}
-                            {t("; numerische Werte in der Tabelle.")}
-                        </title>
-                        {points.map((p, i) =>
-                            typeof numeric[i] === "number" ? (
-                                <circle
-                                    key={i}
-                                    cx={8 + ((values[i] - min) / span) * 680}
-                                    cy={
-                                        75 -
-                                        (Number(numeric[i]) / maxMetric) * 60
-                                    }
-                                    r={4}
-                                    className="point-metric"
-                                >
-                                    <title>
-                                        {time(p.checked_at)}:{" "}
-                                        {String(numeric[i])}
-                                    </title>
-                                </circle>
-                            ) : null,
-                        )}
-                    </svg>
-                </>
-            )}
-            {points.length > 0 && (
-                <div className="table-scroll">
-                    <table>
-                        <caption>
-                            {t(
-                                "Messwerte als zugängliche Diagrammalternative (höchstens 100 aktuelle Punkte)",
-                            )}
-                        </caption>
-                        <thead>
-                            <tr>
-                                <th>{t("Zeitpunkt")}</th>
-                                <th>{t("Status")}</th>
-                                <th>{t("Dauer")}</th>
-                                <th>{t("Aggregierte Kennzahlen")}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {points.map((p, i) => (
-                                <tr key={i}>
-                                    <td>{time(p.checked_at)}</td>
-                                    <td>
-                                        {labels[String(p.result)] ??
-                                            String(p.result)}
-                                    </td>
-                                    <td>
-                                        {String(p.duration_ms)} {t("ms")}
-                                    </td>
-                                    <td>{JSON.stringify(p.metrics)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
         </>
     );
 }

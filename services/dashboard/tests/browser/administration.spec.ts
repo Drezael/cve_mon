@@ -38,8 +38,13 @@ function otp(secret: string, step: number) {
         .toString()
         .padStart(6, "0");
 }
-async function save(page: Page, index: number, critical = false) {
-    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+async function save(
+    page: Page,
+    index: number,
+    critical = false,
+    primary = "Speichern",
+) {
+    await page.getByRole("button", { name: primary, exact: true }).click();
     if (critical)
         await page
             .getByRole("button", { name: "Änderung bestätigen", exact: true })
@@ -93,32 +98,52 @@ test("server registration, dirty navigation, current revision and stale edit", a
     ).toBeVisible();
     await page.getByRole("button", { name: "Weiter bearbeiten" }).click();
     await accessible(page);
-    await save(page, 0);
+    await save(page, 0, false, "Server speichern");
+    await expect(
+        page.getByRole("heading", { name: "Server", exact: true }),
+    ).toBeVisible();
+    await page
+        .getByRole("row")
+        .filter({
+            has: page.getByRole("link", {
+                name: "Phase21-Browser-Server",
+                exact: true,
+            }),
+        })
+        .getByRole("button", { name: "Bearbeiten", exact: true })
+        .click();
     await expect(
         page.getByRole("heading", {
             name: "Phase21-Browser-Server",
             exact: true,
         }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Metadaten bearbeiten" }).click();
     await page
         .getByLabel("Serverbezeichnung", { exact: true })
         .fill("Phase21-Server-geändert");
     await save(page, 0);
     await expect(
-        page.getByRole("heading", {
+        page.getByRole("link", {
             name: "Phase21-Server-geändert",
             exact: true,
         }),
     ).toBeVisible();
+    await page
+        .getByRole("row")
+        .filter({
+            has: page.getByRole("link", {
+                name: "Phase21-Server-geändert",
+                exact: true,
+            }),
+        })
+        .getByRole("button", { name: "Bearbeiten", exact: true })
+        .click();
     const editUrl = page.url();
     const tab = await context.newPage();
     await tab.goto(editUrl);
-    await tab.getByRole("button", { name: "Metadaten bearbeiten" }).click();
     await tab
         .getByLabel("Serverbezeichnung", { exact: true })
         .fill("Veralteter Entwurf");
-    await page.getByRole("button", { name: "Metadaten bearbeiten" }).click();
     await page
         .getByLabel("Serverbezeichnung", { exact: true })
         .fill("Neuer bestätigter Stand");
@@ -154,7 +179,7 @@ test("personal group creation and server keyboard ordering preserve server state
     await login(context, 1);
     await page.goto("/groups");
     await page
-        .getByRole("button", { name: "Servergruppe anlegen", exact: true })
+        .getByRole("button", { name: "Gruppe anlegen", exact: true })
         .click();
     await page
         .getByLabel("Name", { exact: true })
@@ -239,10 +264,10 @@ test("notification preference, disabled rule and safe template preview", async (
     await login(context, 3);
     await page.goto("/settings/preferences");
     await page.getByRole("button", { name: "Präferenzen bearbeiten" }).click();
-    await page.getByLabel("Versandform").selectOption("digest");
+    await page.getByLabel("Mindestpriorität").selectOption("low");
     await page
         .getByLabel("Begründung", { exact: true })
-        .fill("Tägliche Zusammenfassung");
+        .fill("Persönliche Mindestpriorität");
     await page.getByRole("button", { name: "Speichern", exact: true }).click();
     await expect(page.getByRole("status").first()).toContainText("gespeichert");
     await page.goto("/administration/rules");
@@ -322,6 +347,9 @@ test("existing server upload gives 202 receipt and bounded separate processing s
     await login(context, 5);
     await page.goto("/servers/upload");
     await page
+        .getByText("Vorhandenem Server zuordnen (optional)", { exact: true })
+        .click();
+    await page
         .getByLabel(process.env.CVE_E2E_SERVER_NAME!, { exact: true })
         .check();
     await page.getByLabel("JSON-Datei", { exact: true }).setInputFiles({
@@ -329,16 +357,28 @@ test("existing server upload gives 202 receipt and bounded separate processing s
         mimeType: "application/json",
         buffer: Buffer.from(process.env.CVE_E2E_INVENTORY!),
     });
+    const accepted = page.waitForResponse(
+        (response) =>
+            response.url().endsWith("/api/v1/dashboard/inventories/upload") &&
+            response.request().method() === "POST",
+    );
     await page
         .getByRole("button", { name: "Server speichern", exact: true })
         .click();
+    const response = await accepted;
+    expect(response.status()).toBe(202);
+    const receipt = await response.json();
+    expect(receipt.server_id).toBe(process.env.CVE_E2E_SERVER_ID);
     await expect(
-        page.getByRole("heading", { name: "Annahme bestätigt" }),
+        page.getByRole("heading", { name: "Server", exact: true }),
     ).toBeVisible();
-    await expect(page.getByText("HTTP 202:", { exact: false })).toBeVisible();
-    await expect(
-        page.getByRole("heading", { name: "Verarbeitungsstatus", exact: true }),
-    ).toBeVisible();
+    const state = await page.evaluate(async (path) => {
+        const result = await fetch(path);
+        return { status: result.status, body: await result.json() };
+    }, "/api/v1/dashboard/administration/uploads/" + receipt.submission_id);
+    expect(state.status).toBe(200);
+    expect(state.body.receipt.submission_id).toBe(receipt.submission_id);
+    expect(state.body.processing.status).toBe("accepted");
     await accessible(page);
     for (const width of [320, 768, 1440]) {
         await page.setViewportSize({ width, height: 900 });

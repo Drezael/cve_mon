@@ -1,0 +1,2738 @@
+{
+  "version": 1,
+  "reviewed_at": "2026-11-24",
+  "evidence_hashes": {
+    "compose.yml": {
+      "sha256": "1108445efc9be0c24abad3b797d9a38950ad092d6a84e2b3842e0201dd5be99c"
+    },
+    "infrastructure/mail/main.cf": {
+      "sha256": "1271034dbb165194832e77983409fd0ae436584787a5b12cd0239ca9ad1dc591"
+    },
+    "infrastructure/mail/runtime.py": {
+      "sha256": "83eb6a9f6664f6a0eb33fec11611960936d46edc61e6bedb09bbad3b68e9ced4"
+    },
+    "infrastructure/mail/init.sh": {
+      "sha256": "2d92022002ce77314def8c2444a71624b149469b90ccd6904338b6430c10c46c"
+    },
+    "scripts/smtp/manage.py": {
+      "sha256": "aa0d80ba6311e9fd87de116c59a7820f41b8fa138871073784eb791976871d1c"
+    },
+    "workflows/n8n/cve-control-enrichment.json": {
+      "sha256": "d2dd26230f0f0b85e6f9a056ac7aed9d1e7ec31f0bf98ddb5e094a3f8c3a4ecd"
+    },
+    "workflows/n8n/cve-control-findings.json": {
+      "sha256": "76cf3809fc6ca9cf362c24dcb5a02b405da7483a8374aefea759b7636f48b982"
+    },
+    "workflows/n8n/cve-control-import.json": {
+      "sha256": "8dc79d298f3d7e4145538d53f9a9833f0118ed14198e3ea7b69c92c08cf948ba"
+    },
+    "workflows/n8n/cve-control-index.json": {
+      "sha256": "a14a23d27e78b3342a53dba80b69bec533937242b5d016c1d31c49a8c8c60a2c"
+    },
+    "workflows/n8n/cve-control-inventory.json": {
+      "sha256": "0fec7e61286006566e11429f6d64a132729e740fd5c005562ce49f43f208952e"
+    },
+    "workflows/n8n/cve-control-matching.json": {
+      "sha256": "93ce0afe0056567802e7f9df7ee9f6232900cbd40d12a221980170f58a88bf8f"
+    },
+    "workflows/n8n/cve-control-notifications.json": {
+      "sha256": "3c6ecf9b8c9aa07706e705691a9814ff357d25c8c15fd0a987dff5abfad792e2"
+    },
+    "workflows/n8n/cve-control-platform.json": {
+      "sha256": "0760dedfac7eec41c95dc94126fc8f9f9fd5c4bbcc46a08cc6cd32406c69bd3f"
+    },
+    "workflows/n8n/cve-control-queue.json": {
+      "sha256": "f68dabc9f0b95f4391fb2da63594141ca142651cbb4e740d6d5c94eceb827c37"
+    },
+    "workflows/n8n/cve-control-status.json": {
+      "sha256": "1bc19efc4b43f140d31fae58d6ec13e75375dcf1274dab2cf55771c43537bf95"
+    },
+    "workflows/n8n/cve-control-watchdog.json": {
+      "sha256": "7911d33545f55539f01a3d1c3aeee5db8ea9ae021c6ed4151e771ec4e737aeaa"
+    },
+    "workflows/n8n/finding-notification-digest.json": {
+      "sha256": "9fa67fcee43f18073587428da444be57f9a9536d5f05b6cc8d0c2de709ce834b"
+    },
+    "workflows/n8n/finding-notification-dispatch.json": {
+      "sha256": "ee97c8f68912a3e5448146420e12f224e71d53f37ffde0f05f0469eb3a01ed05"
+    },
+    "workflows/n8n/finding-notification-escalation.json": {
+      "sha256": "665cd4521403ea1b5622b3e90473dfd6d3257afb5e2320c3d71dab1588f7792d"
+    },
+    "workflows/n8n/finding-notification-exception.json": {
+      "sha256": "1121dd46633040d6062f808909761fb5ae2ffa30b5529a506cc63933baf038d0"
+    },
+    "workflows/n8n/finding-notification-health.json": {
+      "sha256": "e87a61adcdd3d1bd013bb5b7c9d6b7100b3197779103dcd66138b90461e4c26e"
+    },
+    "workflows/n8n/finding-notification-reconciliation.json": {
+      "sha256": "06b967ce352c1b2d0b18ec168d7178051a4e6c41bf483dd826c6ae8b6e6c05d6"
+    },
+    "infrastructure/mail/rsyslog.conf": {
+      "sha256": "e83d3012fd89e0729a79806a7fd13bfa32c63c6162bbd5f5d4bba1b26acbe212"
+    },
+    "infrastructure/n8n/bootstrap.cjs": {
+      "sha256": "da42df33925d4af8ef5142ac8856f5927f0a04062f5127e9018336ea2d9b831a"
+    }
+  },
+  "reviews": [
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-107364",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: Unauthenticated KDC DoS based on ASN.1 decoder read overrun",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-112315",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: MIT krb5 kadmind unauthenticated memory leak DoS in RPCSEC_GSS buffer decode failure",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-112316",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: MIT krb5 kadmind authenticated memory leak DoS in xdr_krb5_tl_data() decode failure",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-112317",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: MIT krb5 KDC unauthenticated memory leak DoS in KDB keytab key decryption error path",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-112318",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: MIT krb5 kadmind authenticated DoS exploiting dereference of null policy name pointers",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-112319",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: MIT krb5 kadmind authenticated memory exhaustion DoS via unbounded RPC XDR allocation",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-112320",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: MIT krb5 kadmind unauthenticated memory leak DoS via GSS-RPC auth flavor switching",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-112321",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: MIT krb5 kadmind unauthenticated memory leak DoS via AUTH_GSSAPI_INIT error paths",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-112322",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: MIT krb5 kadmind unauthenticated CPU DoS via AUTH_GSSAPI client states cleanup",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-112323",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: MIT krb5 kadmind unauthenticated memory exhaustion via failed AUTH_GSSAPI_INIT requests",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-118380",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: kadmind: request alteration and protected information disclosure",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-119079",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: MIT krb5 KDC unauthenticated CPU DoS via quadratic ASN.1 SEQUENCE OF decoding",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-40355",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: MIT Kerberos 5: Denial of Service via NULL pointer dereference in NegoEx mechanism",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-40356",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: MIT Kerberos 5 (krb5): Denial of Service via integer underflow and out-of-bounds read",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-71199",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: Alteration of authentication indicators in CAMMAC container",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-71200",
+        "package": "krb5-libs",
+        "installed": "1.22.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No KDC or kadmind is started by the mounted init hook. Outbound SASL is explicitly restricted to plain/login over verified TLS, and inbound SASL is disabled. GSSAPI/NegoEx/PKINIT/CAMMAC are not called by this relay. krb5: Unauthenticated KDC NULL pointer dereference KDC DoS via crafted PKINIT pre-auth request",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/main.cf",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-113351",
+        "package": "libexpat",
+        "installed": "2.9.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted relay initialization and Postfix mail path do not parse XML or load an XML protocol module. No untrusted XML enters Expat or libxml2 in this runtime. expat: expat: Denial of Service via improper memory tracking in XML_ParserReset",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-115506",
+        "package": "libexpat",
+        "installed": "2.9.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted relay initialization and Postfix mail path do not parse XML or load an XML protocol module. No untrusted XML enters Expat or libxml2 in this runtime. expat: expat: Denial of Service via delayed entity amplification detection",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-117610",
+        "package": "libexpat",
+        "installed": "2.9.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted relay initialization and Postfix mail path do not parse XML or load an XML protocol module. No untrusted XML enters Expat or libxml2 in this runtime. expat: expat: Denial of Service via NULL pointer dereference in external entity parsing",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-118370",
+        "package": "libexpat",
+        "installed": "2.9.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted relay initialization and Postfix mail path do not parse XML or load an XML protocol module. No untrusted XML enters Expat or libxml2 in this runtime. expat: expat: Denial of Service via integer overflow during XML attribute parsing",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116304",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via use-after-free in parallel worker coordination",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116306",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via composite-value field assignment type confusion",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116307",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via use-after-free in plperl",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116309",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via type confusion in PL/Perl",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116313",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Privilege escalation via untrusted search path in vacuumdb",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116314",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via crafted archive in pg_restore",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116315",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via heap-based buffer overflow in tsvector_delete()",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116316",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: PostgreSQL: Privilege escalation via unqualified type resolution in temporary schema",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116317",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via heap-based buffer overflow in ts_rank_cd()",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116318",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary SQL execution via improper constraint quoting in pg_dump",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116319",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via use-after-free in plperl",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116320",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via use-after-free in PL/Perl",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116323",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via use-after-free in PL/Tcl",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116325",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary SQL execution in reindexdb via crafted index name",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116326",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via uncaught exceptions in PL/Perl",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116328",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via integer wraparound in memory contexts",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116329",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: arbitrary code execution via nested SET DATA TYPE during statistics import",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116330",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via predictable restriction key in pg_dump restore script",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116331",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via aggregate optimization type confusion",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116332",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via use-after-free during portal setup",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116335",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: PostgreSQL: Arbitrary code execution via operator link type confusion",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-116336",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via dropped index in REINDEX CONCURRENTLY",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-120139",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via integer wraparound in tuple-size calculations",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-120141",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via type confusion in materialized set-returning functions",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-120142",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via type confusion in anonymous RECORD types",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-120143",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via use-after-free in trigger functions",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-120144",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: PostgreSQL: Arbitrary code execution via incomplete type-cache invalidation",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-120145",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via system catalog replication target",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-120147",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via use-after-free in dblink extension",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-120148",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via type confusion in extended statistics",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-120149",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via foreign batch inserts",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-120150",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via use-after-free in expanded-record domain checks",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-120151",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via PL/pgSQL type confusion",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-120153",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: arbitrary code execution via SQL injection in extension-script substitutions",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-14661",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Persistent Denial of Service via arbitrary file append in sslkeylogfile parameter",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-18447",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via type confusion in SQL-language functions",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-6460",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Arbitrary code execution via type confusion in data definition commands",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-6467",
+        "package": "libpq",
+        "installed": "18.6-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "This relay never connects to PostgreSQL or loads libpq: the mounted init hook starts Postfix and local rsyslog only. The affected PostgreSQL server, SQL extension and administration utilities are not executed. postgresql: postgresql: Privilege escalation via uncontrolled search path in extension management",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-86144",
+        "package": "libxml2",
+        "installed": "2.13.9-r2",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted relay initialization and Postfix mail path do not parse XML or load an XML protocol module. No untrusted XML enters Expat or libxml2 in this runtime. libxml2: libxml2: Information disclosure, SSRF, or denial of service due to improper parseFlags propagation.",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-42496",
+        "package": "perl",
+        "installed": "5.42.2-r1",
+        "severity": "CRITICAL",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The repository init hook and configuration are Python and shell. Postfix and rsyslog are native executables; no Perl interpreter or Perl module is invoked on messages or runtime configuration. perl-archive-tar: perl-archive-tar: Path traversal via crafted symlinks allows arbitrary file access",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-8376",
+        "package": "perl",
+        "installed": "5.42.2-r1",
+        "severity": "CRITICAL",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The repository init hook and configuration are Python and shell. Postfix and rsyslog are native executables; no Perl interpreter or Perl module is invoked on messages or runtime configuration. perl: Perl: Heap buffer overflow when compiling regular expressions on 32-bit builds",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-42497",
+        "package": "perl",
+        "installed": "5.42.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The repository init hook and configuration are Python and shell. Postfix and rsyslog are native executables; no Perl interpreter or Perl module is invoked on messages or runtime configuration. perl-Archive-Tar: perl-Archive-Tar: Arbitrary file modification via crafted hardlinks during archive extraction",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-48962",
+        "package": "perl",
+        "installed": "5.42.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The repository init hook and configuration are Python and shell. Postfix and rsyslog are native executables; no Perl interpreter or Perl module is invoked on messages or runtime configuration. perl-IO-Compress: perl-IO-Compress: Arbitrary code execution via attacker-controlled output glob",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-57432",
+        "package": "perl",
+        "installed": "5.42.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The repository init hook and configuration are Python and shell. Postfix and rsyslog are native executables; no Perl interpreter or Perl module is invoked on messages or runtime configuration. perl: Perl: Information disclosure via integer overflow in pack/unpack operations",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-57433",
+        "package": "perl",
+        "installed": "5.42.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The repository init hook and configuration are Python and shell. Postfix and rsyslog are native executables; no Perl interpreter or Perl module is invoked on messages or runtime configuration. Storable: Storable: Denial of Service via signed integer overflow in deserialization",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-9538",
+        "package": "perl",
+        "installed": "5.42.2-r1",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The repository init hook and configuration are Python and shell. Postfix and rsyslog are native executables; no Perl interpreter or Perl module is invoked on messages or runtime configuration. perl-Archive-Tar: perl-Archive-Tar: Denial of Service via crafted tar header with large entry size",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/runtime.py"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-19654",
+        "package": "rsyslog",
+        "installed": "8.2604.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. rsyslog: A configuration-dependent issue in rsyslog's optional imptcp input module can allow an unauthenticated remote peer to crash rsyslogd",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-55556",
+        "package": "rsyslog",
+        "installed": "8.2604.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. rsyslog: Rsyslog: Denial of Service via heap buffer overflow in imhttp module",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-61548",
+        "package": "rsyslog",
+        "installed": "8.2604.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. rsyslog: Rsyslog: Denial of Service due to stack buffer overflow in mmpstrucdata plugin",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-78002",
+        "package": "rsyslog",
+        "installed": "8.2604.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. rsyslog: rsyslog: Denial of service via heap buffer overflow in RainerScript replace() function",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-93403",
+        "package": "rsyslog",
+        "installed": "8.2604.0-r0",
+        "severity": "UNKNOWN",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. [Stack-based Buffer Overflow in mmpstrucdata rsyslog plugin]",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-19654",
+        "package": "rsyslog-openssl",
+        "installed": "8.2604.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. rsyslog: A configuration-dependent issue in rsyslog's optional imptcp input module can allow an unauthenticated remote peer to crash rsyslogd",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-55556",
+        "package": "rsyslog-openssl",
+        "installed": "8.2604.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. rsyslog: Rsyslog: Denial of Service via heap buffer overflow in imhttp module",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-61548",
+        "package": "rsyslog-openssl",
+        "installed": "8.2604.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. rsyslog: Rsyslog: Denial of Service due to stack buffer overflow in mmpstrucdata plugin",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-78002",
+        "package": "rsyslog-openssl",
+        "installed": "8.2604.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. rsyslog: rsyslog: Denial of service via heap buffer overflow in RainerScript replace() function",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-93403",
+        "package": "rsyslog-openssl",
+        "installed": "8.2604.0-r0",
+        "severity": "UNKNOWN",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. [Stack-based Buffer Overflow in mmpstrucdata rsyslog plugin]",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-19654",
+        "package": "rsyslog-zstd",
+        "installed": "8.2604.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. rsyslog: A configuration-dependent issue in rsyslog's optional imptcp input module can allow an unauthenticated remote peer to crash rsyslogd",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-55556",
+        "package": "rsyslog-zstd",
+        "installed": "8.2604.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. rsyslog: Rsyslog: Denial of Service via heap buffer overflow in imhttp module",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-61548",
+        "package": "rsyslog-zstd",
+        "installed": "8.2604.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. rsyslog: Rsyslog: Denial of Service due to stack buffer overflow in mmpstrucdata plugin",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-78002",
+        "package": "rsyslog-zstd",
+        "installed": "8.2604.0-r0",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. rsyslog: rsyslog: Denial of service via heap buffer overflow in RainerScript replace() function",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-93403",
+        "package": "rsyslog-zstd",
+        "installed": "8.2604.0-r0",
+        "severity": "UNKNOWN",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted local logging configuration loads imuxsock and built-in JSON formatting only. No imptcp, imhttp or mmpstrucdata module is loaded; no replace() expression processes input. The affected optional module/expression is not configured. [Stack-based Buffer Overflow in mmpstrucdata rsyslog plugin]",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/init.sh",
+        "infrastructure/mail/rsyslog.conf"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-114613",
+        "package": "msgpack",
+        "installed": "1.1.2",
+        "severity": "HIGH",
+        "target": "Python"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted bootstrap imports Python standard library modules only and never invokes package installation, PackageIndex, MessagePack deserialization, or Python HTTP clients. SMTP/TLS transport is native Postfix; the affected package is unused at runtime. msgpack: msgpack: Denial of Service via memory leak during map deserialization",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/runtime.py",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "GHSA-6v7p-g79w-8964",
+        "package": "msgpack",
+        "installed": "1.1.2",
+        "severity": "HIGH",
+        "target": "Python"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted bootstrap imports Python standard library modules only and never invokes package installation, PackageIndex, MessagePack deserialization, or Python HTTP clients. SMTP/TLS transport is native Postfix; the affected package is unused at runtime. MessagePack for Python: Out-of-bounds read / crash on Unpacker reuse after a caught error",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/runtime.py",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2025-47273",
+        "package": "setuptools",
+        "installed": "70.3.0",
+        "severity": "HIGH",
+        "target": "Python"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted bootstrap imports Python standard library modules only and never invokes package installation, PackageIndex, MessagePack deserialization, or Python HTTP clients. SMTP/TLS transport is native Postfix; the affected package is unused at runtime. setuptools: Path Traversal Vulnerability in setuptools PackageIndex",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/runtime.py",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-97687",
+        "package": "urllib3",
+        "installed": "2.7.0",
+        "severity": "HIGH",
+        "target": "Python"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted bootstrap imports Python standard library modules only and never invokes package installation, PackageIndex, MessagePack deserialization, or Python HTTP clients. SMTP/TLS transport is native Postfix; the affected package is unused at runtime. urllib3: urllib3: Traffic interception via HTTPS proxy TLS configuration override",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/runtime.py",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "CVE-2026-97689",
+        "package": "urllib3",
+        "installed": "2.7.0",
+        "severity": "HIGH",
+        "target": "Python"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The mounted bootstrap imports Python standard library modules only and never invokes package installation, PackageIndex, MessagePack deserialization, or Python HTTP clients. SMTP/TLS transport is native Postfix; the affected package is unused at runtime. urllib3: urllib3: Denial of Service via unbounded memory allocation in chunk parser",
+      "evidence": [
+        "compose.yml",
+        "infrastructure/mail/runtime.py",
+        "infrastructure/mail/init.sh"
+      ]
+    },
+    {
+      "image": "boky/postfix:5.2.1-alpine@sha256:f88cc3667ca4f48e0f96edc63fb1689b8f47430724b383938908449d17aa060b",
+      "finding": {
+        "id": "jwt-token",
+        "package": "embedded-secret",
+        "installed": "image",
+        "severity": "MEDIUM",
+        "target": "/root/.cache/pip/http-v2/8/d/2/5/2/8d2520c1756969aa0abde970aaea52f201c9ecabce2889815f2419ea.body"
+      },
+      "disposition": "false_positive",
+      "expires": "2026-12-23",
+      "rationale": "Verified upstream pip-cache documentation example. The only JWT contains the example claim some=payload and verifies with the public documentation key secret; no application credential or private key is present. File SHA256 1ea0c9f139b8c928276b3628af165955f6f764491448a6ad8f103cdcbb382da3. No matched token bytes are stored in this review.",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-86144",
+        "package": "libxml2",
+        "installed": "2.13.9-r2",
+        "severity": "HIGH",
+        "target": "alpine"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The XML external-entity parseFlags issue requires XML entity loading. Application SQL consumes JSON/JSONB, not XML; PostgreSQL XML input disables external entity loading. No configured application query enables the affected parser flags. libxml2: libxml2: Information disclosure, SSRF, or denial of service due to improper parseFlags propagation.",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-39824",
+        "package": "golang.org/x/sys",
+        "installed": "v0.1.0",
+        "severity": "UNKNOWN",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: Invoking integer overflow in NewNTUnicodeString in golang.org/x/sys/windows",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2025-68121",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "CRITICAL",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: crypto/tls: crypto/tls: Incorrect certificate validation during TLS session resumption",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2025-61726",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: golang: net/url: Memory exhaustion in query parameter parsing in net/url",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2025-61729",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: crypto/x509: golang: Denial of Service due to excessive resource consumption via crafted certificate",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-111943",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: crypto/x509: golang: crypto/x509: Man-in-the-middle attacks via untrusted intermediate certificates",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-25679",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: net/url: Incorrect parsing of IPv6 host literals in net/url",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-27145",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: crypto/x509: golang: golang crypto/x509: Denial of Service via excessive processing of DNS SAN entries",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-32280",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: crypto/x509: crypto/tls: golang: Go: Denial of Service vulnerability in certificate chain building",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-32281",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: crypto/x509: golang: Go crypto/x509: Denial of Service via inefficient certificate chain validation",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-32283",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: crypto/tls: golang: Go crypto/tls: Denial of Service via multiple TLS 1.3 key update messages",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-33811",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: net: golang: Go net package: Denial of Service via long CNAME response in LookupCNAME",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-33814",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: net/http/internal/http2: golang: golang.org/x/net: Go HTTP/2: Denial of Service via malformed SETTINGS_MAX_FRAME_SIZE frame",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-33818",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: encoding/asn1: golang: Go encoding/asn1: Denial of Service via excessive recursion in Unmarshal",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-39820",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: net/mail: golang: Go net/mail: Denial of Service via crafted email inputs",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-39821",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: golang.org/x/net/idna: golang: net/http: golang.org/x/net/idna: Privilege escalation via incorrect Punycode label processing",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-39822",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: golang: Go os.Root: Symlink following vulnerability allows directory traversal",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-39836",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: net: golang: Go net package: Denial of Service via NUL byte in Dial and LookupPort on Windows",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-42499",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: net/mail: golang: net/mail: Denial of Service via pathological email address parsing",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-42504",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: mime: golang: Golang MIME: Denial of Service via maliciously-crafted MIME header",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-56853",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: net/http: golang: Go net/http: Unencrypted HTTP/2 connections vulnerable to Denial of Service",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-56858",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: html/template: golang: Go html/template: Cross-Site Scripting via pathological input",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-56859",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: encoding/xml: golang: Go: Denial of Service via XML decoding recursion depth issue",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-56860",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: net/url: golang: golang net/url: Denial of Service from quadratic complexity in path resolution",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-56862",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: crypto/tls: golang: Golang crypto/tls: Denial of Service via indefinite KeyUpdate messages",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-78667",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: net/http: golang: golang: Denial of Service via crafted HTTP Range headers",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-78669",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: net/http: net/http/internal/http2: golang.org/x/net/http2: net/http: Denial of Service via excessive HTTP/2 SETTINGS frames",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "postgres:18.7-alpine3.24@sha256:0115267ab5a509022df9319c77be365cef335adb71556c75f60f5360ee247e71",
+      "finding": {
+        "id": "CVE-2026-97031",
+        "package": "stdlib",
+        "installed": "v1.24.6",
+        "severity": "HIGH",
+        "target": "usr/local/bin/gosu"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The gosu privilege-drop utility invokes user/group lookup and exec. It exposes no HTTP, TLS, certificate, ASN.1, XML, template, mail, URL or Windows API to network inputs. PostgreSQL handles its own protocols outside the Go runtime. The finding is in the unused code of the statically linked utility: crypto/tls: golang: crypto/tls: Denial of Service via multiple ECH outer extension references",
+      "evidence": [
+        "compose.yml"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-109461",
+        "package": "@azure/msal-node",
+        "installed": "5.1.5",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "Azure nodes and OAuth credential flows are excluded by NODES_INCLUDE. The fixed workflows contain no Azure authorization flow. MSAL Node authorization code flow may disclose parameters to an attacker-controlled endpoint",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-109461",
+        "package": "@azure/msal-node",
+        "installed": "5.6.0",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "Azure nodes and OAuth credential flows are excluded by NODES_INCLUDE. The fixed workflows contain no Azure authorization flow. MSAL Node authorization code flow may disclose parameters to an attacker-controlled endpoint",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-118257",
+        "package": "@intlify/core-base",
+        "installed": "11.4.5",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The editor UI is disabled (N8N_DISABLE_UI=true) and is not routed through public Nginx. The server-side control workflows never render translations, iframe srcdoc or user Markdown. vue-i18n: core-base: vue-i18n: Cross-Site Scripting via improper iframe srcdoc sanitization",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-118257",
+        "package": "@intlify/shared",
+        "installed": "11.4.5",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The editor UI is disabled (N8N_DISABLE_UI=true) and is not routed through public Nginx. The server-side control workflows never render translations, iframe srcdoc or user Markdown. vue-i18n: core-base: vue-i18n: Cross-Site Scripting via improper iframe srcdoc sanitization",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "GHSA-f897-62hf-6gxq",
+        "package": "@modelcontextprotocol/node",
+        "installed": "2.0.0",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "MCP nodes and HTTP server transports are excluded by NODES_INCLUDE; no MCP trigger is published. MCP TypeScript SDK: HTTP server transports and handlers did not limit request body size or JSON-RPC batch length",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-111181",
+        "package": "body-parser",
+        "installed": "2.3.0",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The decompression error requires a compressed request body. No n8n port is published or publicly routed. The code-owned HTTPS callbacks use JSON with no Content-Encoding, and the schedules/queue use PostgreSQL. User headers or compressed bodies are never forwarded to these private endpoints. body-parser: body-parser: Denial of Service via unhandled decompression stream error",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-102276",
+        "package": "brace-expansion",
+        "installed": "5.0.9",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No included node or fixed workflow accepts brace/glob expressions from users; the installed package is used for code-owned package/file discovery only. brace-expansion: brace-expansion: Denial of Service via stack exhaustion from crafted brace patterns",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-102278",
+        "package": "brace-expansion",
+        "installed": "5.0.9",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No included node or fixed workflow accepts brace/glob expressions from users; the installed package is used for code-owned package/file discovery only. brace-expansion: brace-expansion: Denial of Service via uncontrolled recursion in nested brace patterns",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-116689",
+        "package": "follow-redirects",
+        "installed": "1.16.1",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "Included HTTP request nodes call fixed private HTTPS callback origins with no cross-origin redirect response and no user-controlled destination. Neither user-provided URLs nor credential-bearing upstream redirects enter these workflows. follow-redirects: follow-redirects: Information disclosure via cross-origin redirects",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-111759",
+        "package": "markdown-it",
+        "installed": "13.0.2",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The editor UI is disabled (N8N_DISABLE_UI=true) and is not routed through public Nginx. The server-side control workflows never render translations, iframe srcdoc or user Markdown. markdown-it: markdown-it: Denial of Service via mismatched quote parsing",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-114141",
+        "package": "toml",
+        "installed": "4.2.0",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No TOML parsing node is included or configured. All supplied workflow configuration and payloads use JSON and typed SQL. toml: toml: Denial of Service via crafted array-of-tables headers",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-114142",
+        "package": "toml",
+        "installed": "4.2.0",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No TOML parsing node is included or configured. All supplied workflow configuration and payloads use JSON and typed SQL. toml-node: Prototype pollution: parsing a TOML document can write to Object.prototype",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-114143",
+        "package": "toml",
+        "installed": "4.2.0",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No TOML parsing node is included or configured. All supplied workflow configuration and payloads use JSON and typed SQL. toml: toml-node: Denial of Service via long dotted keys in TOML input",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-114144",
+        "package": "toml",
+        "installed": "4.2.0",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "No TOML parsing node is included or configured. All supplied workflow configuration and payloads use JSON and typed SQL. toml: toml-node: Denial of Service via unbounded integer parsing",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-109383",
+        "package": "undici",
+        "installed": "6.28.0",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The fixed workflows use Postgres or fixed local HTTPS callbacks; no custom Agent TLS options, WebSocket, compressed HTTP response, or TLS renegotiation endpoint is configured. Telemetry and version/template downloads are disabled. undici: undici: Certificate validation bypass via dropped TLS options in Agent",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-109869",
+        "package": "undici",
+        "installed": "6.28.0",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The fixed workflows use Postgres or fixed local HTTPS callbacks; no custom Agent TLS options, WebSocket, compressed HTTP response, or TLS renegotiation endpoint is configured. Telemetry and version/template downloads are disabled. undici: undici: Denial of Service via unhandled stream error on excessive content encodings",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-19534",
+        "package": "undici",
+        "installed": "6.28.0",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The fixed workflows use Postgres or fixed local HTTPS callbacks; no custom Agent TLS options, WebSocket, compressed HTTP response, or TLS renegotiation endpoint is configured. Telemetry and version/template downloads are disabled. undici: undici: Denial of Service via unrequested WebSocket subprotocol",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-87018",
+        "package": "undici",
+        "installed": "6.28.0",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The fixed workflows use Postgres or fixed local HTTPS callbacks; no custom Agent TLS options, WebSocket, compressed HTTP response, or TLS renegotiation endpoint is configured. Telemetry and version/template downloads are disabled. undici: undici: Denial of Service via TLS renegotiation with mismatched certificate",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    },
+    {
+      "image": "n8nio/n8n:2.48.8@sha256:e0df076a41076127d5f765e05acb8ba746bddff86442a92269c0f5a7219a7e4b",
+      "finding": {
+        "id": "CVE-2026-118257",
+        "package": "vue-i18n",
+        "installed": "11.4.5",
+        "severity": "HIGH",
+        "target": "Node.js"
+      },
+      "disposition": "not_affected",
+      "expires": "2026-12-23",
+      "rationale": "The editor UI is disabled (N8N_DISABLE_UI=true) and is not routed through public Nginx. The server-side control workflows never render translations, iframe srcdoc or user Markdown. vue-i18n: core-base: vue-i18n: Cross-Site Scripting via improper iframe srcdoc sanitization",
+      "evidence": [
+        "compose.yml",
+        "workflows/n8n/cve-control-enrichment.json",
+        "workflows/n8n/cve-control-findings.json",
+        "workflows/n8n/cve-control-import.json",
+        "workflows/n8n/cve-control-index.json",
+        "workflows/n8n/cve-control-inventory.json",
+        "workflows/n8n/cve-control-matching.json",
+        "workflows/n8n/cve-control-notifications.json",
+        "workflows/n8n/cve-control-platform.json",
+        "workflows/n8n/cve-control-queue.json",
+        "workflows/n8n/cve-control-status.json",
+        "workflows/n8n/cve-control-watchdog.json",
+        "workflows/n8n/finding-notification-digest.json",
+        "workflows/n8n/finding-notification-dispatch.json",
+        "workflows/n8n/finding-notification-escalation.json",
+        "workflows/n8n/finding-notification-exception.json",
+        "workflows/n8n/finding-notification-health.json",
+        "workflows/n8n/finding-notification-reconciliation.json",
+        "infrastructure/n8n/bootstrap.cjs"
+      ]
+    }
+  ]
+}

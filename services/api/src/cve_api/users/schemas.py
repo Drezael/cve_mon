@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+from cve_common.email_address import normalize_address
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -16,8 +17,13 @@ class Version(Input):
 
 class UserCreate(Input):
     username: str = Field(min_length=1, max_length=128)
-    email: str = Field(min_length=3, max_length=254, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+    email: str = Field(min_length=3, max_length=254)
     display_name: str = Field(min_length=1, max_length=128)
+
+    @field_validator("email")
+    @classmethod
+    def valid_email(cls, value: str) -> str:
+        return normalize_address(value)
 
     @field_validator("username", "display_name")
     @classmethod
@@ -29,9 +35,12 @@ class UserCreate(Input):
 
 class UserPatch(Version):
     display_name: str | None = Field(default=None, min_length=1, max_length=128)
-    email: str | None = Field(
-        default=None, min_length=3, max_length=254, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
-    )
+    email: str | None = Field(default=None, min_length=3, max_length=254)
+
+    @field_validator("email")
+    @classmethod
+    def valid_email(cls, value: str | None) -> str | None:
+        return normalize_address(value) if value is not None else None
 
     @field_validator("display_name")
     @classmethod

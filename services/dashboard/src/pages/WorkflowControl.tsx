@@ -203,7 +203,12 @@ function Panel() {
                                 {number(data.queue.completed)} {t("übernommen")}
                             </p>
                             {!!data.queue_items?.length && (
-                                <div className="table-scroll">
+                                <div
+                                    className="table-scroll"
+                                    tabIndex={0}
+                                    role="region"
+                                    aria-label={t("Scrollbare Tabelle")}
+                                >
                                     <table>
                                         <thead>
                                             <tr>
@@ -303,7 +308,12 @@ function Panel() {
                         <summary>
                             {t("Verarbeitungsschritte und Abläufe anzeigen")}
                         </summary>
-                        <div className="table-scroll">
+                        <div
+                            className="table-scroll"
+                            tabIndex={0}
+                            role="region"
+                            aria-label={t("Scrollbare Tabelle")}
+                        >
                             <table>
                                 <thead>
                                     <tr>
@@ -361,7 +371,12 @@ function Panel() {
                         {data.runs.length === 0 ? (
                             <p>{t("Noch keine gesteuerten Abläufe.")}</p>
                         ) : (
-                            <div className="table-scroll">
+                            <div
+                                className="table-scroll"
+                                tabIndex={0}
+                                role="region"
+                                aria-label={t("Scrollbare Tabelle")}
+                            >
                                 <table>
                                     <thead>
                                         <tr>

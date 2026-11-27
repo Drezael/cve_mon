@@ -289,39 +289,43 @@ export interface components {
         /** ControlRead */
         ControlRead: {
             /** Enabled */
-            enabled: boolean;
+            enabled: boolean | null;
+            /**
+             * Sample Stale
+             * @default false
+             */
+            sample_stale: boolean;
+            /** Sample Checked At */
+            sample_checked_at?: string | null;
             /**
              * State
              * @enum {string}
              */
-            state:
-                "healthy" | "degraded" | "unavailable" | "unknown" | "starting";
+            state: "healthy" | "degraded" | "unavailable" | "unknown" | "starting";
             /**
              * Workflow State
              * @enum {string}
              */
-            workflow_state:
-                "healthy" | "degraded" | "unavailable" | "unknown" | "starting";
+            workflow_state: "healthy" | "degraded" | "unavailable" | "unknown" | "starting";
             /**
              * Queue State
              * @enum {string}
              */
-            queue_state:
-                "healthy" | "degraded" | "unavailable" | "unknown" | "starting";
+            queue_state: "healthy" | "degraded" | "unavailable" | "unknown" | "starting";
             /** Heartbeat At */
             heartbeat_at: string | null;
             /** Pending */
-            pending: number;
+            pending: number | null;
             /** Processing */
-            processing: number;
+            processing: number | null;
             /** Paused */
-            paused: number;
+            paused: number | null;
             /** Failed */
-            failed: number;
+            failed: number | null;
             /** Oldest Seconds */
-            oldest_seconds: number;
+            oldest_seconds: number | null;
             /** Expired Leases */
-            expired_leases: number;
+            expired_leases: number | null;
             /** Capped */
             capped: boolean;
         };
@@ -370,29 +374,14 @@ export interface components {
              * State
              * @enum {string}
              */
-            state:
-                "healthy" | "degraded" | "unavailable" | "unknown" | "starting";
+            state: "healthy" | "degraded" | "unavailable" | "unknown" | "starting";
             /** Raw State */
-            raw_state:
-                | (
-                      | "healthy"
-                      | "degraded"
-                      | "unavailable"
-                      | "unknown"
-                      | "starting"
-                  )
-                | null;
+            raw_state: ("healthy" | "degraded" | "unavailable" | "unknown" | "starting") | null;
             /**
              * Display State
              * @enum {string}
              */
-            display_state:
-                | "healthy"
-                | "degraded"
-                | "unavailable"
-                | "unknown"
-                | "starting"
-                | "maintenance";
+            display_state: "healthy" | "degraded" | "unavailable" | "unknown" | "starting" | "maintenance";
             /** Observed At */
             observed_at: string | null;
             /** Stale */
@@ -463,8 +452,7 @@ export interface components {
              * State
              * @enum {string}
              */
-            state:
-                "healthy" | "degraded" | "unavailable" | "unknown" | "starting";
+            state: "healthy" | "degraded" | "unavailable" | "unknown" | "starting";
             /**
              * As Of
              * Format: date-time

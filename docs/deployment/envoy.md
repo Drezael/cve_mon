@@ -1,5 +1,12 @@
 # Envoy aufbauen und betreiben
 
+
+> Seit der Zusammenfassung auf sieben Dienste verwendet der Anwendungsstack direkte
+> HTTPS- und SMTP-Verbindungen. Die folgenden Envoy-Betriebshinweise beschreiben
+> den früheren Proxybetrieb. Der erhaltene Policygenerator wird ausschließlich im
+> isolierten Kompatibilitätslabor unter `tests/infrastructure/envoy` geprüft;
+> der Standardstart lädt keinen Envoydienst.
+
 Offizielles `envoyproxy/envoy` **1.40.2**, Digest
 `sha256:8de97e654644827d62afdbf7e1d3dc9fee01a8690d410dd1c63a30dc6b6cecbb` als Basis.
 Das aktuelle Projektimage `cve-envoy:1.40.2-phase23` ergänzt die gesperrten Ubuntu-Sicherheitsupdates für apt/libapt-pkg6.0 aus `infrastructure/envoy/packages.lock.json`. Der finale Build ist netzlos.
@@ -106,3 +113,10 @@ Kein automatisches latest-Pull und kein Fallback auf direkte Quellen oder altern
 Die abschließende Bereitschaftsprüfung nach Installation des Namespace-Guards verwendet `--no-recreate`; ein weiterer Image-/Containerwechsel muss den kompletten kontrollierten Start wiederholen. [Phase-23-Updates](../security/phase-23-remediation.md).
 
 Phase 23 entfernt im eigenen Envoy-Image die ungenutzten Login-/PAM-/RPC-/Kerberos-Pakete sowie APT. Der Envoy-Server benötigt laut Linkerauflösung ausschließlich die verbleibenden glibc-Laufzeitbibliotheken. Start und Healthcheck verwenden weiterhin Bash und Coreutils. Nachinstallationen im laufenden Container sind nicht vorgesehen; Änderungen erfolgen über den geprüften Dockerbuild.
+
+Die Dashboard-Aktivierung prüft die gerenderte Nginx-Konfiguration vor dem Wechsel
+auf das neue HTML. Pro Projekt werden drei Releases aufbewahrt. Das aktive Release
+enthält die ursprünglichen Hash-Assets der beiden vorangegangenen Releases; offene
+Tabs überleben damit zwei weitere Aktivierungen. Danach müssen sie neu laden.
+Ein fehlgeschlagener Check oder Reload stellt HTML-Zeiger und statisches Snippet
+wieder her. Ältere Releaseverzeichnisse werden erst nach erfolgreichem Reload entfernt.

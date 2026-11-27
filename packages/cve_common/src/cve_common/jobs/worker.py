@@ -86,8 +86,8 @@ class Worker:
             ):
                 result = await definition.handler(context, payload)
                 context.validate_result(result)
-            if not context.completed:
-                await self.repository.finish(job, "succeeded")
+            if not context.completed and not await self.repository.finish(job, "succeeded"):
+                raise LeaseLost()
             self.log.info("job_finished", extra={"job_id": str(job.id), "worker_id": str(self.id)})
         except asyncio.CancelledError:
             try:
@@ -120,7 +120,6 @@ class Worker:
                     )
                 except (SQLAlchemyError, OSError, TimeoutError):
                     self.healthy = False
-            self.log.info("job_finished", extra={"job_id": str(job.id), "worker_id": str(self.id)})
         finally:
             if heartbeat is not None:
                 heartbeat.cancel()

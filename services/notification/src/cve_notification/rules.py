@@ -1,21 +1,23 @@
 """Deterministic policy decisions, UTC digest intervals and bounded DST-safe deferral."""
 
-import re
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from cve_common.email_address import normalize_address
+
 from cve_notification.contracts import Preferences, Quiet, Rule
 
 ORDER = {"unrated": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
-EMAIL = re.compile(
-    r"[A-Za-z0-9][A-Za-z0-9._+-]{0,63}@[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?\.[a-z]{2,63}"
-)
 
 
 def address(value: str, domains: list[str]) -> bool:
-    return bool(EMAIL.fullmatch(value) and (not domains or value.rsplit("@", 1)[1] in domains))
+    try:
+        normalized = normalize_address(value)
+    except ValueError:
+        return False
+    return not domains or normalized.rsplit("@", 1)[1] in domains
 
 
 def applies(rule: Rule, event: str, finding: dict[str, Any]) -> bool:

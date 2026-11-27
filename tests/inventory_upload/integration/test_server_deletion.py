@@ -1,4 +1,4 @@
-"""Owners can remove their servers, preserving history and excluding them from current scans."""
+"""Owners can permanently erase their servers and inventories."""
 
 from uuid import UUID
 
@@ -10,7 +10,9 @@ from tests.inventory_upload.integration.test_discovery import document, upload, 
 pytestmark = pytest.mark.inventory_upload
 
 
-async def test_owner_delete_requires_csrf_and_revision_and_is_idempotent(browser: Browser) -> None:
+async def test_owner_delete_requires_csrf_and_revision_and_permanently_erases(
+    browser: Browser,
+) -> None:
     await uploader(browser)
     received = await upload(browser, document())
     assert received.status_code == 202
@@ -27,17 +29,22 @@ async def test_owner_delete_requires_csrf_and_revision_and_is_idempotent(browser
     assert (await browser.client.delete(endpoint, headers=headers)).status_code == 412
     headers["if-match"] = '"' + str(server["version"]) + '"'
     assert (await browser.client.delete(endpoint, headers=headers)).status_code == 204
-    assert (await browser.client.delete(endpoint, headers=headers)).status_code == 204
+    assert (await browser.client.delete(endpoint, headers=headers)).status_code == 404
     assert (
         await browser.client.get("/api/v1/dashboard/security/servers/" + sid)
     ).status_code == 404
     with browser.lab.owner() as s:
-        assert s.execute(
-            "SELECT status FROM inventory.servers WHERE id=%s", (UUID(sid),)
-        ).fetchone() == {"status": "archived"}
-        assert s.execute(
-            "SELECT 1 FROM inventory.submissions WHERE id=%s", (received.json()["submission_id"],)
-        ).fetchone()
+        assert (
+            s.execute("SELECT status FROM inventory.servers WHERE id=%s", (UUID(sid),)).fetchone()
+            is None
+        )
+        assert (
+            s.execute(
+                "SELECT 1 FROM inventory.submissions WHERE id=%s",
+                (received.json()["submission_id"],),
+            ).fetchone()
+            is None
+        )
     count = await browser.client.get("/api/v1/findings/active-count")
     assert count.status_code == 200 and count.json() == {"count": 0}
 
@@ -61,7 +68,7 @@ async def test_upload_permission_does_not_authorize_deleting_another_owners_serv
     assert denied.status_code == 404
 
 
-async def test_restoring_server_requests_full_snapshot_scan(browser: Browser) -> None:
+async def test_erased_server_cannot_be_restored(browser: Browser) -> None:
     from tests.authorization.integration.conftest import actor
     from tests.inventory_processor.test_processing import drain
     from tests.server_administration.integration.conftest import send
@@ -84,14 +91,9 @@ async def test_restoring_server_requests_full_snapshot_scan(browser: Browser) ->
         {"reason": "Restore monitoring"},
         '"2"',
     )
-    assert restored.status_code == 200, restored.text
+    assert restored.status_code == 404, restored.text
     with browser.lab.owner() as s:
-        job = s.execute(
-            "SELECT payload FROM automation.jobs WHERE job_type='matching.evaluate_snapshot' "
-            "AND idempotency_key LIKE %s",
-            ("server-restored:" + sid + ":%",),
+        assert not s.execute("SELECT 1 FROM inventory.servers WHERE id=%s", (sid,)).fetchone()
+        assert not s.execute(
+            "SELECT 1 FROM inventory.snapshots WHERE server_id=%s", (sid,)
         ).fetchone()
-        snapshot = s.execute(
-            "SELECT snapshot_id FROM inventory.server_current_snapshots WHERE server_id=%s", (sid,)
-        ).fetchone()
-        assert job and snapshot and job["payload"]["snapshot_id"] == str(snapshot["snapshot_id"])

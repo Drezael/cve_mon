@@ -421,6 +421,7 @@ export default function FindingManagement() {
                         </p>
                     </Card>
                     <Card title={t("Risikoausnahmen")}>
+                        <p>{t("Eine automatische Entwarnung wird derzeit nicht unterstützt. Findings bleiben bis zur geprüften Entscheidung offen.")}</p>
                         {exceptions.data?.items.map((e) => (
                             <article className="record" key={String(e.id)}>
                                 <Facts values={e} />

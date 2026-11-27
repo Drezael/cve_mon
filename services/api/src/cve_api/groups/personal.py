@@ -57,7 +57,8 @@ async def own_group(s: AsyncSession, actor: Principal, gid: UUID) -> dict[str, A
 
 async def lock(s: AsyncSession, actor: Principal, version: int) -> None:
     # Match the inventory mutation lock order (security lock, inventory lock).
-    await execute(s, "SELECT pg_advisory_xact_lock(1010001)")
+    # Shared inventory fence excludes erasure while owner revisions serialize edits.
+    await execute(s, "SELECT pg_advisory_xact_lock_shared(1010001)")
     await execute(
         s,
         (
@@ -121,7 +122,8 @@ async def listing(s: AsyncSession, actor: Principal) -> dict[str, Any]:
             "ON s.id=m.server_id WHERE g.owner_id=:owner AND g.status='active' AND "
             "s.status='active' AND "
         )
-        + scope,
+        + scope
+        + " ORDER BY m.group_id,m.display_order,m.server_id",
         **params,
     )
     by_group: dict[UUID, list[UUID]] = {}
@@ -241,17 +243,22 @@ async def assign(sid: UUID, request: Request, body: MembershipWrite) -> Any:
             (
                 "DELETE FROM inventory.server_group_memberships m USING "
                 "inventory.server_groups g WHERE m.group_id=g.id AND m.server_id=:sid AND "
-                "g.owner_id=:owner"
+                "g.owner_id=:owner AND NOT (g.id=ANY(:ids))"
             ),
             sid=sid,
+            ids=body.group_ids,
             owner=actor.user_id,
         )
         if body.group_ids:
             await execute(
                 s,
                 (
-                    "INSERT INTO inventory.server_group_memberships(server_id,group_id) SELECT "
-                    ":sid,id FROM inventory.server_groups WHERE id=ANY(:ids) AND owner_id=:owner"
+                    "INSERT INTO inventory.server_group_memberships"
+                    "(server_id,group_id,display_order) "
+                    "SELECT :sid,g.id,coalesce((SELECT max(m.display_order)+1 FROM "
+                    "inventory.server_group_memberships m WHERE m.group_id=g.id),0) "
+                    "FROM inventory.server_groups g WHERE g.id=ANY(:ids) AND g.owner_id=:owner "
+                    "ON CONFLICT (server_id,group_id) DO NOTHING"
                 ),
                 sid=sid,
                 ids=body.group_ids,

@@ -1,14 +1,43 @@
 """Erasure removes server-owned history and queued work while preserving another server."""
 
-from uuid import uuid4
+import secrets
+from pathlib import Path
+from uuid import UUID, uuid4
 
 import pytest
+from cve_common.user_vault import UserVaultKeyring, update_credentials
 
-from tests.authorization.integration.conftest import actor
+from tests.authorization.integration.conftest import Actor, actor
 from tests.findings.test_native import Harness, harness
+from tests.inventory_upload.integration.conftest import Browser
 
 __all__ = ["harness"]
 pytestmark = pytest.mark.findings
+
+
+def ansible_profile(browser: Browser, owner: Actor, server: UUID, host: str) -> None:
+    ring = UserVaultKeyring(Path(browser.service.settings.keyring_file).with_name("ssh-keys.json"))
+    vault = ring.create(owner.id, secrets.token_urlsafe(24))
+    cipher = update_credentials(
+        ring.runtime_key(owner.id, vault),
+        owner.id,
+        server,
+        None,
+        {"password": secrets.token_urlsafe(24)},
+    )
+    with browser.lab.owner() as connection:
+        connection.execute(
+            "INSERT INTO security.ansible_vaults"
+            "(user_id,salt,password_envelope,key_id,runtime_envelope) "
+            "VALUES(%(owner)s,%(salt)s,%(password_envelope)s,%(key_id)s,%(runtime_envelope)s)",
+            {"owner": owner.id, **vault},
+        )
+        connection.execute(
+            "INSERT INTO inventory.ansible_profiles(server_id,owner_id,host,port,username,"
+            "auth_method,key_id,ciphertext) "
+            "VALUES(%s,%s,%s,22,'collector','password','user-vault-v1',%s)",
+            (server, owner.id, host, cipher),
+        )
 
 
 async def test_permanent_server_erasure_removes_history_jobs_and_preserves_others(
@@ -21,14 +50,7 @@ async def test_permanent_server_erasure_removes_history_jobs_and_preserves_other
         version = s.execute(
             "SELECT version FROM inventory.servers WHERE id=%s", (first["server_id"],)
         ).fetchone()["version"]
-        s.execute(
-            (
-                "INSERT INTO inventory.ansible_profiles(server_id,owner_id,host,po"
-                "rt,username,auth_method,key_id,ciphertext) VALUES(%s,%s,'10.1.2.3"
-                "',22,'ansible','password','test',%s)"
-            ),
-            (first["server_id"], admin.id, b"ciphertext"),
-        )
+    ansible_profile(harness.browser, admin, first["server_id"], "10.1.2.3")
     digest, removed_notice, retained_notice = uuid4(), uuid4(), uuid4()
     with harness.browser.lab.owner() as s:
         for owned_finding in (first, other):
@@ -156,12 +178,7 @@ async def test_host_erasure_clears_pending_ansible_and_managed_backup(harness: H
         version = session.execute(
             "SELECT version FROM inventory.servers WHERE id=%s", (finding["server_id"],)
         ).fetchone()["version"]
-        session.execute(
-            "INSERT INTO inventory.ansible_profiles(server_id,owner_id,host,port,username,"
-            "auth_method,key_id,ciphertext) VALUES(%s,%s,'192.168.3.4',22,'collector',"
-            "'password','test',%s)",
-            (finding["server_id"], admin.id, b"fixture-only"),
-        )
+    ansible_profile(harness.browser, admin, finding["server_id"], "192.168.3.4")
     path = "/api/v1/dashboard/servers/" + str(finding["server_id"]) + "/ansible/probe"
     response = await harness.browser.client.post(
         path, headers={"x-csrf-token": harness.browser.csrf}

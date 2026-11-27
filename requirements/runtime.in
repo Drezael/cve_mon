@@ -9,6 +9,8 @@ httpx==0.28.1
 # Phase 8: vetted password hashing and authenticated MFA encryption.
 argon2-cffi==25.1.0
 cryptography==50.0.2
+# Parse and validate passphrase-protected OpenSSH keys before invoking ssh-add.
+bcrypt==5.0.0
 
 # Phase 11: shared authoritative JSON Schema and bounded multipart decoding.
 jsonschema==4.26.0

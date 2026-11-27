@@ -3,7 +3,7 @@
 from typing import Any
 from uuid import UUID
 
-from cve_findings.repository import one, rows
+from cve_common.database.queries import one, rows
 
 from cve_api.administration.service import InventoryAdministration
 from cve_api.authorization.engine import function_decision

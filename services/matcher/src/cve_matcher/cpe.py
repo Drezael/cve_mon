@@ -7,6 +7,7 @@ version bounds require a comparator explicitly supplied by inventory identity.
 import re
 from typing import Any
 
+from cve_matcher.limits import cpe_leaves
 from cve_matcher.versions import VersionError, compare
 
 Truth = bool | None
@@ -123,6 +124,7 @@ def configuration(
     original expression is retained by the caller in provenance/evidence.
     """
     if budget is None:
+        cpe_leaves(tree)
         budget = [4096]
     budget[0] -= 1
     if depth > 32 or budget[0] < 0:

@@ -25,7 +25,7 @@ from scripts.infrastructure.manage import load_config
     "address", ["8.8.8.8", "192.168.1.2", "127.0.0.1", "169.254.1.2", "::1", "2001:db8::1"]
 )
 def test_any_target_address_is_accepted(address: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    assert Connection(host=address, username="collector").host == address
+    assert Connection(version=0, host=address, username="collector").host == address
     monkeypatch.setattr(socket, "getaddrinfo", lambda *a, **kw: [(0, 0, 0, "", (address, 22))])
     assert destination(address, 22) == address
 
@@ -48,7 +48,9 @@ def test_removed_network_setting_is_no_longer_public(tmp_path: Path) -> None:
 )
 def test_api_rejects_privileged_configuration(fields: dict[str, Any]) -> None:
     with pytest.raises(ValidationError):
-        Connection.model_validate({"host": "host.example.org", "username": "collector", **fields})
+        Connection.model_validate(
+            {"version": 0, "host": "host.example.org", "username": "collector", **fields}
+        )
 
 
 @pytest.mark.parametrize("fields", [{"username": "root"}, {"use_sudo": True}])

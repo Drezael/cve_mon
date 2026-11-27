@@ -1,5 +1,12 @@
 # Envoy ab Phase 4
 
+
+> Seit der Zusammenfassung auf sieben Dienste verwendet der Anwendungsstack direkte
+> HTTPS- und SMTP-Verbindungen. Die folgenden Envoy-Betriebshinweise beschreiben
+> den früheren Proxybetrieb. Der erhaltene Policygenerator wird ausschließlich im
+> isolierten Kompatibilitätslabor unter `tests/infrastructure/envoy` geprüft;
+> der Standardstart lädt keinen Envoydienst.
+
 > Aktueller Betrieb: unveränderte Docker-Hub-Images gemäß `infrastructure/images.lock.json`. Frühere Hinweise auf eigene Hersteller-Builds/Paketentfernung sind historisch und durch die Umstellung auf Original-Images ersetzt. Es werden keine Herstellerprogramme nachgepatcht.
 
 

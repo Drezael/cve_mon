@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "CVE internal status API",
-    "version": "0.22.0"
+    "version": "0.23.0"
   },
   "paths": {
     "/api/v1/status/overview": {
@@ -958,8 +958,32 @@
       "ControlRead": {
         "properties": {
           "enabled": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Enabled"
+          },
+          "sample_stale": {
+            "type": "boolean",
+            "title": "Sample Stale",
+            "default": false
+          },
+          "sample_checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sample Checked At"
           },
           "state": {
             "type": "string",
@@ -1007,27 +1031,69 @@
             "title": "Heartbeat At"
           },
           "pending": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Pending"
           },
           "processing": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Processing"
           },
           "paused": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Paused"
           },
           "failed": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Failed"
           },
           "oldest_seconds": {
-            "type": "number",
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Oldest Seconds"
           },
           "expired_leases": {
-            "type": "integer",
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Expired Leases"
           },
           "capped": {

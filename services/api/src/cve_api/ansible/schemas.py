@@ -2,13 +2,16 @@
 
 import ipaddress
 import re
+from datetime import datetime
 from typing import Literal
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
 
 
 class Connection(BaseModel):
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    version: int = Field(ge=0, strict=True)
     host: str = Field(min_length=1, max_length=253)
     port: int = Field(default=22, ge=1, le=65535)
     username: str = Field(pattern=r"^[a-zA-Z_][a-zA-Z0-9_.-]{0,63}$")
@@ -70,3 +73,56 @@ class Connection(BaseModel):
 class ConfirmKey(BaseModel):
     model_config = ConfigDict(extra="forbid")
     fingerprint: str = Field(pattern=r"^SHA256:[A-Za-z0-9+/]{43}$")
+
+
+class Profile(BaseModel):
+    version: int
+    host: str
+    port: int
+    username: str
+    auth_method: Literal["key", "password"]
+    use_sudo: bool
+    enabled: bool
+    interval_seconds: int
+    next_due: datetime | None
+    host_key: str | None
+    host_key_confirmed: bool
+    mount_paths: list[str]
+
+
+class RunRead(BaseModel):
+    id: UUID
+    profile_version: int
+    fingerprint: str | None
+    action: str
+    state: str
+    requested_at: datetime
+    started_at: datetime | None
+    finished_at: datetime | None
+    error_code: str | None
+    host_key: str | None
+    execution_id: str | None
+    workflow_id: str | None
+    submission_id: UUID | None
+    trigger_type: str
+
+
+class SettingsRead(BaseModel):
+    profile: Profile | None
+    credentials_configured: bool
+    vault_configured: bool
+    editable: bool
+    runs: list[RunRead]
+
+
+class Saved(BaseModel):
+    saved: Literal[True]
+
+
+class Confirmed(BaseModel):
+    confirmed: Literal[True]
+
+
+class RunAccepted(BaseModel):
+    run_id: UUID
+    status: Literal["pending"]

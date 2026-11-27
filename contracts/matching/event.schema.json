@@ -12,6 +12,7 @@
       "type": "string"
     },
     "identity": {
+      "maxLength": 256,
       "pattern": "^CVE-[0-9]{4}-[0-9]{4,}$",
       "title": "Identity",
       "type": "string"
@@ -27,7 +28,11 @@
       "type": "string"
     },
     "rule_version": {
-      "const": "matching-1",
+      "enum": [
+        "matching-1",
+        "matching-2",
+        "matching-3"
+      ],
       "title": "Rule Version",
       "type": "string"
     },
@@ -58,8 +63,6 @@
     "status",
     "current_version"
   ],
-  "title": "Event",
-  "type": "object",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://cve-monitoring.invalid/contracts/matching/event.schema.json"
+  "title": "MatchingEvent",
+  "type": "object"
 }

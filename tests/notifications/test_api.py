@@ -109,6 +109,12 @@ async def test_personal_list_counts_and_history_never_expose_other_recipient(
     harness.enable()
     f = await harness.findings.create()
     with harness.browser.lab.owner() as c:
+        # Scan reports are addressed to the server owner. ACL membership alone
+        # does not subscribe a second recipient to another owner's report.
+        c.execute(
+            "UPDATE inventory.servers SET created_by=%s,version=version+1 WHERE id=%s",
+            (viewer.id, f["server_id"]),
+        )
         c.execute(
             (
                 "INSERT INTO security.user_server_access(user_id,se"

@@ -622,3 +622,38 @@ def test_start_help_has_no_workflow_initialization_option(repository_root: Path)
         check=True,
     )
     assert "initialize-workflows" not in result.stdout
+
+
+@pytest.mark.parametrize("foreign", [False, True])
+def test_shared_controller_stop_checks_user_unit_working_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, foreign: bool
+) -> None:
+    from scripts.automation_executor import agent
+
+    config = load_config(overrides={"COMPOSE_PROJECT_NAME": "cve-db-test-control-stop"})
+    calls: list[list[str]] = []
+    monkeypatch.setattr(agent, "directory", lambda _c: tmp_path)
+    monkeypatch.setattr(shutil, "which", lambda _name: "systemctl")
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda args, **kwargs: subprocess.CompletedProcess(args, 0, "", ""),
+    )
+
+    def run(args: list[str]) -> SimpleNamespace:
+        calls.append(args)
+        return SimpleNamespace(stdout="/foreign" if foreign else str(config.root))
+
+    monkeypatch.setattr(agent, "run", run)
+    if foreign:
+        with pytest.raises(ValueError, match="Arbeitsverzeichnis"):
+            agent.stop(config)
+        assert not any("stop" in args for args in calls)
+    else:
+        agent.stop(config)
+        assert calls[-1] == [
+            "systemctl",
+            "--user",
+            "stop",
+            "cve-automation-control-" + config.project,
+        ]
