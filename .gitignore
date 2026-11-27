@@ -54,3 +54,9 @@ test-results/
 # Private historical development plans; retained locally, never published.
 /docs/history/plans/
 /docs/development/phase-*-plan.md
+
+# Local code reviews and generated QA reports
+/docs/development/code-review-*.md
+/docs/development/review-implementation-*.md
+/docs/testing/qa-*/
+/docs/performance/performance-results.md
